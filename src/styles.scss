@@ -1,0 +1,42 @@
+// 1. Include functions first (so you can manipulate colors, SVGs, calc, etc)
+@import "bootstrap/scss/functions";
+
+// 2. Include any default variable overrides here
+$primary: #171717;
+$primary-hover: #262626;
+$secondary: #dfb938;
+$gray100: #f5f5f5;
+$gray200: #e5e5e5;
+$gray300: #737373;
+$gray400: #a3a3a3;
+$gray500: #fafafa;
+$gray600: #404040;
+$grayf2: #f2f2f2;
+$graye2e8: #e2e8f0;
+$text-danger: #ef4444;
+$text-blue: #1d4ed8;
+$text-green: #34C759;
+
+// 3. Import the rest of bootstrap
+@import "bootstrap/scss/bootstrap";
+
+/* Stop Samsung Internet force dark */
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background: #f5f5f5;
+  color: #171717;
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  forced-color-adjust: none;
+  box-sizing: border-box;
+}
+
+.bg-gray-100 {
+  background: $gray100;
+}

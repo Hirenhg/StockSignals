@@ -1,0 +1,18 @@
+{
+  "short_name": "StockSignal",
+  "name": "StockSignal - Trading Signals",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#171717",
+  "background_color": "#f5f5f5",
+  "orientation": "portrait",
+  "scope": "/",
+  "description": "Real-time stock trading signals with technical indicators"
+}
