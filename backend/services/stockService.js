@@ -1,6 +1,9 @@
 const axios = require("axios");
 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = false, getVolume = false, getHighLow = false) {
+  await delay(100); // Add 100ms delay between requests
   const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
   const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
   
