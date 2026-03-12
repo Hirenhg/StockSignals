@@ -17,7 +17,7 @@ const indicesPath = path.join(__dirname, './data/indices.json');
 const optionsPath = path.join(__dirname, './data/options.json');
 const commoditiesPath = path.join(__dirname, './data/commodities.json');
 const cryptoPath = path.join(__dirname, './data/crypto.json');
-const nifty50Path = path.join(__dirname, './data/Nifty50.json');
+const nifty50Path = path.join(__dirname, './data/nifty50.json');
 const niftynext50Path = path.join(__dirname, './data/niftynext50.json');
 
 const getStocks = () => JSON.parse(fs.readFileSync(stocksPath, 'utf8'));
