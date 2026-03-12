@@ -28,13 +28,13 @@ const getCrypto = () => JSON.parse(fs.readFileSync(cryptoPath, 'utf8'));
 const getNifty50 = () => JSON.parse(fs.readFileSync(nifty50Path, 'utf8'));
 const getNiftyNext50 = () => JSON.parse(fs.readFileSync(niftynext50Path, 'utf8'));
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://stocksignal.vercel.app', 'https://stocksignal.netlify.app', 'https://stocksignal-backend.up.railway.app'];
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://stock-signals-six.vercel.app/'];
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS.'));
     }
   }
 }));
