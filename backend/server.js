@@ -28,16 +28,22 @@ const getCrypto = () => JSON.parse(fs.readFileSync(cryptoPath, 'utf8'));
 const getNifty50 = () => JSON.parse(fs.readFileSync(nifty50Path, 'utf8'));
 const getNiftyNext50 = () => JSON.parse(fs.readFileSync(niftynext50Path, 'utf8'));
 
-// const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://stock-signals-six.vercel.app/'];
-// app.use(cors({
-//   origin: (origin, callback) => {
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS.'));
-//     }
-//   }
-// }));
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001', 
+  'https://stock-signals-six.vercel.app'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 app.get("/", (req, res) => {
