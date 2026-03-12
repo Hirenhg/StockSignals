@@ -25,6 +25,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.url.includes('stocksignals-65rz.onrender.com') || event.request.url.includes('localhost:5000')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request);

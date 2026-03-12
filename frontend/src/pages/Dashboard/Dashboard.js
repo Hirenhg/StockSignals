@@ -126,63 +126,66 @@ function Dashboard() {
         <title>Stock Signals Dashboard</title>
       </Helmet>
       
-      <div>
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h4 className="mb-0">Trading Signals</h4>
-          <div className="d-flex gap-2">
+      <div className="container-fluid px-2 px-md-4 py-3">
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+          <h4 className="mb-0 fw-bold">Trading Signals</h4>
+          <div className="d-flex gap-2 w-md-auto">
             <input 
               type="text" 
-              className="form-control" 
-              placeholder={`Add ${assetTab === 'stocks' ? 'Stocks' : assetTab === 'indices' ? 'indices' : assetTab === 'commodities' ? 'commodities' : assetTab === 'crypto' ? 'Crypto' : assetTab === 'nifty50' ? 'Nifty50 Stock' : 'NiftyNext50 Stock'}`} 
+              className="form-control form-control" 
+              placeholder={`Add ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}`} 
               value={newStock}
               onChange={(e) => setNewStock(e.target.value.toUpperCase())}
             />
             <button className="btn btn-primary" onClick={handleAddStock}>Add</button>
           </div>
         </div>
-        <div className="bg-white rounded-2 mb-3">
-        {/* Asset Type Tabs */}
-        <ul className="nav nav-pills" style={{fontSize: '14px'}}>
-           <li className="nav-item">
-            <button className={`nav-link ${assetTab === 'indices' ? 'active' : ''}`} onClick={() => setAssetTab('indices')}>Indices</button>
-          </li>
-          <li className="nav-item">
-            <button className={`nav-link ${assetTab === 'stocks' ? 'active' : ''}`} onClick={() => setAssetTab('stocks')}>Watchlist Stocks</button>
-          </li>
-          <li className="nav-item">
-            <button className={`nav-link ${assetTab === 'nifty50' ? 'active' : ''}`} onClick={() => setAssetTab('nifty50')}>Nifty 50</button>
-          </li>
-          <li className="nav-item">
-            <button className={`nav-link ${assetTab === 'niftynext50' ? 'active' : ''}`} onClick={() => setAssetTab('niftynext50')}>Nifty Next 50</button>
-          </li>
-          <li className="nav-item">
-            <button className={`nav-link ${assetTab === 'commodities' ? 'active' : ''}`} onClick={() => setAssetTab('commodities')}>Commodities</button>
-          </li>
-          <li className="nav-item">
-            <button className={`nav-link ${assetTab === 'crypto' ? 'active' : ''}`} onClick={() => setAssetTab('crypto')}>Crypto</button>
-          </li>
-        </ul>
-         </div>
-           {/* Signal Filter & Search */}
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <div className="d-flex gap-2 align-items-center">
+
+        <div className="mb-3">
+          <div className="d-flex align-items-center flex-wrap gap-2 mb-2 overflow-auto pb-2" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+            <style>{`.overflow-auto::-webkit-scrollbar { display: none; }`}</style>
+            {[
+              { key: 'indices', label: 'Indices' },
+              { key: 'stocks', label: 'Watchlist' },
+              { key: 'nifty50', label: 'Nifty 50' },
+              { key: 'niftynext50', label: 'Next 50'},
+              { key: 'commodities', label: 'Commodities'},
+              { key: 'crypto', label: 'Crypto' }
+            ].map(tab => (
+              <button 
+                key={tab.key}
+                className={`btn btn-sm flex-shrink-0 d-flex align-items-center gap-1 ${
+                  assetTab === tab.key ? 'btn-primary' : 'btn-outline-primary'
+                }`}
+                onClick={() => setAssetTab(tab.key)}
+                style={{fontSize: '13px', padding: '8px 16px', whiteSpace: 'nowrap'}}
+              >
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+          <div className="d-flex gap-2 align-items-center flex-wrap">
             <div className="btn-group" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
               <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
               <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
             </div>
-            <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab} title="Refresh">
-              <i className="bi bi-arrow-clockwise"></i> Refresh
+            <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab}>
+              <i className="bi bi-arrow-clockwise"></i>Refresh
             </button>
           </div>
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-2">
             <input 
               type="text" 
-              className="form-control form-control-sm" 
+              className="form-control flex-grow-1" 
               placeholder="Search..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              style={{minWidth: '150px'}}
             />
             <div className="d-flex gap-2">
               <span className="badge bg-success">BUY: {buyCount}</span>
@@ -191,7 +194,70 @@ function Dashboard() {
             </div>
           </div>
         </div>
-        <div className="table-responsive">
+
+        {/* Mobile Card View */}
+        <div className="d-md-none">
+          {filteredSignals.map((item, index) => (
+            <div key={index} className="card mb-3 shadow-sm">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <div>
+                    <h5 className="card-title mb-1 fw-bold">{item.symbol}</h5>
+                    <h6 className="text-primary fw-bold mb-0">₹{item.price}</h6>
+                  </div>
+                  <span className={`badge rounded-pill px-3 py-2 ${item.signal === 'BUY' ? 'bg-success' : item.signal === 'SELL' ? 'bg-danger' : 'bg-secondary'}`}>
+                    {item.signal}
+                  </span>
+                </div>
+
+                <div className="row g-3 mb-3">
+                  <div className="col-6">
+                    <small className="text-muted d-block">RSI</small>
+                    <strong>{item.rsi}</strong>
+                  </div>
+                  <div className="col-6">
+                    <small className="text-muted d-block">Volume (K)</small>
+                    <strong>{item.volume || '-'}</strong>
+                  </div>
+                  <div className="col-6">
+                    <small className="text-muted d-block">52W High</small>
+                    <strong>₹{item.week52High || '-'}</strong>
+                  </div>
+                  <div className="col-6">
+                    <small className="text-muted d-block">52W Low</small>
+                    <strong>₹{item.week52Low || '-'}</strong>
+                  </div>
+                </div>
+
+                <div className="row g-3 mb-3 mt-3 border-top">
+                  <div className="col-6">
+                    <small className="text-danger d-block">EMA5</small>
+                    <strong className="text-danger">₹{item.ema5}</strong>
+                  </div>
+                  <div className="col-6">
+                    <small className="text-success d-block">EMA10</small>
+                    <strong className="text-success">₹{item.ema10}</strong>
+                  </div>
+                  <div className="col-6">
+                    <small className="text-primary d-block">EMA15</small>
+                    <strong className="text-primary">₹{item.ema15}</strong>
+                  </div>
+                  <div className="col-6">
+                    <small className="text-warning d-block">EMA20</small>
+                    <strong className="text-warning">₹{item.ema20}</strong>
+                  </div>
+                </div>
+
+                <button className="btn btn-danger btn-sm w-100" onClick={() => handleDeleteStock(item.symbol)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="d-none d-md-block table-responsive">
           <table className="table table-hover" style={{fontSize: '14px'}}>
             <thead className="table-dark">
               <tr>
@@ -223,7 +289,7 @@ function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {filteredSignals.map((item,index)=>(
+              {filteredSignals.map((item, index) => (
                 <tr key={index}>
                   <td className="fw-bold">{item.symbol}</td>
                   <td>₹{item.price}</td>
@@ -244,7 +310,7 @@ function Dashboard() {
                   <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.yesterdayLow || '-'}</td>
                   <td>{fetchTime ? new Date(fetchTime).toLocaleString() : new Date(item.timestamp).toLocaleString()}</td>
                   <td>
-                    <button className="btn btn-sm btn-primary" onClick={() => handleDeleteStock(item.symbol)}>Delete</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDeleteStock(item.symbol)}>Delete</button>
                   </td>
                 </tr>
               ))}
