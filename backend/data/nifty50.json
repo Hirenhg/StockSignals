@@ -23,7 +23,6 @@
   { "symbol": "POWERGRID" },
   { "symbol": "ULTRACEMCO" },
   { "symbol": "ADANIENT" },
-  { "symbol": "TATAMOTORS" },
   { "symbol": "ONGC" },
   { "symbol": "TATASTEEL" },
   { "symbol": "JSWSTEEL" },
@@ -36,7 +35,6 @@
   { "symbol": "DRREDDY" },
   { "symbol": "GRASIM" },
   { "symbol": "DIVISLAB" },
-  { "symbol": "BAJAJ-AUTO" },
   { "symbol": "BRITANNIA" },
   { "symbol": "HEROMOTOCO" },
   { "symbol": "ADANIPORTS" },
@@ -48,5 +46,5 @@
   { "symbol": "TATACONSUM" },
   { "symbol": "APOLLOHOSP" },
   { "symbol": "SHREECEM" },
-  { "symbol": "HDFC" }
+  { "symbol": "HDFCLIFE" }
 ]

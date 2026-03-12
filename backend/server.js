@@ -80,8 +80,13 @@ app.get("/api/signals/:type", async (req, res) => {
         stocks = getStocks();
     }
     
+    if (!stocks || stocks.length === 0) {
+      return res.json([]);
+    }
+    
     const results = [];
-    const batchSize = 3; // Process 3 stocks at a time
+    const batchSize = 3;
+    const errors = [];
 
     for (let i = 0; i < stocks.length; i += batchSize) {
       const batch = stocks.slice(i, i + batchSize);
@@ -90,7 +95,10 @@ app.get("/api/signals/:type", async (req, res) => {
           try {
             const prices5m = await getStockHistory(stock.symbol, '1d', '3mo');
             
-            if (!prices5m || prices5m.length < 20) return null;
+            if (!prices5m || prices5m.length < 20) {
+              errors.push(`${stock.symbol}: Insufficient data`);
+              return null;
+            }
 
             const result = generateSignal(prices5m);
             
@@ -129,9 +137,8 @@ app.get("/api/signals/:type", async (req, res) => {
               timestamp: new Date().toISOString()
             };
           } catch (err) {
-            console.error(`Error processing ${stock.symbol}:`, err.message);
+            errors.push(`${stock.symbol}: ${err.message}`);
             if (err.response?.status === 429) {
-              console.log('Rate limit hit, waiting...');
               await new Promise(resolve => setTimeout(resolve, 2000));
             }
             return null;
@@ -141,7 +148,11 @@ app.get("/api/signals/:type", async (req, res) => {
       results.push(...batchResults.filter(r => r !== null));
     }
 
-    console.log(`Processed ${results.length} stocks for ${type}`);
+    console.log(`Processed ${results.length}/${stocks.length} stocks for ${type}`);
+    if (errors.length > 0) {
+      console.log(`Errors: ${errors.slice(0, 5).join(', ')}`);
+    }
+    
     res.json(results);
     
     const buySignals = results.filter(r => r.signal === 'BUY');
@@ -150,7 +161,8 @@ app.get("/api/signals/:type", async (req, res) => {
       sendBulkSignals(results);
     }
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch signals" });
+    console.error('API Error:', error.message);
+    res.status(500).json({ error: "Failed to fetch signals", message: error.message });
   }
 });
 
