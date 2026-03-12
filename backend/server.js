@@ -2,7 +2,6 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 require('dotenv').config();
 const express = require("express");
-const cors = require("cors");
 const fs = require('fs');
 const path = require('path');
 const getStockHistory = require("./services/stockService");
@@ -28,22 +27,16 @@ const getCrypto = () => JSON.parse(fs.readFileSync(cryptoPath, 'utf8'));
 const getNifty50 = () => JSON.parse(fs.readFileSync(nifty50Path, 'utf8'));
 const getNiftyNext50 = () => JSON.parse(fs.readFileSync(niftynext50Path, 'utf8'));
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001', 
-  'https://stock-signals-six.vercel.app'
-];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 app.use(express.json());
 
 app.get("/", (req, res) => {
