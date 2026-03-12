@@ -2,7 +2,6 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 require('dotenv').config();
 const express = require("express");
-const cors = require("cors");
 const fs = require('fs');
 const path = require('path');
 const getStockHistory = require("./services/stockService");
@@ -17,7 +16,7 @@ const indicesPath = path.join(__dirname, './data/indices.json');
 const optionsPath = path.join(__dirname, './data/options.json');
 const commoditiesPath = path.join(__dirname, './data/commodities.json');
 const cryptoPath = path.join(__dirname, './data/crypto.json');
-const nifty50Path = path.join(__dirname, './data/Nifty50.json');
+const nifty50Path = path.join(__dirname, './data/nifty50.json');
 const niftynext50Path = path.join(__dirname, './data/niftynext50.json');
 
 const getStocks = () => JSON.parse(fs.readFileSync(stocksPath, 'utf8'));
@@ -28,16 +27,16 @@ const getCrypto = () => JSON.parse(fs.readFileSync(cryptoPath, 'utf8'));
 const getNifty50 = () => JSON.parse(fs.readFileSync(nifty50Path, 'utf8'));
 const getNiftyNext50 = () => JSON.parse(fs.readFileSync(niftynext50Path, 'utf8'));
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://stocksignal.vercel.app', 'https://stocksignal.netlify.app', 'https://stocksignal-backend.up.railway.app'];
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
   }
-}));
+  next();
+});
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -82,55 +81,67 @@ app.get("/api/signals/:type", async (req, res) => {
     }
     
     const results = [];
+    const batchSize = 3; // Process 3 stocks at a time
 
-    for (const stock of stocks) {
-      try {
-        const prices5m = await getStockHistory(stock.symbol, '1d', '3mo');
-        
-        if (!prices5m || prices5m.length < 20) continue;
+    for (let i = 0; i < stocks.length; i += batchSize) {
+      const batch = stocks.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(async (stock) => {
+          try {
+            const prices5m = await getStockHistory(stock.symbol, '1d', '3mo');
+            
+            if (!prices5m || prices5m.length < 20) return null;
 
-        const result = generateSignal(prices5m);
-        
-        let stockInfo = { week52High: null, week52Low: null };
-        let volumeData = null;
-        
-        try {
-          stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
-          volumeData = await getStockHistory(stock.symbol, '1d', '1y', false, true);
-        } catch (err) {}
-        
-        // Get yesterday's high and low
-        let yesterdayHigh = null;
-        let yesterdayLow = null;
-        try {
-          const yesterdayData = await getStockHistory(stock.symbol, '1d', '5d', false, false, true);
-          if (yesterdayData) {
-            yesterdayHigh = yesterdayData.high;
-            yesterdayLow = yesterdayData.low;
+            const result = generateSignal(prices5m);
+            
+            let stockInfo = { week52High: null, week52Low: null };
+            let volumeData = null;
+            
+            try {
+              stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
+              volumeData = await getStockHistory(stock.symbol, '1d', '1y', false, true);
+            } catch (err) {}
+            
+            let yesterdayHigh = null;
+            let yesterdayLow = null;
+            try {
+              const yesterdayData = await getStockHistory(stock.symbol, '1d', '5d', false, false, true);
+              if (yesterdayData) {
+                yesterdayHigh = yesterdayData.high;
+                yesterdayLow = yesterdayData.low;
+              }
+            } catch (err) {}
+            
+            return {
+              symbol: stock.symbol,
+              signal: result.signal,
+              rsi: result.rsi.toFixed(2),
+              ema5: result.ema5.toFixed(2),
+              ema10: result.ema10.toFixed(2),
+              ema15: result.ema15.toFixed(2),
+              ema20: result.ema20.toFixed(2),
+              price: prices5m[prices5m.length - 1].toFixed(2),
+              week52High: stockInfo?.week52High || null,
+              week52Low: stockInfo?.week52Low || null,
+              volume: volumeData || null,
+              yesterdayHigh: yesterdayHigh,
+              yesterdayLow: yesterdayLow,
+              timestamp: new Date().toISOString()
+            };
+          } catch (err) {
+            console.error(`Error processing ${stock.symbol}:`, err.message);
+            if (err.response?.status === 429) {
+              console.log('Rate limit hit, waiting...');
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            return null;
           }
-        } catch (err) {}
-        
-        results.push({
-          symbol: stock.symbol,
-          signal: result.signal,
-          rsi: result.rsi.toFixed(2),
-          ema5: result.ema5.toFixed(2),
-          ema10: result.ema10.toFixed(2),
-          ema15: result.ema15.toFixed(2),
-          ema20: result.ema20.toFixed(2),
-          price: prices5m[prices5m.length - 1].toFixed(2),
-          week52High: stockInfo?.week52High || null,
-          week52Low: stockInfo?.week52Low || null,
-          volume: volumeData || null,
-          yesterdayHigh: yesterdayHigh,
-          yesterdayLow: yesterdayLow,
-          timestamp: new Date().toISOString()
-        });
-      } catch (err) {
-        console.error(`Error processing ${stock.symbol}:`, err.message);
-      }
+        })
+      );
+      results.push(...batchResults.filter(r => r !== null));
     }
 
+    console.log(`Processed ${results.length} stocks for ${type}`);
     res.json(results);
     
     const buySignals = results.filter(r => r.signal === 'BUY');
