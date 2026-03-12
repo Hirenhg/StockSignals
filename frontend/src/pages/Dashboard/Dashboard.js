@@ -126,7 +126,7 @@ function Dashboard() {
         <title>Stock Signals Dashboard</title>
       </Helmet>
       
-      <div className="container-fluid px-2 px-md-4 py-3">
+      <div className="p-1">
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
           <h4 className="mb-0 fw-bold">Trading Signals</h4>
           <div className="d-flex gap-2 w-md-auto">
@@ -166,7 +166,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
           <div className="d-flex gap-2 align-items-center flex-wrap">
             <div className="btn-group" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
@@ -178,7 +178,7 @@ function Dashboard() {
               <i className="bi bi-arrow-clockwise"></i>Refresh
             </button>
           </div>
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
             <input 
               type="text" 
               className="form-control flex-grow-1" 
@@ -188,9 +188,9 @@ function Dashboard() {
               style={{minWidth: '150px'}}
             />
             <div className="d-flex gap-2">
-              <span className="badge bg-success">BUY: {buyCount}</span>
-              <span className="badge bg-danger">SELL: {sellCount}</span>
-              <span className="badge bg-secondary">HOLD: {holdCount}</span>
+              <span className="badge bg-success p-2">BUY: {buyCount}</span>
+              <span className="badge bg-danger p-2">SELL: {sellCount}</span>
+              <span className="badge bg-secondary p-2">HOLD: {holdCount}</span>
             </div>
           </div>
         </div>
