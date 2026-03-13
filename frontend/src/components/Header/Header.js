@@ -8,7 +8,7 @@ const Header = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/options', label: 'Options', icon: '⚙️' },
-    { path: '/symbolmaster', label: 'Symbol Master', icon: '📋' }
+    // { path: '/symbolmaster', label: 'Symbol Master', icon: '📋' }
   ];
 
   return (

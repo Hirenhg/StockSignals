@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Helmet } from "react-helmet-async"
 import API from "../../services/api"
 
@@ -11,6 +11,10 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [signalTab, setSignalTab] = useState('all')
   const [allData, setAllData] = useState({})
   const [fetchTime, setFetchTime] = useState(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteSymbol, setDeleteSymbol] = useState('')
+  const [toast, setToast] = useState({ show: false, message: '', type: '' })
 
   // Sync with prop changes
   useEffect(() => {
@@ -26,6 +30,11 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
     }
   }, [assetTab, setAssetTabProp])
 
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type })
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000)
+  }
+
   const filteredSignals = signals.filter(s => {
     const matchesSearch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesSignal = signalTab === 'all' || s.signal === signalTab.toUpperCase()
@@ -36,28 +45,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const sellCount = filteredSignals.filter(s => s.signal === 'SELL').length
   const holdCount = filteredSignals.filter(s => s.signal === 'HOLD').length
 
-  useEffect(() => {
-    fetchAllData()
-    
-    const handleSyncData = () => {
-      console.log('Background sync triggered, refreshing data...');
-      fetchAllData();
-    };
-    
-    window.addEventListener('sync-data', handleSyncData);
-    
-    return () => {
-      window.removeEventListener('sync-data', handleSyncData);
-    };
-  }, [])
-
-  useEffect(() => {
-    if (allData[assetTab]) {
-      setSignals(allData[assetTab])
-    }
-  }, [assetTab, allData])
-
-  const fetchAllData = () => {
+  const fetchAllData = useCallback(() => {
     const types = ['indices', 'stocks', 'nifty50', 'niftynext50', 'commodities', 'crypto']
     const promises = types.map(type => 
       API.get(`/api/signals/${type}`).then(res => ({ type, data: res.data }))
@@ -74,7 +62,28 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         setFetchTime(new Date().toISOString())
       })
       .catch(err => console.error("API Error:", err))
-  }
+  }, [assetTab])
+
+  useEffect(() => {
+    fetchAllData()
+    
+    const handleSyncData = () => {
+      console.log('Background sync triggered, refreshing data...');
+      fetchAllData();
+    };
+    
+    window.addEventListener('sync-data', handleSyncData);
+    
+    return () => {
+      window.removeEventListener('sync-data', handleSyncData);
+    };
+  }, [fetchAllData])
+
+  useEffect(() => {
+    if (allData[assetTab]) {
+      setSignals(allData[assetTab])
+    }
+  }, [assetTab, allData])
 
   const refreshCurrentTab = () => {
     API.get(`/api/signals/${assetTab}`)
@@ -87,35 +96,45 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   }
 
   const handleAddStock = () => {
-    if (!newStock.trim()) return
+    if (!newStock.trim()) {
+      showToast('Symbol is required', 'error')
+      return
+    }
     const assetType = assetTab;
     API.post(`/api/${assetType}`, { symbol: newStock })
       .then(() => {
         setNewStock('')
+        setShowAddModal(false)
         const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
-        alert(`${displayName} added successfully!`)
+        showToast(`${displayName} added successfully!`, 'success')
         fetchAllData()
       })
       .catch(err => {
         const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
-        alert(err.response?.data?.error || `Error adding ${displayName}`)
+        showToast(err.response?.data?.error || `Error adding ${displayName}`, 'error')
       })
   }
 
-  const handleDeleteStock = (symbol) => {
-    if (!window.confirm(`Delete ${symbol}?`)) return
+  const handleDeleteStock = () => {
     const assetType = assetTab;
-    API.delete(`/api/${assetType}/${symbol}`)
+    API.delete(`/api/${assetType}/${deleteSymbol}`)
       .then(() => {
-        setSignals(signals.filter(s => s.symbol !== symbol))
+        setSignals(signals.filter(s => s.symbol !== deleteSymbol))
+        setShowDeleteModal(false)
+        setDeleteSymbol('')
         const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
-        alert(`${displayName} deleted successfully!`)
+        showToast(`${displayName} deleted successfully!`, 'success')
       })
       .catch(err => {
         console.error('Delete error:', err)
         const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
-        alert(err.response?.data?.error || `Error deleting ${displayName}`)
+        showToast(err.response?.data?.error || `Error deleting ${displayName}`, 'error')
       })
+  }
+
+  const openDeleteModal = (symbol) => {
+    setDeleteSymbol(symbol)
+    setShowDeleteModal(true)
   }
 
   const handleSort = (key) => {
@@ -141,21 +160,70 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
       </Helmet>
       
       <div className="p-1">
+        {toast.show && (
+          <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>
+            <div className={`alert alert-${toast.type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`} role="alert">
+              {toast.message}
+              <button type="button" className="btn-close" onClick={() => setToast({ show: false, message: '', type: '' })}></button>
+            </div>
+          </div>
+        )}
+
+        {showAddModal && (
+          <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Add {assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <label className="form-label">Symbol</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder={`Enter ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab} symbol`}
+                    value={newStock}
+                    onChange={(e) => setNewStock(e.target.value.toUpperCase())}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddStock()}
+                  />
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-primary" onClick={handleAddStock}>Add</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDeleteModal && (
+          <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Delete {assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowDeleteModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <p>Are you sure you want to delete <strong>{deleteSymbol}</strong>?</p>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-danger" onClick={handleDeleteStock}>Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="d-none d-md-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
           <h4 className="mb-0 fw-bold">Trading Signals</h4>
-          <div className="d-flex gap-2 w-md-auto">
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder={`Add ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}`} 
-              value={newStock}
-              onChange={(e) => setNewStock(e.target.value.toUpperCase())}
-            />
-            <button className="btn btn-primary text-uppercase" onClick={handleAddStock}>Add</button>
-          </div>
+          <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>Add {assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}</button>
         </div>
         <div className="d-md-none mb-3">
           <h4 className="mb-0 fw-bold">Trading Signals</h4>
+          <button className="btn btn-primary btn-sm mt-2 w-100" onClick={() => setShowAddModal(true)}>Add {assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}</button>
         </div>
         <div className="d-md-none mb-3">
           <div className="position-relative mb-2">
@@ -173,18 +241,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                 style={{fontSize: '14px'}}
               >✕</button>
             )}
-          </div>
-          <div className="d-flex gap-2">
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder={`Add ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}`} 
-              value={newStock}
-              onChange={(e) => setNewStock(e.target.value.toUpperCase())}
-            />
-            <button className="btn btn-primary text-uppercase" onClick={handleAddStock}>
-              Add
-            </button>
           </div>
         </div>
         <div className="overflow-auto mb-3 d-none d-md-block" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
@@ -271,8 +327,8 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                     {item.signal}
                   </span>
                    <button 
-                    className="btn btn-outline-primary btn-sm" 
-                    onClick={() => handleDeleteStock(item.symbol)}
+                    className="btn btn-outline-danger btn-sm" 
+                    onClick={() => openDeleteModal(item.symbol)}
                   >
                     Delete
                   </button>
@@ -373,7 +429,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                   <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.yesterdayLow || '-'}</td>
                   <td>{fetchTime ? new Date(fetchTime).toLocaleString() : new Date(item.timestamp).toLocaleString()}</td>
                   <td>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDeleteStock(item.symbol)}>Delete</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => openDeleteModal(item.symbol)}>Delete</button>
                   </td>
                 </tr>
               ))}
