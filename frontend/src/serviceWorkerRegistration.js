@@ -6,8 +6,23 @@ export function register() {
         .then((registration) => {
           console.log('SW registered:', registration);
           
-          if ('sync' in registration) {
-            registration.sync.register('sync-data');
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated' && 'sync' in registration) {
+                  registration.sync.register('sync-data').catch(err => {
+                    console.log('Background sync not supported:', err);
+                  });
+                }
+              });
+            }
+          });
+          
+          if (registration.active && 'sync' in registration) {
+            registration.sync.register('sync-data').catch(err => {
+              console.log('Background sync not supported:', err);
+            });
           }
           
           navigator.serviceWorker.addEventListener('message', (event) => {
@@ -25,7 +40,9 @@ export function register() {
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.ready.then((registration) => {
           if ('sync' in registration) {
-            registration.sync.register('sync-data');
+            registration.sync.register('sync-data').catch(err => {
+              console.log('Background sync not supported:', err);
+            });
           }
         });
       }

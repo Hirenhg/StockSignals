@@ -2,15 +2,29 @@ import React, { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import API from "../../services/api"
 
-function Dashboard() {
+function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [signals, setSignals] = useState([])
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [searchTerm, setSearchTerm] = useState('')
   const [newStock, setNewStock] = useState('')
-  const [assetTab, setAssetTab] = useState('indices')
+  const [assetTab, setAssetTab] = useState(assetTabProp || 'stocks')
   const [signalTab, setSignalTab] = useState('all')
   const [allData, setAllData] = useState({})
   const [fetchTime, setFetchTime] = useState(null)
+
+  // Sync with prop changes
+  useEffect(() => {
+    if (assetTabProp) {
+      setAssetTab(assetTabProp)
+    }
+  }, [assetTabProp])
+
+  // Update parent when local state changes
+  useEffect(() => {
+    if (setAssetTabProp) {
+      setAssetTabProp(assetTab)
+    }
+  }, [assetTab, setAssetTabProp])
 
   const filteredSignals = signals.filter(s => {
     const matchesSearch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase())
@@ -127,28 +141,60 @@ function Dashboard() {
       </Helmet>
       
       <div className="p-1">
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+        <div className="d-none d-md-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
           <h4 className="mb-0 fw-bold">Trading Signals</h4>
           <div className="d-flex gap-2 w-md-auto">
             <input 
               type="text" 
-              className="form-control form-control" 
+              className="form-control" 
               placeholder={`Add ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}`} 
               value={newStock}
               onChange={(e) => setNewStock(e.target.value.toUpperCase())}
             />
-            <button className="btn btn-primary" onClick={handleAddStock}>Add</button>
+            <button className="btn btn-primary text-uppercase" onClick={handleAddStock}>Add</button>
           </div>
         </div>
-
-        <div className="mb-3">
-          <div className="d-flex align-items-center flex-wrap gap-2 mb-2 overflow-auto pb-2" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
-            <style>{`.overflow-auto::-webkit-scrollbar { display: none; }`}</style>
+        <div className="d-md-none mb-3">
+          <h4 className="mb-0 fw-bold">Trading Signals</h4>
+        </div>
+        <div className="d-md-none mb-3">
+          <div className="position-relative mb-2">
+            <input 
+              type="text" 
+              className="form-control" 
+              placeholder="Search..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button 
+                className="btn btn-link position-absolute top-50 end-0 translate-middle-y text-muted p-0 me-3 text-decoration-none" 
+                onClick={() => setSearchTerm('')}
+                style={{fontSize: '14px'}}
+              >✕</button>
+            )}
+          </div>
+          <div className="d-flex gap-2">
+            <input 
+              type="text" 
+              className="form-control" 
+              placeholder={`Add ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}`} 
+              value={newStock}
+              onChange={(e) => setNewStock(e.target.value.toUpperCase())}
+            />
+            <button className="btn btn-primary text-uppercase" onClick={handleAddStock}>
+              Add
+            </button>
+          </div>
+        </div>
+        <div className="overflow-auto mb-3 d-none d-md-block" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+          <style>{`.overflow-auto::-webkit-scrollbar { display: none; }`}</style>
+          <div className="d-flex gap-2 pb-2">
             {[
               { key: 'indices', label: 'Indices' },
               { key: 'stocks', label: 'Watchlist' },
-              { key: 'nifty50', label: 'Nifty 50' },
-              { key: 'niftynext50', label: 'Next 50'},
+              { key: 'Nifty 50', label: 'Nifty 50' },
+              { key: 'Next 50', label: 'Next 50'},
               { key: 'commodities', label: 'Commodities'},
               { key: 'crypto', label: 'Crypto' }
             ].map(tab => (
@@ -165,8 +211,7 @@ function Dashboard() {
             ))}
           </div>
         </div>
-
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
+        <div className="d-none d-md-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
           <div className="d-flex gap-2 align-items-center flex-wrap">
             <div className="btn-group" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
@@ -175,10 +220,10 @@ function Dashboard() {
               <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
             </div>
             <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab}>
-              <i className="bi bi-arrow-clockwise"></i>Refresh
+              Refresh
             </button>
           </div>
-          <div className="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
+          <div className="d-flex align-items-center gap-2">
             <input 
               type="text" 
               className="form-control flex-grow-1" 
@@ -194,20 +239,44 @@ function Dashboard() {
             </div>
           </div>
         </div>
-
-        {/* Mobile Card View */}
+        <div className="d-md-none d-flex flex-column gap-3 mb-3">
+          <div className="d-flex gap-2 align-items-center">
+            <div className="btn-group flex-grow-1" role="group">
+              <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
+              <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
+              <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
+              <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
+            </div>
+            <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab}>
+                Refresh
+            </button>
+          </div>
+          <div className="d-flex gap-2">
+            <span className="badge bg-success p-2">BUY: {buyCount}</span>
+            <span className="badge bg-danger p-2">SELL: {sellCount}</span>
+            <span className="badge bg-secondary p-2">HOLD: {holdCount}</span>
+          </div>
+        </div>
         <div className="d-md-none">
           {filteredSignals.map((item, index) => (
-            <div key={index} className="card mb-3 shadow-sm">
+            <div key={index} className="card mb-3 shadow-sm position-relative">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start mb-3">
                   <div>
                     <h5 className="card-title mb-1 fw-bold">{item.symbol}</h5>
                     <h6 className="text-primary fw-bold mb-0">₹{item.price}</h6>
                   </div>
+                  <div className="d-flex align-items-center gap-2">
                   <span className={`badge rounded-pill px-3 py-2 ${item.signal === 'BUY' ? 'bg-success' : item.signal === 'SELL' ? 'bg-danger' : 'bg-secondary'}`}>
                     {item.signal}
                   </span>
+                   <button 
+                    className="btn btn-outline-primary btn-sm" 
+                    onClick={() => handleDeleteStock(item.symbol)}
+                  >
+                    Delete
+                  </button>
+                  </div>
                 </div>
 
                 <div className="row g-3 mb-3">
@@ -229,7 +298,7 @@ function Dashboard() {
                   </div>
                 </div>
 
-                <div className="row g-3 mb-3 mt-3 border-top">
+                <div className="row g-3 border-top mt-3">
                   <div className="col-6">
                     <small className="text-danger d-block">EMA5</small>
                     <strong className="text-danger">₹{item.ema5}</strong>
@@ -247,16 +316,10 @@ function Dashboard() {
                     <strong className="text-warning">₹{item.ema20}</strong>
                   </div>
                 </div>
-
-                <button className="btn btn-danger btn-sm w-100" onClick={() => handleDeleteStock(item.symbol)}>
-                  Delete
-                </button>
               </div>
             </div>
           ))}
         </div>
-
-        {/* Desktop Table View */}
         <div className="d-none d-md-block table-responsive">
           <table className="table table-hover" style={{fontSize: '14px'}}>
             <thead className="table-dark">

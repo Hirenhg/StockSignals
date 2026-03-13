@@ -49,18 +49,19 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <nav className="d-md-none pb-1">
+          <nav className="d-md-none pb-2">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsMenuOpen(false)}
-                className={`d-flex align-items-center gap-2 py-1 mb-1 rounded text-decoration-none ${
+                className={`d-flex align-items-center gap-2 py-2 px-3 mb-1 rounded text-decoration-none ${
                   location.pathname === item.path 
-                    ? 'text-primary' 
+                    ? 'bg-light text-primary fw-semibold' 
                     : 'text-dark'
                 }`}
               >
+                <span style={{fontSize: '20px'}}>{item.icon}</span>
                 <span>{item.label}</span>
               </Link>
             ))}
