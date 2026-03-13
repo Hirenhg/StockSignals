@@ -3,7 +3,7 @@ import BottomNav from '../BottomNav/BottomNav';
 import { useState } from 'react';
 
 const Layout = ({ children }) => {
-  const [assetTab, setAssetTab] = useState('stocks');
+  const [assetTab, setAssetTab] = useState('indices');
 
   return (
     <div className="min-vh-100 bg-light">
