@@ -18,7 +18,6 @@ function initTelegram() {
   const chat = process.env.TELEGRAM_CHAT_ID;
   
   if (!token || !chat) {
-    console.log('Telegram not configured');
     return false;
   }
   
@@ -30,7 +29,7 @@ function initTelegram() {
   return true;
 }
 
-async function sendSignal(symbol, signal, price, rsi, ema5, ema10, ema15, ema20) {
+async function sendSignal(symbol, signal, price) {
   if (!bot || !chatId) return;
   
   const signalKey = `${symbol}-${signal}`;
@@ -42,12 +41,7 @@ async function sendSignal(symbol, signal, price, rsi, ema5, ema10, ema15, ema20)
   const emoji = signal === 'BUY' ? '🟢' : signal === 'SELL' ? '🔴' : '🟡';
   const message = `${emoji} *${signal}* Signal\n\n` +
     `Symbol: *${symbol}*\n` +
-    `Price: ₹${price}\n` +
-    `RSI: ${rsi}\n` +
-    `EMA5: ₹${ema5}\n` +
-    `EMA10: ₹${ema10}\n` +
-    `EMA15: ₹${ema15}\n` +
-    `EMA20: ₹${ema20}`;
+    `Price: ₹${price}`;
   
   try {
     await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
@@ -98,21 +92,16 @@ async function sendBulkSignals(signals) {
   if (buySignals.length > 0) {
     message += `🟢 *BUY Signals (${buySignals.length})*\n\n`;
     buySignals.forEach(s => {
-      message += `*${s.symbol}*\n`;
-      message += `Price: ₹${s.price} | RSI: ${s.rsi}\n`;
-      message += `EMA5: ₹${s.ema5} | EMA10: ₹${s.ema10}\n`;
-      message += `EMA15: ₹${s.ema15} | EMA20: ₹${s.ema20}\n\n`;
+      message += `*${s.symbol}* - ₹${s.price}\n`;
       sentSignals.set(`${s.symbol}-${s.signal}`, now);
     });
+    message += '\n';
   }
   
   if (sellSignals.length > 0) {
     message += `🔴 *SELL Signals (${sellSignals.length})*\n\n`;
     sellSignals.forEach(s => {
-      message += `*${s.symbol}*\n`;
-      message += `Price: ₹${s.price} | RSI: ${s.rsi}\n`;
-      message += `EMA5: ₹${s.ema5} | EMA10: ₹${s.ema10}\n`;
-      message += `EMA15: ₹${s.ema15} | EMA20: ₹${s.ema20}\n\n`;
+      message += `*${s.symbol}* - ₹${s.price}\n`;
       sentSignals.set(`${s.symbol}-${s.signal}`, now);
     });
   }

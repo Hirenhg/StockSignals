@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const getStockHistory = require("./services/stockService");
 const generateSignal = require("./services/signalService");
+const { generateMultiTimeframeSignal } = require("./services/signalService");
 const { initTelegram, sendBulkSignals } = require("./services/telegramService");
 
 initTelegram();
@@ -93,14 +94,18 @@ app.get("/api/signals/:type", async (req, res) => {
       const batchResults = await Promise.all(
         batch.map(async (stock) => {
           try {
-            const prices5m = await getStockHistory(stock.symbol, '1d', '3mo');
+            // Fetch multiple timeframes
+            const prices1m = await getStockHistory(stock.symbol, '1m', '1d');
+            const prices5m = await getStockHistory(stock.symbol, '5m', '5d');
+            const prices15m = await getStockHistory(stock.symbol, '15m', '5d');
             
-            if (!prices5m || prices5m.length < 20) {
+            if (!prices1m || prices1m.length < 20 || !prices5m || prices5m.length < 20 || !prices15m || prices15m.length < 20) {
               errors.push(`${stock.symbol}: Insufficient data`);
               return null;
             }
 
-            const result = generateSignal(prices5m);
+            // Generate multi-timeframe signal
+            const result = generateMultiTimeframeSignal(prices1m, prices5m, prices15m);
             
             let stockInfo = { week52High: null, week52Low: null };
             let volumeData = null;
@@ -148,7 +153,6 @@ app.get("/api/signals/:type", async (req, res) => {
       results.push(...batchResults.filter(r => r !== null));
     }
 
-    console.log(`Processed ${results.length}/${stocks.length} stocks for ${type}`);
     if (errors.length > 0) {
       console.log(`Errors: ${errors.slice(0, 5).join(', ')}`);
     }
