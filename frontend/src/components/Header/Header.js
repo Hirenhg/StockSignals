@@ -49,7 +49,7 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <nav className="d-md-none pb-2">
+          <nav className="d-md-none">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -61,7 +61,6 @@ const Header = () => {
                     : 'text-dark'
                 }`}
               >
-                <span style={{fontSize: '20px'}}>{item.icon}</span>
                 <span>{item.label}</span>
               </Link>
             ))}

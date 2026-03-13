@@ -7,7 +7,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [searchTerm, setSearchTerm] = useState('')
   const [newStock, setNewStock] = useState('')
-  const [assetTab, setAssetTab] = useState(assetTabProp || 'stocks')
+  const [assetTab, setAssetTab] = useState(assetTabProp || 'indices')
   const [signalTab, setSignalTab] = useState('all')
   const [allData, setAllData] = useState({})
   const [fetchTime, setFetchTime] = useState(null)
@@ -70,7 +70,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
           dataObj[type] = data
         })
         setAllData(dataObj)
-        setSignals(dataObj['stocks'])
+        setSignals(dataObj[assetTab] || dataObj['indices'])
         setFetchTime(new Date().toISOString())
       })
       .catch(err => console.error("API Error:", err))
@@ -193,8 +193,8 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             {[
               { key: 'indices', label: 'Indices' },
               { key: 'stocks', label: 'Watchlist' },
-              { key: 'Nifty 50', label: 'Nifty 50' },
-              { key: 'Next 50', label: 'Next 50'},
+              { key: 'nifty50', label: 'Nifty 50' },
+              { key: 'niftynext50', label: 'Next 50'},
               { key: 'commodities', label: 'Commodities'},
               { key: 'crypto', label: 'Crypto' }
             ].map(tab => (
@@ -323,7 +323,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         <div className="d-none d-md-block table-responsive">
           <table className="table table-hover" style={{fontSize: '14px'}}>
             <thead className="table-dark">
-              <tr>
+              <tr style={{verticalAlign: 'middle'}}>
                 <th onClick={() => handleSort('symbol')} style={{cursor: 'pointer'}}>
                   Stock {sortConfig.key === 'symbol' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
@@ -353,7 +353,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             </thead>
             <tbody>
               {filteredSignals.map((item, index) => (
-                <tr key={index}>
+                <tr key={index} style={{verticalAlign: 'middle'}}>
                   <td className="fw-bold">{item.symbol}</td>
                   <td>₹{item.price}</td>
                   <td>
