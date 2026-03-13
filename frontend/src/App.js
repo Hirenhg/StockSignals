@@ -21,14 +21,16 @@ function App() {
     <HelmetProvider>
       <Router>
         <Layout>
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              <Route index element={<Dashboard />} />
-              <Route path="/options" element={<Options />} />
-              <Route path="/symbolmaster" element={<SymbolMaster />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          {({ assetTab, setAssetTab }) => (
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route index element={<Dashboard assetTab={assetTab} setAssetTab={setAssetTab} />} />
+                <Route path="/options" element={<Options />} />
+                <Route path="/symbolmaster" element={<SymbolMaster />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          )}
         </Layout>
       </Router>
     </HelmetProvider>
