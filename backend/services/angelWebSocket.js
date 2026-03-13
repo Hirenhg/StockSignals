@@ -10,6 +10,7 @@ let sessionToken = null;
 let feedToken = null;
 let ws = null;
 let liveData = {};
+let subscribedTokens = [];
 
 async function getAngelSession() {
     try {
@@ -34,8 +35,10 @@ async function getAngelSession() {
     return false;
 }
 
-function connectWebSocket() {
-    if (!feedToken || !process.env.ANGEL_CLIENT_CODE) return;
+function connectWebSocket(tokens = []) {
+    if (!feedToken || !process.env.ANGEL_CLIENT_CODE) {
+        return;
+    }
 
     const wsUrl = 'wss://smartapisocket.angelone.in/smart-stream';
     ws = new WebSocket(wsUrl, {
@@ -48,21 +51,44 @@ function connectWebSocket() {
     });
 
     ws.on('open', () => {
-        subscribeToTokens();
+        if (tokens.length > 0) {
+            subscribeToTokens(tokens);
+        }
     });
 
     ws.on('message', (data) => {
         try {
+            const message = data.toString();
+            
+            try {
+                JSON.parse(message);
+                return;
+            } catch (e) {
+            }
+            
             const buffer = Buffer.from(data);
-            if (buffer.length > 2) {
-                const token = buffer.readUInt32BE(0).toString();
-                const ltp = buffer.readUInt32BE(4) / 100;
+            
+            if (buffer.length < 2) return;
+            
+            let offset = 0;
+            while (offset < buffer.length) {
+                if (offset + 8 > buffer.length) break;
                 
-                liveData[token] = {
-                    ltp: ltp,
-                    volume: null,
-                    oi: null
-                };
+                const token = buffer.readUInt32BE(offset);
+                const flag = buffer[offset + 4];
+                
+                if (flag === 1) {
+                    if (offset + 12 > buffer.length) break;
+                    const ltp = buffer.readUInt32BE(offset + 8) / 100;
+                    
+                    liveData[token.toString()] = {
+                        ltp: ltp,
+                        timestamp: Date.now()
+                    };
+                    offset += 12;
+                } else {
+                    offset += 8;
+                }
             }
         } catch (err) {
             console.error('Parse error:', err.message);
@@ -74,34 +100,42 @@ function connectWebSocket() {
     });
 
     ws.on('close', () => {
-        setTimeout(connectWebSocket, 5000);
+        setTimeout(() => connectWebSocket(subscribedTokens), 5000);
     });
 }
 
-function subscribeToTokens() {
-    // Subscribe to NIFTY and BANKNIFTY spot
+function subscribeToTokens(tokens) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    
+    subscribedTokens = tokens;
     const subscribeMessage = {
-        correlationID: "abc123",
+        correlationID: "options_" + Date.now(),
         action: 1,
         params: {
             mode: 1,
             tokenList: [
-                { exchangeType: 1, tokens: ["99926000", "99926009"] }
+                { exchangeType: 2, tokens: tokens.map(t => t.toString()) }
             ]
         }
     };
     ws.send(JSON.stringify(subscribeMessage));
 }
 
-async function initializeWebSocket() {
+async function initializeWebSocket(tokens = []) {
     const success = await getAngelSession();
     if (success) {
-        connectWebSocket();
+        connectWebSocket(tokens);
     }
 }
 
-function getLivePrice(token) {
-    return liveData[token] || null;
+function getLiveData() {
+    return liveData;
 }
 
-module.exports = { initializeWebSocket, getLivePrice };
+function updateSubscription(tokens) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        subscribeToTokens(tokens);
+    }
+}
+
+module.exports = { initializeWebSocket, getLiveData, updateSubscription };

@@ -9,6 +9,8 @@ const generateSignal = require("./services/signalService");
 const { generateMultiTimeframeSignal } = require("./services/signalService");
 const { initTelegram, sendBulkSignals } = require("./services/telegramService");
 
+const { initializeWebSocket, getLiveData, updateSubscription } = require("./services/angelWebSocket");
+
 initTelegram();
 
 const app = express();
@@ -170,6 +172,190 @@ app.get("/api/signals/:type", async (req, res) => {
   }
 });
 
+app.get("/api/options/data", (req, res) => {
+  const options = getOptions();
+  res.json(options);
+});
+
+app.get("/api/options/test-rest", async (req, res) => {
+  try {
+    const { getAngelOptionData } = require("./services/angelOneService");
+    const options = getOptions();
+    const tokens = options.map(opt => opt.token);
+    const data = await getAngelOptionData(tokens);
+    res.json({ tokens, data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/options/refresh", async (req, res) => {
+  try {
+    const options = getOptions();
+    const tokens = options.map(opt => opt.token);
+    updateSubscription(tokens);
+    res.json({ message: "Options data refreshed", count: tokens.length });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to refresh options" });
+  }
+});
+
+app.get("/api/options/live", async (req, res) => {
+  try {
+    const { getAngelOptionData } = require("./services/angelOneService");
+    const { sendBulkSignals } = require("./services/telegramService");
+    const options = getOptions();
+    if (!options || options.length === 0) {
+      return res.json([]);
+    }
+
+    const liveData = getLiveData();
+    const hasWebSocketData = Object.keys(liveData).length > 0;
+    
+    if (!hasWebSocketData) {
+      const tokens = options.map(opt => opt.token);
+      const restData = await getAngelOptionData(tokens);
+      
+      const enrichedOptions = await Promise.all(options.map(async (opt) => {
+        const live = restData.find(d => d.exchange === opt.exchange && d.tradingSymbol === opt.symbol);
+        
+        let signal = 'HOLD';
+        let rsi = null;
+        let ema5 = null;
+        let ema10 = null;
+        let ema15 = null;
+        let ema20 = null;
+        
+        try {
+          const symbolMatch = opt.symbol.match(/^([A-Z]+)/);
+          if (!symbolMatch) {
+            throw new Error('Invalid symbol format');
+          }
+          
+          let underlyingSymbol = symbolMatch[1];
+          
+          const indexMap = {
+            'NIFTY': '^NSEI',
+            'BANKNIFTY': '^NSEBANK',
+            'FINNIFTY': '^CNXFIN',
+            'MIDCPNIFTY': '^NSEMDCP50'
+          };
+          
+          if (indexMap[underlyingSymbol]) {
+            underlyingSymbol = indexMap[underlyingSymbol];
+          }
+          
+          const prices5m = await getStockHistory(underlyingSymbol, '5m', '5d');
+          
+          if (prices5m && prices5m.length >= 20) {
+            const result = generateSignal(prices5m);
+            signal = result.signal;
+            rsi = result.rsi.toFixed(2);
+            ema5 = result.ema5.toFixed(2);
+            ema10 = result.ema10.toFixed(2);
+            ema15 = result.ema15.toFixed(2);
+            ema20 = result.ema20.toFixed(2);
+          }
+        } catch (err) {}
+        
+        return {
+          ...opt,
+          ltp: live?.ltp || 0,
+          open: live?.open || 0,
+          high: live?.high || 0,
+          low: live?.low || 0,
+          close: live?.close || 0,
+          signal,
+          rsi,
+          ema5,
+          ema10,
+          ema15,
+          ema20,
+          price: (live?.ltp || 0).toFixed(2),
+          symbol: opt.symbol
+        };
+      }));
+      
+      const buySignals = enrichedOptions.filter(o => o.signal === 'BUY');
+      const sellSignals = enrichedOptions.filter(o => o.signal === 'SELL');
+      if (buySignals.length > 0 || sellSignals.length > 0) {
+        sendBulkSignals(enrichedOptions);
+      }
+      
+      return res.json(enrichedOptions);
+    }
+    
+    const enrichedOptions = options.map(opt => {
+      const live = liveData[opt.token];
+      return {
+        ...opt,
+        ltp: live?.ltp || 0,
+        timestamp: live?.timestamp || null,
+        signal: 'HOLD',
+        rsi: null,
+        ema5: null,
+        ema10: null,
+        ema15: null,
+        ema20: null
+      };
+    });
+
+    res.json(enrichedOptions);
+  } catch (error) {
+    console.error("Options live data error:", error.message);
+    res.status(500).json({ error: "Failed to fetch live options data" });
+  }
+});
+
+app.post("/api/options", (req, res) => {
+  const { symbol } = req.body;
+  if (!symbol) {
+    return res.status(400).json({ error: "Symbol is required" });
+  }
+  
+  const symbolMasterPath = path.join(__dirname, './data/OpenAPIScripMaster.json');
+  const symbolMaster = JSON.parse(fs.readFileSync(symbolMasterPath, 'utf8'));
+  const found = symbolMaster.find(s => s.symbol === symbol.toUpperCase() && s.exch_seg === 'NFO');
+  
+  if (!found) {
+    return res.status(404).json({ error: "Symbol not found in NFO" });
+  }
+  
+  const options = getOptions();
+  const exists = options.find(o => o.symbol === symbol.toUpperCase());
+  if (exists) {
+    return res.status(400).json({ error: "Option already exists" });
+  }
+  
+  options.push({ 
+    symbol: symbol.toUpperCase(), 
+    token: found.token,
+    exchange: "NFO",
+    lotSize: found.lotsize,
+    tickSize: "5.000000"
+  });
+  fs.writeFileSync(optionsPath, JSON.stringify(options, null, 2));
+  
+  const tokens = options.map(opt => opt.token);
+  updateSubscription(tokens);
+  
+  res.json({ message: "Option added successfully" });
+});
+
+app.delete("/api/options/:symbol", (req, res) => {
+  const { symbol } = req.params;
+  const options = getOptions();
+  const index = options.findIndex(o => o.symbol === symbol.toUpperCase());
+  
+  if (index === -1) {
+    return res.status(404).json({ error: "Option not found" });
+  }
+  
+  options.splice(index, 1);
+  fs.writeFileSync(optionsPath, JSON.stringify(options, null, 2));
+  res.json({ message: "Option deleted successfully" });
+});
+
 app.post("/api/:type", (req, res) => {
   const { type } = req.params;
   const { symbol } = req.body;
@@ -261,11 +447,6 @@ app.delete("/api/:type/:symbol", (req, res) => {
   res.json({ message: `${type.slice(0, -1)} deleted successfully` });
 });
 
-app.get("/api/options/data", (req, res) => {
-  const options = getOptions();
-  res.json(options);
-});
-
 app.get("/api/telegram/test", async (req, res) => {
   try {
     const stocks = getStocks();
@@ -316,48 +497,13 @@ app.get("/api/symbol-master", async (req, res) => {
   }
 });
 
-app.get("/api/options/refresh", async (req, res) => {
-  res.json({ message: "Options data refreshed", count: 0 });
-});
-
-app.get("/api/options/live", (req, res) => {
-  res.json([]);
-});
-
-app.post("/api/options", (req, res) => {
-  const { symbol, expiry, strikePrice, optionType } = req.body;
-  if (!symbol || !strikePrice || !optionType) {
-    return res.status(400).json({ error: "Symbol, strikePrice, and optionType are required" });
-  }
-  
-  const options = getOptions();
-  const exists = options.find(o => o.symbol === symbol.toUpperCase() && o.strikePrice === strikePrice && o.optionType === optionType);
-  if (exists) {
-    return res.status(400).json({ error: "Option already exists" });
-  }
-  
-  options.push({ symbol: symbol.toUpperCase(), expiry: expiry || null, strikePrice, optionType });
-  fs.writeFileSync(optionsPath, JSON.stringify(options, null, 2));
-  res.json({ message: "Option added successfully" });
-});
-
-app.delete("/api/options/:symbol", (req, res) => {
-  const { symbol } = req.params;
-  const options = getOptions();
-  const index = options.findIndex(o => o.symbol === symbol.toUpperCase());
-  
-  if (index === -1) {
-    return res.status(404).json({ error: "Option not found" });
-  }
-  
-  options.splice(index, 1);
-  fs.writeFileSync(optionsPath, JSON.stringify(options, null, 2));
-  res.json({ message: "Option deleted successfully" });
-});
-
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
   console.log(`Server running on ${HOST}:${PORT}`);
+  
+  const options = getOptions();
+  const tokens = options.map(opt => opt.token);
+  initializeWebSocket(tokens);
 });

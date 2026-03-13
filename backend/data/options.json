@@ -1,9 +1,37 @@
 [
   {
-    "symbol": "BANKNIFTY30MAR2655700CE",
-    "token": "52468",
+    "symbol": "NIFTY30MAR2623500CE",
+    "token": "54518",
     "exchange": "NFO",
-    "lotSize": "30",
+    "lotSize": "65",
+    "tickSize": "5.000000"
+  },
+  {
+    "symbol": "NIFTY30MAR2623500PE",
+    "token": "54519",
+    "exchange": "NFO",
+    "lotSize": "65",
+    "tickSize": "5.000000"
+  },
+  {
+    "symbol": "NYKAA30MAR26260CE",
+    "token": "145399",
+    "exchange": "NFO",
+    "lotSize": "3125",
+    "tickSize": "5.000000"
+  },
+  {
+    "symbol": "MAZDOCK30MAR262600CE",
+    "token": "138747",
+    "exchange": "NFO",
+    "lotSize": "200",
+    "tickSize": "5.000000"
+  },
+  {
+    "symbol": "MAZDOCK30MAR262300PE",
+    "token": "141263",
+    "exchange": "NFO",
+    "lotSize": "200",
     "tickSize": "5.000000"
   }
 ]

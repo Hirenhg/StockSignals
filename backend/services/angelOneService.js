@@ -35,23 +35,25 @@ async function getAngelSession() {
     return null;
 }
 
-async function getAngelOptionData(symbol, strikePrice, optionType, expiry) {
+async function getAngelOptionData(tokenList) {
     try {
         const token = await getAngelSession();
-        if (!token) return null;
+        if (!token || !tokenList || tokenList.length === 0) return [];
 
-        const marketData = await smart_api.marketData({
-            mode: "LTP",
-            exchangeTokens: { "NFO": ["12345"] }
-        });
+        const params = {
+            mode: "FULL",
+            exchangeTokens: { "NFO": tokenList }
+        };
+        
+        const marketData = await smart_api.marketData(params);
 
-        if (marketData.status && marketData.data.fetched) {
-            return { price: marketData.data.fetched[0].ltp };
+        if (marketData.status && marketData.data && marketData.data.fetched) {
+            return marketData.data.fetched;
         }
     } catch (error) {
         console.error("Market Data Error:", error.message);
     }
-    return null;
+    return [];
 }
 
-module.exports = { getAngelOptionData };
+module.exports = { getAngelOptionData, getAngelSession };
