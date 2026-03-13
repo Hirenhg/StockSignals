@@ -5,7 +5,7 @@ import Layout from './components/Layout/Layout';
 
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const Options = lazy(() => import('./pages/Options/Options'));
-const SymbolMaster = lazy(() => import('./pages/SymbolMaster/SymbolMaster'));
+// const SymbolMaster = lazy(() => import('./pages/SymbolMaster/SymbolMaster'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
 const LoadingSpinner = () => (
@@ -26,7 +26,7 @@ function App() {
               <Routes>
                 <Route index element={<Dashboard assetTab={assetTab} setAssetTab={setAssetTab} />} />
                 <Route path="/options" element={<Options />} />
-                <Route path="/symbolmaster" element={<SymbolMaster />} />
+                {/* <Route path="/symbolmaster" element={<SymbolMaster />} /> */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
