@@ -307,6 +307,107 @@ app.get("/api/options/live", async (req, res) => {
   }
 });
 
+app.get("/api/optionchain/:symbol", async (req, res) => {
+  try {
+    const { getAngelOptionData } = require("./services/angelOneService");
+    const symbol = req.params.symbol.toUpperCase();
+    const expiry = req.query.expiry || '';
+
+    const symbolMasterPath = path.join(__dirname, './data/OpenAPIScripMaster.json');
+    const symbolMaster = JSON.parse(fs.readFileSync(symbolMasterPath, 'utf8'));
+
+    // Find all NFO options for this underlying
+    const regex = new RegExp(`^${symbol}\\d`);
+    let allOptions = symbolMaster.filter(s => 
+      s.exch_seg === 'NFO' && 
+      s.instrumenttype && 
+      (s.instrumenttype === 'OPTIDX' || s.instrumenttype === 'OPTSTK') &&
+      regex.test(s.symbol)
+    );
+
+    if (allOptions.length === 0) {
+      return res.json({ expiries: [], chain: [], spotPrice: 0 });
+    }
+
+    // Extract unique expiries and filter out past dates
+    const monthMap = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+    const parseExpiry = (exp) => {
+      const day = parseInt(exp.substring(0, 2));
+      const mon = monthMap[exp.substring(2, 5)];
+      const year = parseInt(exp.substring(5));
+      return new Date(year, mon, day);
+    };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const expiries = [...new Set(allOptions.map(o => o.expiry))]
+      .filter(exp => parseExpiry(exp) >= today)
+      .sort((a, b) => parseExpiry(a) - parseExpiry(b));
+    const selectedExpiry = expiry || expiries[0];
+
+    // Filter by selected expiry
+    const expiryOptions = allOptions.filter(o => o.expiry === selectedExpiry);
+
+    // Parse strike and type from each option
+    const parsed = expiryOptions.map(o => {
+      const isCE = o.symbol.endsWith('CE');
+      const isPE = o.symbol.endsWith('PE');
+      if (!isCE && !isPE) return null;
+      return {
+        token: o.token,
+        symbol: o.symbol,
+        strike: parseFloat(o.strike) / 100,
+        type: isCE ? 'CE' : 'PE',
+        lotSize: o.lotsize
+      };
+    }).filter(Boolean);
+
+    // Get unique strikes sorted
+    const strikes = [...new Set(parsed.map(p => p.strike))].sort((a, b) => a - b);
+
+    // Fetch live data for all tokens (max 50 at a time from Angel API)
+    const allTokens = parsed.map(p => p.token);
+    let liveDataMap = {};
+
+    for (let i = 0; i < allTokens.length; i += 50) {
+      const batch = allTokens.slice(i, i + 50);
+      try {
+        const data = await getAngelOptionData(batch);
+        data.forEach(d => {
+          liveDataMap[d.tradingSymbol] = d;
+        });
+      } catch (err) {}
+    }
+
+    // Build chain rows
+    const chain = strikes.map(strike => {
+      const ce = parsed.find(p => p.strike === strike && p.type === 'CE');
+      const pe = parsed.find(p => p.strike === strike && p.type === 'PE');
+      const ceLive = ce ? liveDataMap[ce.symbol] : null;
+      const peLive = pe ? liveDataMap[pe.symbol] : null;
+
+      return {
+        strike,
+        ce: ce ? {
+          symbol: ce.symbol, token: ce.token, lotSize: ce.lotSize,
+          ltp: ceLive?.ltp || 0, oi: ceLive?.opnInterest || 0,
+          volume: ceLive?.tradeVolume || 0, change: ceLive?.netChange || 0
+        } : null,
+        pe: pe ? {
+          symbol: pe.symbol, token: pe.token, lotSize: pe.lotSize,
+          ltp: peLive?.ltp || 0, oi: peLive?.opnInterest || 0,
+          volume: peLive?.tradeVolume || 0, change: peLive?.netChange || 0
+        } : null
+      };
+    });
+
+    res.json({ expiries, selectedExpiry, chain, symbol });
+  } catch (error) {
+    console.error("Option chain error:", error.message);
+    res.status(500).json({ error: "Failed to fetch option chain" });
+  }
+});
+
 app.post("/api/options", (req, res) => {
   const { symbol } = req.body;
   if (!symbol) {
