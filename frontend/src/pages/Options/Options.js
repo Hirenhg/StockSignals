@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
 
@@ -56,7 +56,7 @@ const Options = () => {
     setSortConfig({ key, direction });
   };
 
-  const fetchOptionsData = async (showRefreshToast = false) => {
+  const fetchOptionsData = useCallback(async (showRefreshToast = false) => {
     if (showRefreshToast) setRefreshing(true);
     try {
       const response = await API.get('/api/options/live');
@@ -68,7 +68,7 @@ const Options = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   const handleAddOption = () => {
     if (!newOption.trim()) {
@@ -105,7 +105,7 @@ const Options = () => {
     fetchOptionsData();
     const interval = setInterval(fetchOptionsData, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchOptionsData]);
 
   if (loading) {
     return (
