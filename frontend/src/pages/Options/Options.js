@@ -60,9 +60,8 @@ const Options = () => {
 
   const fetchOptionsData = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/options/live");
-      const data = await response.json();
-      setOptionsData(data);
+      const response = await API.get('/api/options/live');
+      setOptionsData(response.data);
     } catch (error) {
       console.error("Error fetching options data:", error);
     } finally {
