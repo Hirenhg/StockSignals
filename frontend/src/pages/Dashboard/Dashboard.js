@@ -313,7 +313,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             <span className="badge bg-secondary p-2">HOLD: {holdCount}</span>
           </div>
         </div>
-        <div className="d-md-none">
+        <div className="d-md-none" style={{paddingBottom: '80px'}}>
           {filteredSignals.map((item, index) => (
             <div key={index} className="card mb-3 shadow-sm position-relative">
               <div className="card-body">

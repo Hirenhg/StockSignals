@@ -26,11 +26,8 @@ const Options = () => {
       const matchesType = (optionTypeTab === 'index' && isIndex) || 
                           (optionTypeTab === 'stocks' && !isIndex);
       
-      if (signalTab === 'all') return matchesSearch && matchesType;
-      const isCE = option.symbol.includes('CE');
-      if (signalTab === 'ce') return matchesSearch && matchesType && isCE;
-      if (signalTab === 'pe') return matchesSearch && matchesType && !isCE;
-      return matchesSearch && matchesType;
+      const matchesSignal = signalTab === 'all' || (option.signal || 'HOLD') === signalTab.toUpperCase();
+      return matchesSearch && matchesType && matchesSignal;
     })
     .sort((a, b) => {
       if (!sortConfig.key) return 0;
@@ -42,8 +39,9 @@ const Options = () => {
       return bValue > aValue ? 1 : -1;
     });
 
-  const ceCount = filteredOptions.filter(o => o.symbol.includes('CE')).length;
-  const peCount = filteredOptions.filter(o => o.symbol.includes('PE')).length;
+  const buyCount = filteredOptions.filter(o => o.signal === 'BUY').length;
+  const sellCount = filteredOptions.filter(o => o.signal === 'SELL').length;
+  const holdCount = filteredOptions.filter(o => (o.signal || 'HOLD') === 'HOLD').length;
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -230,8 +228,9 @@ const Options = () => {
           <div className="d-flex gap-2 align-items-center">
             <div className="btn-group" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
-              <button className={`btn btn-sm ${signalTab === 'ce' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('ce')}>CE</button>
-              <button className={`btn btn-sm ${signalTab === 'pe' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('pe')}>PE</button>
+              <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
+              <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
+              <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
             </div>
             <button className="btn btn-sm btn-outline-primary" onClick={fetchOptionsData}>Refresh</button>
           </div>
@@ -245,8 +244,9 @@ const Options = () => {
               style={{ maxWidth: "300px" }}
             />
             <div className="d-flex gap-2">
-              <span className="badge bg-success p-2">CE: {ceCount}</span>
-              <span className="badge bg-danger p-2">PE: {peCount}</span>
+              <span className="badge bg-success p-2">BUY: {buyCount}</span>
+              <span className="badge bg-danger p-2">SELL: {sellCount}</span>
+              <span className="badge bg-secondary p-2">HOLD: {holdCount}</span>
             </div>
           </div>
         </div>
@@ -255,14 +255,16 @@ const Options = () => {
           <div className="d-flex gap-2 align-items-center">
             <div className="btn-group flex-grow-1" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
-              <button className={`btn btn-sm ${signalTab === 'ce' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('ce')}>CE</button>
-              <button className={`btn btn-sm ${signalTab === 'pe' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('pe')}>PE</button>
+              <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
+              <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
+              <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
             </div>
             <button className="btn btn-sm btn-outline-primary" onClick={fetchOptionsData}>Refresh</button>
           </div>
           <div className="d-flex gap-2">
-            <span className="badge bg-success p-2">CE: {ceCount}</span>
-            <span className="badge bg-danger p-2">PE: {peCount}</span>
+            <span className="badge bg-success p-2">BUY: {buyCount}</span>
+            <span className="badge bg-danger p-2">SELL: {sellCount}</span>
+            <span className="badge bg-secondary p-2">HOLD: {holdCount}</span>
           </div>
         </div>
 
