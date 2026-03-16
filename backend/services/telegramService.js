@@ -11,7 +11,7 @@ const httpsAgent = new https.Agent({
 let bot = null;
 let chatId = null;
 const sentSignals = new Map();
-const SIGNAL_COOLDOWN = 3600000;
+const SIGNAL_COOLDOWN = 1200000;
 
 function initTelegram() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
