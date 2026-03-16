@@ -15,7 +15,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteSymbol, setDeleteSymbol] = useState('')
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
-
+  const [refreshing, setRefreshing] = useState(false)
   // Sync with prop changes
   useEffect(() => {
     if (assetTabProp) {
@@ -86,13 +86,16 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   }, [assetTab, allData])
 
   const refreshCurrentTab = () => {
+    setRefreshing(true)
     API.get(`/api/signals/${assetTab}`)
       .then(res => {
         setAllData(prev => ({ ...prev, [assetTab]: res.data }))
         setSignals(res.data)
         setFetchTime(new Date().toISOString())
+        showToast('Data refreshed!', 'success')
       })
-      .catch(err => console.error("API Error:", err))
+      .catch(err => showToast('Refresh failed', 'error'))
+      .finally(() => setRefreshing(false))
   }
 
   const handleAddStock = () => {
@@ -275,8 +278,8 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
               <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
             </div>
-            <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab}>
-              Refresh
+            <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab} disabled={refreshing}>
+              {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
           <div className="d-flex align-items-center gap-2">
@@ -303,8 +306,8 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
               <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
             </div>
-            <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab}>
-                Refresh
+            <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab} disabled={refreshing}>
+                {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
           <div className="d-flex gap-2">

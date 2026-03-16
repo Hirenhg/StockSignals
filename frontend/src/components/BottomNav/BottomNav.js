@@ -17,14 +17,14 @@ const BottomNav = ({ assetTab, setAssetTab }) => {
   ];
 
   return (
-    <nav className="d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top" style={{zIndex: 1000, boxShadow: '0 -2px 10px rgba(0,0,0,0.05)', overflowX: 'auto'}}>
+    <nav className="d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top bottom-nav" style={{zIndex: 1000, boxShadow: '0 -2px 10px rgba(0,0,0,0.05)', overflowX: 'auto'}}>
       <div className="d-flex" style={{minWidth: 'max-content'}}>
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setAssetTab(tab.key)}
-            className={`d-flex flex-column align-items-center border-0 px-3 py-1 ${
-              assetTab === tab.key ? 'text-dark bg-gray-200' : 'text-muted bg-transparent'
+            className={`d-flex flex-column align-items-center border-0 px-3 py-1 nav-item ${
+              assetTab === tab.key ? 'text-dark active' : 'text-muted bg-transparent'
             }`}
           >
             <i className={`bi bi-${assetTab === tab.key ? tab.solidIcon : tab.icon}`} style={{fontSize: '24px'}}></i>

@@ -2,10 +2,11 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
 import Layout from './components/Layout/Layout';
+import { ThemeProvider } from './context/ThemeContext';
 
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const Options = lazy(() => import('./pages/Options/Options'));
-// const SymbolMaster = lazy(() => import('./pages/SymbolMaster/SymbolMaster'));
+const OptionChain = lazy(() => import('./pages/OptionChain/OptionChain'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
 const LoadingSpinner = () => (
@@ -19,6 +20,7 @@ const LoadingSpinner = () => (
 function App() {
   return (
     <HelmetProvider>
+      <ThemeProvider>
       <Router>
         <Layout>
           {({ assetTab, setAssetTab }) => (
@@ -26,13 +28,14 @@ function App() {
               <Routes>
                 <Route index element={<Dashboard assetTab={assetTab} setAssetTab={setAssetTab} />} />
                 <Route path="/options" element={<Options />} />
-                {/* <Route path="/symbolmaster" element={<SymbolMaster />} /> */}
+                <Route path="/optionchain" element={<OptionChain />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           )}
         </Layout>
       </Router>
+      </ThemeProvider>
     </HelmetProvider>
   );
 }

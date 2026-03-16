@@ -14,7 +14,7 @@ const Options = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteSymbol, setDeleteSymbol] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
-
+  const [refreshing, setRefreshing] = useState(false);
   const filteredOptions = optionsData
     .filter((option) => {
       const matchesSearch = option.symbol?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -56,14 +56,17 @@ const Options = () => {
     setSortConfig({ key, direction });
   };
 
-  const fetchOptionsData = async () => {
+  const fetchOptionsData = async (showRefreshToast = false) => {
+    if (showRefreshToast) setRefreshing(true);
     try {
       const response = await API.get('/api/options/live');
       setOptionsData(response.data);
+      if (showRefreshToast) showToast('Data refreshed!', 'success');
     } catch (error) {
-      console.error("Error fetching options data:", error);
+      if (showRefreshToast) showToast('Refresh failed', 'error');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -232,7 +235,7 @@ const Options = () => {
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
               <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
             </div>
-            <button className="btn btn-sm btn-outline-primary" onClick={fetchOptionsData}>Refresh</button>
+            <button className="btn btn-sm btn-outline-primary" onClick={() => fetchOptionsData(true)} disabled={refreshing}>{refreshing ? 'Refreshing...' : 'Refresh'}</button>
           </div>
           <div className="d-flex align-items-center gap-2">
             <input
@@ -259,7 +262,7 @@ const Options = () => {
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
               <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
             </div>
-            <button className="btn btn-sm btn-outline-primary" onClick={fetchOptionsData}>Refresh</button>
+            <button className="btn btn-sm btn-outline-primary" onClick={() => fetchOptionsData(true)} disabled={refreshing}>{refreshing ? 'Refreshing...' : 'Refresh'}</button>
           </div>
           <div className="d-flex gap-2">
             <span className="badge bg-success p-2">BUY: {buyCount}</span>
@@ -268,7 +271,7 @@ const Options = () => {
           </div>
         </div>
 
-        <div className="d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg" style={{zIndex: 1000}}>
+        <div className="d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg bottom-nav" style={{zIndex: 1000}}>
           <div className="d-flex">
             <button
               className={`btn flex-fill rounded-0 border-0 py-3 ${optionTypeTab === 'index' ? 'btn-primary' : 'btn-light'}`}
