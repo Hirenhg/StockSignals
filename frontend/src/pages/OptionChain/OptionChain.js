@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 const SYMBOLS = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'NYKAA', 'MAZDOCK'];
 
@@ -14,6 +15,7 @@ const OptionChain = () => {
   const [strikeRange, setStrikeRange] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const { darkMode } = useTheme();
+  const { t } = useLanguage();
 
   const fetchChain = useCallback(async () => {
     setLoading(true);

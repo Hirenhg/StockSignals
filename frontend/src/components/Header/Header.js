@@ -1,16 +1,20 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Header = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { darkMode, toggleTheme } = useTheme();
+  const { lang, setLang, t } = useLanguage();
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/options', label: 'Options', icon: '⚙️' },
-    { path: '/optionchain', label: 'Option Chain', icon: '🔗' },
+    { path: '/', label: t('dashboard'), icon: '📊' },
+    { path: '/options', label: t('options'), icon: '⚙️' },
+    { path: '/optionchain', label: t('optionChain'), icon: '🔗' },
+    { path: '/sectors', label: t('sectors'), icon: '🏢' },
+    { path: '/news', label: t('news'), icon: '📰' },
   ];
 
   return (
@@ -45,6 +49,11 @@ const Header = () => {
                 </div>
               </div>
             </button>
+            <select className="form-select form-select-sm border-0 p-0" style={{width: 'auto', fontSize: '16px'}} value={lang} onChange={e => setLang(e.target.value)}>
+              <option value="en">English</option>
+              <option value="hi">हिन्दी</option>
+              <option value="gu">ગુજરાતી</option>
+            </select>
             <button 
               className="btn btn-link p-0 text-dark text-decoration-none" 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -90,6 +99,11 @@ const Header = () => {
                 </div>
               </div>
             </button>
+            <select className="form-select form-select-sm border-0" style={{width: 'auto', fontSize: '16px'}} value={lang} onChange={e => setLang(e.target.value)}>
+              <option value="en">English</option>
+              <option value="hi">हिन्दी</option>
+              <option value="gu">ગુજરાતી</option>
+            </select>
           </nav>
         </div>
 
