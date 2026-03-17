@@ -13,7 +13,8 @@ async function getAngelSession() {
     if (sessionToken && now < sessionExpiry) return sessionToken;
 
     try {
-        const secret = process.env.ANGEL_TOTP_SECRET.replace(/\s/g, '');
+        const secret = (process.env.ANGEL_TOTP_SECRET || '').replace(/\s/g, '');
+        if (!secret) return null;
         const totpResult = await TOTP.generate(secret);
         const otp = totpResult.otp;
 
@@ -29,9 +30,7 @@ async function getAngelSession() {
             sessionExpiry = now + 3600000;
             return sessionToken;
         }
-    } catch (error) {
-        console.error("Session error:", error.message);
-    }
+    } catch (error) {}
     return null;
 }
 
@@ -50,9 +49,7 @@ async function getAngelOptionData(tokenList) {
         if (marketData.status && marketData.data && marketData.data.fetched) {
             return marketData.data.fetched;
         }
-    } catch (error) {
-        console.error("Market Data Error:", error.message);
-    }
+    } catch (error) {}
     return [];
 }
 
