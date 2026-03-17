@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
-import { useTheme } from "../../context/ThemeContext";
 
 const Sectors = () => {
   const [sectors, setSectors] = useState([]);
@@ -9,7 +8,6 @@ const Sectors = () => {
   const [categoryTab, setCategoryTab] = useState('all');
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
   const [refreshing, setRefreshing] = useState(false);
-  const { darkMode } = useTheme();
 
   const fetchSectors = useCallback(async (showToast = false) => {
     if (showToast) setRefreshing(true);

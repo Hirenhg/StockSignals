@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
-import { useLanguage } from "../../context/LanguageContext";
 
 const Options = () => {
-  const { t } = useLanguage();
   const [optionsData, setOptionsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
