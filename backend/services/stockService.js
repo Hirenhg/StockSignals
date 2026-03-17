@@ -1,5 +1,7 @@
 const axios = require("axios");
+const https = require("https");
 
+const agent = new https.Agent({ rejectUnauthorized: false });
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = false, getVolume = false, getHighLow = false) {
@@ -16,6 +18,7 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${fullSymbol}?range=${range}&interval=${interval}`;
       const response = await axios.get(url, { 
         timeout: 10000,
+        httpsAgent: agent,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'application/json'
