@@ -307,6 +307,64 @@ app.get("/api/options/live", async (req, res) => {
   }
 });
 
+app.get("/api/sectors", async (req, res) => {
+  try {
+    const sectors = [
+      { name: 'NIFTY 50', symbol: '^NSEI', category: 'Broad Market' },
+      { name: 'NIFTY NEXT 50', symbol: '^NSMIDCP', category: 'Broad Market' },
+      { name: 'NIFTY BANK', symbol: '^NSEBANK', category: 'Sectoral' },
+      { name: 'NIFTY IT', symbol: '^CNXIT', category: 'Sectoral' },
+      { name: 'NIFTY PHARMA', symbol: '^CNXPHARMA', category: 'Sectoral' },
+      { name: 'NIFTY AUTO', symbol: '^CNXAUTO', category: 'Sectoral' },
+      { name: 'NIFTY FMCG', symbol: '^CNXFMCG', category: 'Sectoral' },
+      { name: 'NIFTY METAL', symbol: '^CNXMETAL', category: 'Sectoral' },
+      { name: 'NIFTY REALTY', symbol: '^CNXREALTY', category: 'Sectoral' },
+      { name: 'NIFTY ENERGY', symbol: '^CNXENERGY', category: 'Sectoral' },
+      { name: 'NIFTY INFRA', symbol: '^CNXINFRA', category: 'Sectoral' },
+      { name: 'NIFTY PSE', symbol: '^CNXPSE', category: 'Sectoral' },
+      { name: 'NIFTY MEDIA', symbol: '^CNXMEDIA', category: 'Sectoral' },
+      { name: 'NIFTY FIN SERVICE', symbol: '^CNXFIN', category: 'Sectoral' },
+      { name: 'NIFTY COMMODITIES', symbol: '^CNXCOMMODITIES', category: 'Thematic' },
+      { name: 'NIFTY CONSUMPTION', symbol: '^CNXCONSUMPTION', category: 'Thematic' },
+      { name: 'NIFTY PSU BANK', symbol: '^CNXPSUBANK', category: 'Sectoral' },
+      { name: 'NIFTY PVT BANK', symbol: '^CNXPVTBANK', category: 'Sectoral' },
+    ];
+
+    const results = await Promise.all(
+      sectors.map(async (sector) => {
+        try {
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sector.symbol}?range=2d&interval=1d`;
+          const axios = require('axios');
+          const https = require('https');
+          const agent = new https.Agent({ rejectUnauthorized: false });
+          const response = await axios.get(url, {
+            timeout: 10000, httpsAgent: agent,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+          });
+          const result = response.data?.chart?.result?.[0];
+          if (!result) return { ...sector, last: 0, change: 0, pChange: 0 };
+          const meta = result.meta;
+          const quote = result.indicators.quote[0];
+          const closes = quote.close.filter(c => c !== null);
+          const opens = quote.open.filter(c => c !== null);
+          const highs = quote.high.filter(c => c !== null);
+          const lows = quote.low.filter(c => c !== null);
+          const last = closes[closes.length - 1] || meta.regularMarketPrice || 0;
+          const prev = closes.length >= 2 ? closes[closes.length - 2] : meta.chartPreviousClose || last;
+          const change = last - prev;
+          const pChange = prev ? (change / prev) * 100 : 0;
+          return { ...sector, last: parseFloat(last.toFixed(2)), change: parseFloat(change.toFixed(2)), pChange: parseFloat(pChange.toFixed(2)), open: parseFloat((opens[opens.length - 1] || 0).toFixed(2)), high: parseFloat((highs[highs.length - 1] || 0).toFixed(2)), low: parseFloat((lows[lows.length - 1] || 0).toFixed(2)), prevClose: parseFloat(prev.toFixed(2)) };
+        } catch (err) {
+          return { ...sector, last: 0, change: 0, pChange: 0 };
+        }
+      })
+    );
+    res.json(results.filter(r => r.last > 0));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch sectors' });
+  }
+});
+
 app.get("/api/optionchain/:symbol", async (req, res) => {
   try {
     const { getAngelOptionData } = require("./services/angelOneService");
@@ -583,6 +641,72 @@ app.get("/api/telegram/test", async (req, res) => {
     res.json({ message: "No BUY signals found in current market data" });
   } catch (error) {
     res.status(500).json({ error: "Failed to send test signal" });
+  }
+});
+
+app.get("/api/news", async (req, res) => {
+  try {
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const stocks = getStocks();
+    const results = [];
+
+    for (let i = 0; i < stocks.length; i += 3) {
+      const batch = stocks.slice(i, i + 3);
+      const batchResults = await Promise.all(
+        batch.map(async ({ symbol }) => {
+          try {
+            const afterDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            const url = `https://news.google.com/rss/search?q=${symbol}+stock+NSE+after:${afterDate}&hl=en-IN&gl=IN&ceid=IN:en`;
+            const rss = await axios.get(url, { timeout: 10000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' } });
+            const xml = rss.data;
+            const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+            const threeMonthsAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+            const news = items.map(item => {
+              const title = (item.match(/<title>(.*?)<\/title>/) || [])[1] || '';
+              const link = (item.match(/<link>(.*?)<\/link>/) || [])[1] || '';
+              const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
+              const source = (item.match(/<source.*?>(.*?)<\/source>/) || [])[1] || '';
+              const time = pubDate ? new Date(pubDate) : null;
+              return { title: title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"'), publisher: source, link, time: time ? time.toISOString() : null };
+            }).filter(n => n.time && new Date(n.time) >= threeMonthsAgo).sort((a, b) => new Date(b.time) - new Date(a.time));
+            return { symbol, news };
+          } catch { return { symbol, news: [] }; }
+        })
+      );
+      results.push(...batchResults);
+    }
+    // Fetch general market news
+    try {
+      const marketQueries = ['Indian+stock+market', 'NSE+BSE+market', 'Nifty+Sensex'];
+      const marketNews = [];
+      for (const q of marketQueries) {
+        try {
+          const url = `https://news.google.com/rss/search?q=${q}+after:${new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}&hl=en-IN&gl=IN&ceid=IN:en`;
+          const rss = await axios.get(url, { timeout: 10000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' } });
+          const items = rss.data.match(/<item>[\s\S]*?<\/item>/g) || [];
+          const threeMonthsAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+          items.forEach(item => {
+            const title = (item.match(/<title>(.*?)<\/title>/) || [])[1] || '';
+            const link = (item.match(/<link>(.*?)<\/link>/) || [])[1] || '';
+            const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
+            const source = (item.match(/<source.*?>(.*?)<\/source>/) || [])[1] || '';
+            const time = pubDate ? new Date(pubDate) : null;
+            if (time && time >= threeMonthsAgo && !marketNews.find(n => n.title === title.replace(/&amp;/g, '&'))) {
+              marketNews.push({ title: title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"'), publisher: source, link, time: time.toISOString() });
+            }
+          });
+        } catch {}
+      }
+      if (marketNews.length > 0) {
+        results.unshift({ symbol: 'MARKET', news: marketNews.sort((a, b) => new Date(b.time) - new Date(a.time)) });
+      }
+    } catch {}
+
+    res.json(results.filter(r => r.news.length > 0));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch news' });
   }
 });
 
