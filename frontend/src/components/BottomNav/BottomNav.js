@@ -1,19 +1,20 @@
 import { useLocation } from 'react-router-dom';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import { useLanguage } from '../../context/LanguageContext';
 
 const BottomNav = ({ assetTab, setAssetTab }) => {
   const location = useLocation();
+  const { t } = useLanguage();
 
-  // Only show on dashboard page
   if (location.pathname !== '/') return null;
 
   const tabs = [
-    { key: 'indices', label: 'Indices', icon: 'graph-up', solidIcon: 'graph-up-arrow' },
-    { key: 'stocks', label: 'Watchlist', icon: 'star', solidIcon: 'star-fill' },
-    { key: 'nifty50', label: 'Nifty 50', icon: 'trophy', solidIcon: 'trophy-fill' },
-    { key: 'niftynext50', label: 'Next 50', icon: 'bar-chart', solidIcon: 'bar-chart-fill'},
-    { key: 'commodities', label: 'Commod', icon: 'droplet', solidIcon: 'droplet-fill'},
-    { key: 'crypto', label: 'Crypto', icon: 'currency-bitcoin', solidIcon: 'currency-bitcoin' }
+    { key: 'indices', label: t('indices'), icon: 'graph-up', solidIcon: 'graph-up-arrow' },
+    { key: 'stocks', label: t('watchlist'), icon: 'star', solidIcon: 'star-fill' },
+    { key: 'nifty50', label: t('nifty50'), icon: 'trophy', solidIcon: 'trophy-fill' },
+    { key: 'niftynext50', label: t('next50'), icon: 'bar-chart', solidIcon: 'bar-chart-fill'},
+    { key: 'commodities', label: t('commodities'), icon: 'droplet', solidIcon: 'droplet-fill'},
+    { key: 'crypto', label: t('crypto'), icon: 'currency-bitcoin', solidIcon: 'currency-bitcoin' }
   ];
 
   return (

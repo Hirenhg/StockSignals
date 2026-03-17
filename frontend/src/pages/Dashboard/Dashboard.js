@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { Helmet } from "react-helmet-async"
 import API from "../../services/api"
+import { useLanguage } from "../../context/LanguageContext"
 
 function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
+  const { t } = useLanguage()
   const [signals, setSignals] = useState([])
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [searchTerm, setSearchTerm] = useState('')
@@ -16,6 +18,17 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [deleteSymbol, setDeleteSymbol] = useState('')
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
   const [refreshing, setRefreshing] = useState(false)
+
+  const exportCSV = () => {
+    const headers = ['Symbol','Price','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Volume','52W High','52W Low','Yest High','Yest Low']
+    const rows = filteredSignals.map(s => [s.symbol,s.price,s.signal,s.rsi,s.ema5,s.ema10,s.ema15,s.ema20,s.volume||'',s.week52High||'',s.week52Low||'',s.yesterdayHigh||'',s.yesterdayLow||''])
+    const csv = [headers,...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `${assetTab}_signals_${new Date().toISOString().slice(0,10)}.csv`
+    a.click()
+  }
   // Sync with prop changes
   useEffect(() => {
     if (assetTabProp) {
@@ -225,8 +238,10 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
           <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>Add {assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}</button>
         </div>
         <div className="d-md-none mb-3">
-          <h4 className="mb-0 fw-bold">Trading Signals</h4>
-          <button className="btn btn-primary btn-sm mt-2 w-100" onClick={() => setShowAddModal(true)}>Add {assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}</button>
+          <div className="d-flex gap-2 mb-2">
+            <h4 className="mb-0 fw-bold flex-grow-1">Trading Signals</h4>
+          </div>
+          <button className="btn btn-primary btn-sm w-100" onClick={() => setShowAddModal(true)}>Add {assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}</button>
         </div>
         <div className="d-md-none mb-3">
           <div className="position-relative mb-2">
@@ -250,12 +265,12 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
           <style>{`.overflow-auto::-webkit-scrollbar { display: none; }`}</style>
           <div className="d-flex gap-2 pb-2">
             {[
-              { key: 'indices', label: 'Indices' },
-              { key: 'stocks', label: 'Watchlist' },
-              { key: 'nifty50', label: 'Nifty 50' },
-              { key: 'niftynext50', label: 'Next 50'},
-              { key: 'commodities', label: 'Commodities'},
-              { key: 'crypto', label: 'Crypto' }
+              { key: 'indices', label: t('indices') },
+              { key: 'stocks', label: t('watchlist') },
+              { key: 'nifty50', label: t('nifty50') },
+              { key: 'niftynext50', label: t('next50')},
+              { key: 'commodities', label: t('commodities')},
+              { key: 'crypto', label: t('crypto') }
             ].map(tab => (
               <button 
                 key={tab.key}
@@ -281,6 +296,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab} disabled={refreshing}>
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={exportCSV}>Export CSV</button>
           </div>
           <div className="d-flex align-items-center gap-2">
             <input 
@@ -309,6 +325,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             <button className="btn btn-sm btn-outline-primary" onClick={refreshCurrentTab} disabled={refreshing}>
                 {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={exportCSV}>CSV</button>
           </div>
           <div className="d-flex gap-2">
             <span className="badge bg-success p-2">BUY: {buyCount}</span>
@@ -367,7 +384,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                     <strong className="text-success">₹{item.ema10}</strong>
                   </div>
                   <div className="col-6">
-                    <small className="text-primary d-block">EMA15</small>
+                    <small className="text-blue d-block">EMA15</small>
                     <strong className="text-primary">₹{item.ema15}</strong>
                   </div>
                   <div className="col-6">
