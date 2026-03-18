@@ -11,7 +11,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [newStock, setNewStock] = useState('')
   const [assetTab, setAssetTab] = useState(assetTabProp || 'indices')
   const [signalTab, setSignalTab] = useState('all')
-  const [allData, setAllData] = useState({})
   const [fetchTime, setFetchTime] = useState(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -83,7 +82,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
     API.get(`/api/signals/${t}`)
       .then(res => {
         cacheRef.current[t] = { data: res.data, time: Date.now() }
-        setAllData(prev => ({ ...prev, [t]: res.data }))
         setSignals(res.data)
         setFetchTime(new Date().toISOString())
       })
@@ -99,7 +97,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
     cacheRef.current[assetTab] = null
     API.get(`/api/signals/${assetTab}`)
       .then(res => {
-        setAllData(prev => ({ ...prev, [assetTab]: res.data }))
         cacheRef.current[assetTab] = { data: res.data, time: Date.now() }
         setSignals(res.data)
         setFetchTime(new Date().toISOString())
