@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { HelmetProvider } from 'react-helmet-async';
+import { HelmetProvider, Helmet } from 'react-helmet-async';
 import Layout from './components/Layout/Layout';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -23,6 +23,10 @@ const LoadingSpinner = () => (
 function App() {
   return (
     <HelmetProvider>
+      <Helmet>
+        <title>StockSignal - Trading Dashboard</title>
+        <meta name="description" content="Real-time stock trading signals with RSI, EMA indicators, option chain, sector indices and market news" />
+      </Helmet>
       <ThemeProvider>
       <LanguageProvider>
       <Router>

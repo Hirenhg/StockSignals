@@ -156,6 +156,10 @@ html, body {
   border-color: $gray600;
 }
 
+[data-theme="dark"] .modal-header .btn-close {
+  color: $white;
+}
+
 * {
   forced-color-adjust: none;
   box-sizing: border-box;

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
 
+const sectorsCache = { data: null, time: 0 };
+
 const Sectors = () => {
   const [sectors, setSectors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,13 +12,18 @@ const Sectors = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchSectors = useCallback(async (showToast = false) => {
+    if (!showToast && sectorsCache.data && Date.now() - sectorsCache.time < 60000) {
+      setSectors(sectorsCache.data);
+      setLoading(false);
+      return;
+    }
     if (showToast) setRefreshing(true);
     try {
       const res = await API.get('/api/sectors');
       setSectors(res.data);
-    } catch (err) {
-      console.error("Sectors error:", err);
-    } finally {
+      sectorsCache.data = res.data;
+      sectorsCache.time = Date.now();
+    } catch (err) {} finally {
       setLoading(false);
       setRefreshing(false);
     }

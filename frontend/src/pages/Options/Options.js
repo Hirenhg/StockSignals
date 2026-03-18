@@ -17,8 +17,8 @@ const Options = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const exportCSV = () => {
-    const headers = ['Symbol','LotSize','LTP','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Open','High','Low']
-    const rows = filteredOptions.map(o => [o.symbol,o.lotSize,o.ltp?.toFixed(2)||0,o.signal||'HOLD',o.rsi||'',o.ema5||'',o.ema10||'',o.ema15||'',o.ema20||'',o.open?.toFixed(2)||0,o.high?.toFixed(2)||0,o.low?.toFixed(2)||0])
+    const headers = ['Symbol','LotSize','LTP','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Open','High','Low']
+    const rows = filteredOptions.map(o => [o.symbol,o.lotSize,o.ltp?.toFixed(2)||0,o.pChange||'',o.signal||'HOLD',o.rsi||'',o.ema5||'',o.ema10||'',o.ema15||'',o.ema20||'',o.open?.toFixed(2)||0,o.high?.toFixed(2)||0,o.low?.toFixed(2)||0])
     const csv = [headers,...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const a = document.createElement('a')
@@ -240,6 +240,11 @@ const Options = () => {
                     <div>
                       <h6 className="card-title mb-1 fw-bold" style={{ color: textColor, wordBreak: "break-all" }}>{option.symbol}</h6>
                       <h6 className="text-primary fw-bold mb-0">₹{option.ltp?.toFixed(2) || "0.00"}</h6>
+                      {option.pChange != null && (
+                        <small className="fw-bold" style={{color: option.pChange >= 0 ? '#198754' : '#dc3545'}}>
+                          {option.pChange >= 0 ? '▲' : '▼'} {Math.abs(option.pChange)}%
+                        </small>
+                      )}
                     </div>
                     <div className="d-flex align-items-center gap-2">
                       <span className={`badge rounded-pill px-3 py-2 ${option.signal === 'BUY' ? 'bg-success' : option.signal === 'SELL' ? 'bg-danger' : 'bg-secondary'}`}>{option.signal || 'HOLD'}</span>
@@ -281,6 +286,7 @@ const Options = () => {
                 <th>Open</th>
                 <th>High</th>
                 <th>Low</th>
+                <th>% Chg</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -302,6 +308,9 @@ const Options = () => {
                     <td>₹{option.open?.toFixed(2) || "0.00"}</td>
                     <td>₹{option.high?.toFixed(2) || "0.00"}</td>
                     <td>₹{option.low?.toFixed(2) || "0.00"}</td>
+                    <td style={{color: option.pChange >= 0 ? '#198754' : '#dc3545', fontWeight: 'bold'}}>
+                      {option.pChange != null ? `${option.pChange >= 0 ? '+' : ''}${option.pChange}%` : '-'}
+                    </td>
                     <td><button className="btn btn-sm btn-danger" onClick={() => openDeleteModal(option.symbol)}>Delete</button></td>
                   </tr>
                 );

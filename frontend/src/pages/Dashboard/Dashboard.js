@@ -18,10 +18,22 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [deleteSymbol, setDeleteSymbol] = useState('')
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
   const [refreshing, setRefreshing] = useState(false)
+  const [telegramEnabled, setTelegramEnabled] = useState(true)
+
+  useEffect(() => {
+    API.get('/api/telegram/status').then(res => setTelegramEnabled(res.data.enabled)).catch(() => {})
+  }, [])
+
+  const toggleTelegram = () => {
+    const newVal = !telegramEnabled
+    API.post('/api/telegram/toggle', { enabled: newVal })
+      .then(res => { setTelegramEnabled(res.data.enabled); showToast(`Telegram ${res.data.enabled ? 'ON' : 'OFF'}`, 'success') })
+      .catch(() => showToast('Failed to toggle', 'error'))
+  }
 
   const exportCSV = () => {
-    const headers = ['Symbol','Price','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Volume','52W High','52W Low','Yest High','Yest Low']
-    const rows = filteredSignals.map(s => [s.symbol,s.price,s.signal,s.rsi,s.ema5,s.ema10,s.ema15,s.ema20,s.volume||'',s.week52High||'',s.week52Low||'',s.yesterdayHigh||'',s.yesterdayLow||''])
+    const headers = ['Symbol','Price','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Volume','52W High','52W Low','Yest High','Yest Low']
+    const rows = filteredSignals.map(s => [s.symbol,s.price,s.pChange||'',s.signal,s.rsi,s.ema5,s.ema10,s.ema15,s.ema20,s.volume||'',s.week52High||'',s.week52Low||'',s.yesterdayHigh||'',s.yesterdayLow||''])
     const csv = [headers,...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const a = document.createElement('a')
@@ -58,51 +70,37 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const sellCount = filteredSignals.filter(s => s.signal === 'SELL').length
   const holdCount = filteredSignals.filter(s => s.signal === 'HOLD').length
 
-  const fetchAllData = useCallback(() => {
-    const types = ['indices', 'stocks', 'nifty50', 'niftynext50', 'commodities', 'crypto']
-    const promises = types.map(type => 
-      API.get(`/api/signals/${type}`).then(res => ({ type, data: res.data }))
-    )
-    
-    Promise.all(promises)
-      .then(results => {
-        const dataObj = {}
-        results.forEach(({ type, data }) => {
-          dataObj[type] = data
-        })
-        setAllData(dataObj)
-        setSignals(dataObj[assetTab] || dataObj['indices'])
+  const cacheRef = React.useRef({})
+
+  const fetchTabData = useCallback((tab) => {
+    const t = tab || assetTab
+    const cached = cacheRef.current[t]
+    if (cached && Date.now() - cached.time < 60000) {
+      setSignals(cached.data)
+      setFetchTime(new Date(cached.time).toISOString())
+      return
+    }
+    API.get(`/api/signals/${t}`)
+      .then(res => {
+        cacheRef.current[t] = { data: res.data, time: Date.now() }
+        setAllData(prev => ({ ...prev, [t]: res.data }))
+        setSignals(res.data)
         setFetchTime(new Date().toISOString())
       })
-      .catch(err => console.error("API Error:", err))
+      .catch(() => {})
   }, [assetTab])
 
   useEffect(() => {
-    fetchAllData()
-    
-    const handleSyncData = () => {
-      console.log('Background sync triggered, refreshing data...');
-      fetchAllData();
-    };
-    
-    window.addEventListener('sync-data', handleSyncData);
-    
-    return () => {
-      window.removeEventListener('sync-data', handleSyncData);
-    };
-  }, [fetchAllData])
-
-  useEffect(() => {
-    if (allData[assetTab]) {
-      setSignals(allData[assetTab])
-    }
-  }, [assetTab, allData])
+    fetchTabData()
+  }, [fetchTabData])
 
   const refreshCurrentTab = () => {
     setRefreshing(true)
+    cacheRef.current[assetTab] = null
     API.get(`/api/signals/${assetTab}`)
       .then(res => {
         setAllData(prev => ({ ...prev, [assetTab]: res.data }))
+        cacheRef.current[assetTab] = { data: res.data, time: Date.now() }
         setSignals(res.data)
         setFetchTime(new Date().toISOString())
         showToast('Data refreshed!', 'success')
@@ -123,7 +121,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         setShowAddModal(false)
         const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
         showToast(`${displayName} added successfully!`, 'success')
-        fetchAllData()
+        fetchTabData()
       })
       .catch(err => {
         const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
@@ -142,7 +140,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         showToast(`${displayName} deleted successfully!`, 'success')
       })
       .catch(err => {
-        console.error('Delete error:', err)
         const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
         showToast(err.response?.data?.error || `Error deleting ${displayName}`, 'error')
       })
@@ -297,6 +294,9 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
             <button className="btn btn-sm btn-outline-secondary" onClick={exportCSV}>Export CSV</button>
+            <button className={`btn btn-sm ${telegramEnabled ? 'btn-success' : 'btn-outline-secondary'}`} onClick={toggleTelegram} title="Toggle Telegram notifications">
+              {telegramEnabled ? '🔔 TG ON' : '🔕 TG OFF'}
+            </button>
           </div>
           <div className="d-flex align-items-center gap-2">
             <input 
@@ -326,6 +326,9 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                 {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
             <button className="btn btn-sm btn-outline-secondary" onClick={exportCSV}>CSV</button>
+            <button className={`btn btn-sm ${telegramEnabled ? 'btn-success' : 'btn-outline-secondary'}`} onClick={toggleTelegram}>
+              {telegramEnabled ? '🔔' : '🔕'}
+            </button>
           </div>
           <div className="d-flex gap-2">
             <span className="badge bg-success p-2">BUY: {buyCount}</span>
@@ -341,6 +344,11 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                   <div>
                     <h5 className="card-title mb-1 fw-bold">{item.symbol}</h5>
                     <h6 className="text-primary fw-bold mb-0">₹{item.price}</h6>
+                    {item.pChange != null && (
+                      <small className="fw-bold" style={{color: item.pChange >= 0 ? '#198754' : '#dc3545'}}>
+                        {item.pChange >= 0 ? '▲' : '▼'} {Math.abs(item.pChange)}%
+                      </small>
+                    )}
                   </div>
                   <div className="d-flex align-items-center gap-2">
                   <span className={`badge rounded-pill px-3 py-2 ${item.signal === 'BUY' ? 'bg-success' : item.signal === 'SELL' ? 'bg-danger' : 'bg-secondary'}`}>
@@ -423,6 +431,9 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                 <th>52W Low</th>
                 <th style={{color: '#28a745'}}>Yest High</th>
                 <th style={{color: '#dc3545'}}>Yest Low</th>
+                <th onClick={() => handleSort('pChange')} style={{cursor: 'pointer'}}>
+                  % Chg {sortConfig.key === 'pChange' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </th>
                 <th>Time</th>
                 <th>Action</th>
               </tr>
@@ -447,6 +458,9 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                   <td>₹{item.week52Low || '-'}</td>
                   <td style={{color: '#28a745', fontWeight: 'bold'}}>₹{item.yesterdayHigh || '-'}</td>
                   <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.yesterdayLow || '-'}</td>
+                  <td style={{color: item.pChange >= 0 ? '#198754' : '#dc3545', fontWeight: 'bold'}}>
+                    {item.pChange != null ? `${item.pChange >= 0 ? '+' : ''}${item.pChange}%` : '-'}
+                  </td>
                   <td>{fetchTime ? new Date(fetchTime).toLocaleString() : new Date(item.timestamp).toLocaleString()}</td>
                   <td>
                     <button className="btn btn-sm btn-danger" onClick={() => openDeleteModal(item.symbol)}>Delete</button>

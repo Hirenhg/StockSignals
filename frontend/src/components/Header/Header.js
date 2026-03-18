@@ -49,7 +49,7 @@ const Header = () => {
                 </div>
               </div>
             </button>
-            <select className="form-select form-select-sm border-0 p-0" style={{width: 'auto', fontSize: '16px'}} value={lang} onChange={e => setLang(e.target.value)}>
+            <select className="form-select form-select-sm border-0 p-0" style={{width: 'auto', fontSize: '16px'}} value={lang} onChange={e => setLang(e.target.value)} aria-label="Language">
               <option value="en">English</option>
               <option value="hi">हिन्दी</option>
               <option value="gu">ગુજરાતી</option>
@@ -99,7 +99,7 @@ const Header = () => {
                 </div>
               </div>
             </button>
-            <select className="form-select form-select-sm border-0" style={{width: 'auto', fontSize: '16px'}} value={lang} onChange={e => setLang(e.target.value)}>
+            <select className="form-select form-select-sm border-0" style={{width: 'auto', fontSize: '16px'}} value={lang} onChange={e => setLang(e.target.value)} aria-label="Language">
               <option value="en">English</option>
               <option value="hi">हिन्दी</option>
               <option value="gu">ગુજરાતી</option>
