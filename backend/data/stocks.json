@@ -1,41 +1,29 @@
 [
-  {
-    "symbol": "MAZDOCK"
-  },
-  {
-    "symbol": "NYKAA"
-  },
-  {
-    "symbol": "RADHIKAJWE"
-  },
-  {
-    "symbol": "INOXWIND"
-  },
-  {
-    "symbol": "TBZ"
-  },
-  {
-    "symbol": "SURYODAY"
-  },
-  {
-    "symbol": "GRSE"
-  },
-  {
-    "symbol": "VENKEYS"
-  },
-  {
-    "symbol": "JWL"
-  },
-  {
-    "symbol": "TRANSRAILL"
-  },
-  {
-    "symbol": "NFL"
-  },
-  {
-    "symbol": "ANANTRAJ"
-  },
-  {
-    "symbol": "OBEROIRLTY"
-  }
+  {"symbol": "SURYODAY"},
+  {"symbol": "GRSE"},
+  {"symbol": "NFL"},
+  {"symbol": "OBEROIRLTY"},
+  {"symbol": "HAPPSTMNDS"},
+  {"symbol": "TATASTEEL"},
+  {"symbol": "HINDALCO"},
+  {"symbol": "VEDL"},
+  {"symbol": "MARUTI"},
+  {"symbol": "M&M"},
+  {"symbol": "HDFCBANK"},
+  {"symbol": "ICICIBANK"},
+  {"symbol": "PNB"},
+  {"symbol": "INFY"},
+  {"symbol": "TCS"},
+  {"symbol": "WIPRO"},
+  {"symbol": "TECHM"},
+  {"symbol": "NTPC"},
+  {"symbol": "TATAPOWER"},
+  {"symbol": "POWERGRID"},
+  {"symbol": "BEL"},
+  {"symbol": "SWANDEF"},
+  {"symbol": "STAR"},
+  {"symbol": "AUROPHARMA"},
+  {"symbol": "VBL"},
+  {"symbol": "SHREECEM"},
+  {"symbol": "RELIANCE"}
 ]

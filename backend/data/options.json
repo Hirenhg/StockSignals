@@ -1,12 +1,4 @@
-[
-  {
-    "symbol": "NIFTY30MAR2623500CE",
-    "token": "54518",
-    "exchange": "NFO",
-    "lotSize": "65",
-    "tickSize": "5.000000"
-  },
-  {
+[  {
     "symbol": "NIFTY30MAR2623500PE",
     "token": "54519",
     "exchange": "NFO",
@@ -23,13 +15,6 @@
   {
     "symbol": "MAZDOCK30MAR262600CE",
     "token": "138747",
-    "exchange": "NFO",
-    "lotSize": "200",
-    "tickSize": "5.000000"
-  },
-  {
-    "symbol": "MAZDOCK30MAR262300PE",
-    "token": "141263",
     "exchange": "NFO",
     "lotSize": "200",
     "tickSize": "5.000000"
