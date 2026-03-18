@@ -23,9 +23,7 @@ const OptionChain = () => {
       setExpiries(res.data.expiries || []);
       setSelectedExpiry(res.data.selectedExpiry || '');
       setChain(res.data.chain || []);
-    } catch (err) {
-      console.error("Option chain error:", err);
-    } finally {
+    } catch (err) {} finally {
       setLoading(false);
     }
   }, [symbol, selectedExpiry]);
@@ -86,13 +84,13 @@ const OptionChain = () => {
         {/* Desktop Controls */}
         <div className="d-none d-md-flex flex-wrap gap-2 align-items-center mb-3">
           <h4 className="mb-0 fw-bold me-auto">Option Chain</h4>
-          <select className="form-select" style={{width: 'auto'}} value={symbol} onChange={e => { setSymbol(e.target.value); setSelectedExpiry(''); }}>
+          <select className="form-select" style={{width: 'auto'}} value={symbol} onChange={e => { setSymbol(e.target.value); setSelectedExpiry(''); }} aria-label="Symbol">
             {SYMBOLS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <select className="form-select" style={{width: 'auto'}} value={selectedExpiry} onChange={e => setSelectedExpiry(e.target.value)}>
+          <select className="form-select" style={{width: 'auto'}} value={selectedExpiry} onChange={e => setSelectedExpiry(e.target.value)} aria-label="Expiry">
             {expiries.map(exp => <option key={exp} value={exp}>{exp}</option>)}
           </select>
-          <select className="form-select" style={{width: 'auto'}} value={strikeRange} onChange={e => setStrikeRange(Number(e.target.value))}>
+          <select className="form-select" style={{width: 'auto'}} value={strikeRange} onChange={e => setStrikeRange(Number(e.target.value))} aria-label="Strike range">
             <option value={5}>±5 Strikes</option>
             <option value={10}>±10 Strikes</option>
             <option value={20}>±20 Strikes</option>
@@ -105,15 +103,15 @@ const OptionChain = () => {
         <div className="d-md-none mb-3">
           <h4 className="mb-3 fw-bold">Option Chain</h4>
           <div className="d-flex gap-2 mb-2">
-            <select className="form-select" value={symbol} onChange={e => { setSymbol(e.target.value); setSelectedExpiry(''); }}>
+            <select className="form-select" value={symbol} onChange={e => { setSymbol(e.target.value); setSelectedExpiry(''); }} aria-label="Symbol">
               {SYMBOLS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select className="form-select" value={selectedExpiry} onChange={e => setSelectedExpiry(e.target.value)}>
+            <select className="form-select" value={selectedExpiry} onChange={e => setSelectedExpiry(e.target.value)} aria-label="Expiry">
               {expiries.map(exp => <option key={exp} value={exp}>{exp}</option>)}
             </select>
           </div>
           <div className="d-flex gap-2">
-            <select className="form-select" value={strikeRange} onChange={e => setStrikeRange(Number(e.target.value))}>
+            <select className="form-select" value={strikeRange} onChange={e => setStrikeRange(Number(e.target.value))} aria-label="Strike range">
               <option value={5}>±5 Strikes</option>
               <option value={10}>±10 Strikes</option>
               <option value={20}>±20 Strikes</option>

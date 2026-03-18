@@ -3,6 +3,8 @@ import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
 import { useLanguage } from "../../context/LanguageContext";
 
+const newsCache = { data: null, time: 0 };
+
 const News = () => {
   const { t } = useLanguage();
   const [newsData, setNewsData] = useState([]);
@@ -17,10 +19,17 @@ const News = () => {
   };
 
   const fetchNews = useCallback(async (showRefreshToast = false) => {
+    if (!showRefreshToast && newsCache.data && Date.now() - newsCache.time < 300000) {
+      setNewsData(newsCache.data);
+      setLoading(false);
+      return;
+    }
     if (showRefreshToast) setRefreshing(true);
     try {
       const res = await API.get('/api/news');
       setNewsData(res.data);
+      newsCache.data = res.data;
+      newsCache.time = Date.now();
       if (showRefreshToast) showToast(t('dataRefreshed'), 'success');
     } catch {
       if (showRefreshToast) showToast(t('refreshFailed'), 'error');
@@ -102,7 +111,7 @@ const News = () => {
                   <div className="card-body p-3">
                     <div className="fw-bold" style={{fontSize: '14px', lineHeight: '1.3'}}>{item.title}</div>
                     <div className="d-flex gap-2 mt-2 align-items-center" style={{fontSize: '12px'}}>
-                      <span className={`badge ${item.symbol === 'MARKET' ? 'bg-gray-100 text-dark' : 'bg-primary'}`}>{item.symbol === 'MARKET' ? '📈 Market' : item.symbol}</span>
+                      <span className={`badge ${item.symbol === 'MARKET' ? 'bg-gray-100 text-primary' : 'bg-primary'}`}>{item.symbol === 'MARKET' ? '📈 Market' : item.symbol}</span>
                       <span className="text-muted">{item.publisher}</span>
                       <span className="text-muted ms-auto">{timeAgo(item.time)}</span>
                     </div>
@@ -121,7 +130,7 @@ const News = () => {
                 <div className="card-body p-3">
                   <div className="fw-bold" style={{fontSize: '15px'}}>{item.title}</div>
                   <div className="d-flex gap-2 mt-2 align-items-center" style={{fontSize: '13px'}}>
-                    <span className={`badge ${item.symbol === 'MARKET' ? 'bg-warning text-dark' : 'bg-primary'}`}>{item.symbol === 'MARKET' ? '📈 Market' : item.symbol}</span>
+                    <span className={`badge ${item.symbol === 'MARKET' ? 'bg-gray-100 text-primary' : 'bg-primary'}`}>{item.symbol === 'MARKET' ? '📈 Market' : item.symbol}</span>
                     <span className="text-muted">{item.publisher}</span>
                     <span className="text-muted ms-auto">{timeAgo(item.time)}</span>
                   </div>
