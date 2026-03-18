@@ -7,7 +7,7 @@ const path = require('path');
 const getStockHistory = require("./services/stockService");
 const generateSignal = require("./services/signalService");
 const { generateMultiTimeframeSignal } = require("./services/signalService");
-const { initTelegram, sendBulkSignals } = require("./services/telegramService");
+const { initTelegram, sendBulkSignals, setTelegramEnabled, isTelegramEnabled } = require("./services/telegramService");
 
 const { initializeWebSocket, getLiveData, updateSubscription } = require("./services/angelWebSocket");
 
@@ -111,10 +111,18 @@ app.get("/api/signals/:type", async (req, res) => {
             
             let stockInfo = { week52High: null, week52Low: null };
             let volumeData = null;
+            let prevClose = null;
             
             try {
               stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
               volumeData = await getStockHistory(stock.symbol, '1d', '1y', false, true);
+            } catch (err) {}
+
+            try {
+              const dailyPrices = await getStockHistory(stock.symbol, '1d', '5d');
+              if (dailyPrices && dailyPrices.length >= 2) {
+                prevClose = dailyPrices[dailyPrices.length - 2];
+              }
             } catch (err) {}
             
             let yesterdayHigh = null;
@@ -127,6 +135,10 @@ app.get("/api/signals/:type", async (req, res) => {
               }
             } catch (err) {}
             
+            const currentPrice = parseFloat(prices5m[prices5m.length - 1].toFixed(2));
+            const change = prevClose ? parseFloat((currentPrice - prevClose).toFixed(2)) : null;
+            const pChange = prevClose ? parseFloat(((currentPrice - prevClose) / prevClose * 100).toFixed(2)) : null;
+
             return {
               symbol: stock.symbol,
               signal: result.signal,
@@ -135,7 +147,10 @@ app.get("/api/signals/:type", async (req, res) => {
               ema10: result.ema10.toFixed(2),
               ema15: result.ema15.toFixed(2),
               ema20: result.ema20.toFixed(2),
-              price: prices5m[prices5m.length - 1].toFixed(2),
+              price: currentPrice.toFixed(2),
+              prevClose: prevClose ? prevClose.toFixed(2) : null,
+              change,
+              pChange,
               week52High: stockInfo?.week52High || null,
               week52Low: stockInfo?.week52Low || null,
               volume: volumeData || null,
@@ -161,10 +176,12 @@ app.get("/api/signals/:type", async (req, res) => {
     
     res.json(results);
     
-    const buySignals = results.filter(r => r.signal === 'BUY');
-    const sellSignals = results.filter(r => r.signal === 'SELL');
-    if (buySignals.length > 0 || sellSignals.length > 0) {
-      sendBulkSignals(results);
+    if (type === 'stocks') {
+      const buySignals = results.filter(r => r.signal === 'BUY');
+      const sellSignals = results.filter(r => r.signal === 'SELL');
+      if (buySignals.length > 0 || sellSignals.length > 0) {
+        sendBulkSignals(results);
+      }
     }
   } catch (error) {
     console.error('API Error:', error.message);
@@ -265,6 +282,7 @@ app.get("/api/options/live", async (req, res) => {
           high: live?.high || 0,
           low: live?.low || 0,
           close: live?.close || 0,
+          pChange: live?.ltp && live?.close ? parseFloat(((live.ltp - live.close) / live.close * 100).toFixed(2)) : null,
           signal,
           rsi,
           ema5,
@@ -285,20 +303,42 @@ app.get("/api/options/live", async (req, res) => {
       return res.json(enrichedOptions);
     }
     
-    const enrichedOptions = options.map(opt => {
+    const enrichedOptions = await Promise.all(options.map(async (opt) => {
       const live = liveData[opt.token];
+
+      let signal = 'HOLD';
+      let rsi = null;
+      let ema5 = null;
+      let ema10 = null;
+      let ema15 = null;
+      let ema20 = null;
+
+      try {
+        const symbolMatch = opt.symbol.match(/^([A-Z]+)/);
+        if (symbolMatch) {
+          let underlyingSymbol = symbolMatch[1];
+          const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
+          if (indexMap[underlyingSymbol]) underlyingSymbol = indexMap[underlyingSymbol];
+          const prices5m = await getStockHistory(underlyingSymbol, '5m', '5d');
+          if (prices5m && prices5m.length >= 20) {
+            const result = generateSignal(prices5m);
+            signal = result.signal;
+            rsi = result.rsi.toFixed(2);
+            ema5 = result.ema5.toFixed(2);
+            ema10 = result.ema10.toFixed(2);
+            ema15 = result.ema15.toFixed(2);
+            ema20 = result.ema20.toFixed(2);
+          }
+        }
+      } catch (err) {}
+
       return {
         ...opt,
         ltp: live?.ltp || 0,
         timestamp: live?.timestamp || null,
-        signal: 'HOLD',
-        rsi: null,
-        ema5: null,
-        ema10: null,
-        ema15: null,
-        ema20: null
+        signal, rsi, ema5, ema10, ema15, ema20
       };
-    });
+    }));
 
     res.json(enrichedOptions);
   } catch (error) {
@@ -708,6 +748,16 @@ app.get("/api/news", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch news' });
   }
+});
+
+app.get("/api/telegram/status", (req, res) => {
+  res.json({ enabled: isTelegramEnabled() });
+});
+
+app.post("/api/telegram/toggle", (req, res) => {
+  const { enabled } = req.body;
+  setTelegramEnabled(!!enabled);
+  res.json({ enabled: isTelegramEnabled() });
 });
 
 app.get("/api/symbol-master", async (req, res) => {

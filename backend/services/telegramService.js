@@ -2,6 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 
 let bot = null;
 let chatId = null;
+let enabled = true;
 const sentSignals = new Map();
 const SIGNAL_COOLDOWN = 1200000;
 
@@ -36,7 +37,7 @@ async function sendWithRetry(message, retries = 3) {
 }
 
 async function sendSignal(symbol, signal, price) {
-  if (!bot || !chatId) return;
+  if (!bot || !chatId || !enabled) return;
   
   const signalKey = `${symbol}-${signal}`;
   const now = Date.now();
@@ -54,7 +55,7 @@ async function sendSignal(symbol, signal, price) {
 }
 
 async function sendBulkSignals(signals) {
-  if (!bot || !chatId) return;
+  if (!bot || !chatId || !enabled) return;
   
   const now = Date.now();
   
@@ -98,4 +99,7 @@ async function sendBulkSignals(signals) {
   }
 }
 
-module.exports = { initTelegram, sendSignal, sendBulkSignals };
+function setTelegramEnabled(val) { enabled = val; }
+function isTelegramEnabled() { return enabled; }
+
+module.exports = { initTelegram, sendSignal, sendBulkSignals, setTelegramEnabled, isTelegramEnabled };
