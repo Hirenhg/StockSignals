@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
+import { SkeletonTable, SkeletonCards } from "../../components/Skeleton/Skeleton";
 
 const Options = () => {
   const [optionsData, setOptionsData] = useState([]);
@@ -17,8 +18,12 @@ const Options = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const exportCSV = () => {
-    const headers = ['Symbol','LotSize','LTP','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Open','High','Low']
-    const rows = filteredOptions.map(o => [o.symbol,o.lotSize,o.ltp?.toFixed(2)||0,o.pChange||'',o.signal||'HOLD',o.rsi||'',o.ema5||'',o.ema10||'',o.ema15||'',o.ema20||'',o.open?.toFixed(2)||0,o.high?.toFixed(2)||0,o.low?.toFixed(2)||0])
+    const headers = ['Symbol','LotSize','LTP','Target','SL','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Open','High','Low']
+    const rows = filteredOptions.map(o => {
+      const p = o.ltp || 0
+      const isSell = o.signal === 'SELL'
+      return [o.symbol,o.lotSize,p.toFixed(2),isSell ? (p*0.7).toFixed(2) : (p*1.3).toFixed(2),isSell ? (p*1.1).toFixed(2) : (p*0.9).toFixed(2),o.pChange||'',o.signal||'HOLD',o.rsi||'',o.ema5||'',o.ema10||'',o.ema15||'',o.ema20||'',o.open?.toFixed(2)||0,o.high?.toFixed(2)||0,o.low?.toFixed(2)||0]
+    })
     const csv = [headers,...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const a = document.createElement('a')
@@ -95,7 +100,44 @@ const Options = () => {
   }, [fetchOptionsData]);
 
   if (loading) {
-    return (<div className="d-flex justify-content-center p-5"><div className="spinner-border" role="status"></div></div>);
+    return (
+      <>
+        <Helmet><title>Stock Signals Options</title></Helmet>
+        <div>
+          <div className="d-none d-md-flex justify-content-between align-items-center mb-4">
+            <h4 className="mb-0">Options Data</h4>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>Add Option</button>
+          </div>
+          <div className="d-md-none mb-3"><h4 className="mb-0 fw-bold">Options</h4></div>
+          <div className="d-none d-md-flex gap-2 mb-3">
+            <button className={`btn btn-sm ${optionTypeTab === 'index' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setOptionTypeTab('index')} style={{fontSize: '13px', padding: '8px 16px'}}>Index Options</button>
+            <button className={`btn btn-sm ${optionTypeTab === 'stocks' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setOptionTypeTab('stocks')} style={{fontSize: '13px', padding: '8px 16px'}}>Stock Options</button>
+          </div>
+          <div className="d-none d-md-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex gap-2 align-items-center">
+              <div className="d-flex gap-1" role="group">
+                <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
+                <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
+                <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
+                <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
+              </div>
+              <button className="btn btn-sm btn-outline-primary" onClick={() => fetchOptionsData(true)} disabled={refreshing}>{refreshing ? 'Refreshing...' : 'Refresh'}</button>
+              <button className="btn btn-sm btn-outline-secondary" onClick={exportCSV}>Export CSV</button>
+            </div>
+            <div className="d-flex align-items-center gap-2">
+              <input type="text" className="form-control" placeholder="Search options..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ maxWidth: "300px" }} />
+              <div className="d-flex gap-2">
+                <span className="badge bg-success p-2">BUY: {buyCount}</span>
+                <span className="badge bg-danger p-2">SELL: {sellCount}</span>
+                <span className="badge bg-secondary p-2">HOLD: {holdCount}</span>
+              </div>
+            </div>
+          </div>
+          <SkeletonCards count={4} />
+          <SkeletonTable rows={8} cols={14} />
+        </div>
+      </>
+    );
   }
 
   return (
@@ -182,7 +224,7 @@ const Options = () => {
         {/* Desktop controls */}
         <div className="d-none d-md-flex justify-content-between align-items-center mb-3">
           <div className="d-flex gap-2 align-items-center">
-            <div className="btn-group" role="group">
+            <div className="d-flex gap-1" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
               <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
@@ -192,7 +234,7 @@ const Options = () => {
             <button className="btn btn-sm btn-outline-secondary" onClick={exportCSV}>Export CSV</button>
           </div>
           <div className="d-flex align-items-center gap-2">
-            <input type="text" className="form-control" placeholder="Search options..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ maxWidth: "300px" }} />
+            <input type="text" className="form-control" placeholder="Search options..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ minWidth: "150px" }} />
             <div className="d-flex gap-2">
               <span className="badge bg-success p-2">BUY: {buyCount}</span>
               <span className="badge bg-danger p-2">SELL: {sellCount}</span>
@@ -204,7 +246,7 @@ const Options = () => {
         {/* Mobile controls */}
         <div className="d-md-none d-flex flex-column gap-3 mb-3">
           <div className="d-flex gap-2 align-items-center">
-            <div className="btn-group flex-grow-1" role="group">
+            <div className="d-flex gap-1 flex-grow-1" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
               <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
@@ -263,6 +305,14 @@ const Options = () => {
                     <div className="col-6"><small className="text-success d-block">EMA10</small><strong className="text-success">₹{option.ema10 || '-'}</strong></div>
                     <div className="col-6"><small className="text-blue d-block">EMA15</small><strong className="text-primary">₹{option.ema15 || '-'}</strong></div>
                     <div className="col-6"><small className="text-warning d-block">EMA20</small><strong className="text-warning">₹{option.ema20 || '-'}</strong></div>
+                    <div className="col-6">
+                      <small style={{color: '#198754'}} className="d-block">Target {(option.signal || 'HOLD') === 'SELL' ? '-' : '+'}30%</small>
+                      <strong style={{color: '#198754'}}>₹{(option.signal || 'HOLD') === 'SELL' ? ((option.ltp || 0) * 0.7).toFixed(2) : ((option.ltp || 0) * 1.3).toFixed(2)}</strong>
+                    </div>
+                    <div className="col-6">
+                      <small style={{color: '#dc3545'}} className="d-block">SL {(option.signal || 'HOLD') === 'SELL' ? '+' : '-'}10%</small>
+                      <strong style={{color: '#dc3545'}}>₹{(option.signal || 'HOLD') === 'SELL' ? ((option.ltp || 0) * 1.1).toFixed(2) : ((option.ltp || 0) * 0.9).toFixed(2)}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -283,6 +333,8 @@ const Options = () => {
                 <th style={{color: 'green'}}>EMA10</th>
                 <th style={{color: 'blue'}}>EMA15</th>
                 <th style={{color: '#ffc107'}}>EMA20</th>
+                <th style={{color: '#198754'}}>Target</th>
+                <th style={{color: '#dc3545'}}>SL</th>
                 <th>Open</th>
                 <th>High</th>
                 <th>Low</th>
@@ -305,6 +357,8 @@ const Options = () => {
                     <td style={{color: 'green'}}>₹{option.ema10 || '-'}</td>
                     <td style={{color: 'blue'}}>₹{option.ema15 || '-'}</td>
                     <td style={{color: '#ffc107'}}>₹{option.ema20 || '-'}</td>
+                    <td style={{color: '#198754', fontWeight: 'bold'}}>₹{(option.signal || 'HOLD') === 'SELL' ? ((option.ltp || 0) * 0.7).toFixed(2) : ((option.ltp || 0) * 1.3).toFixed(2)}</td>
+                    <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{(option.signal || 'HOLD') === 'SELL' ? ((option.ltp || 0) * 1.1).toFixed(2) : ((option.ltp || 0) * 0.9).toFixed(2)}</td>
                     <td>₹{option.open?.toFixed(2) || "0.00"}</td>
                     <td>₹{option.high?.toFixed(2) || "0.00"}</td>
                     <td>₹{option.low?.toFixed(2) || "0.00"}</td>

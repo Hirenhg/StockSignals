@@ -76,6 +76,8 @@ const translations = {
     crypto: 'Crypto',
     news: 'News',
     noNews: 'No news found for watchlist stocks',
+    equityTool: 'Equity Tool',
+    charts: 'Charts',
   },
   hi: {
     dashboard: 'डैशबोर्ड',
@@ -147,6 +149,8 @@ const translations = {
     crypto: 'क्रिप्टो',
     news: 'समाचार',
     noNews: 'वॉचलिस्ट स्टॉक के लिए कोई समाचार नहीं मिला',
+    equityTool: 'इक्विटी टूल',
+    charts: 'चार्ट',
   },
   gu: {
     dashboard: 'ડેશબોર્ડ',
@@ -218,6 +222,8 @@ const translations = {
     crypto: 'ક્રિપ્ટો',
     news: 'સમાચાર',
     noNews: 'વોચલિસ્ટ સ્ટોક માટે કોઈ સમાચાર મળ્યો નથી',
+    equityTool: 'ઇક્વિટી ટૂલ',
+    charts: 'ચાર્ટ',
   }
 };
 

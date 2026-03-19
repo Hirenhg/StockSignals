@@ -2,6 +2,9 @@ import React, { useEffect, useState, useCallback } from "react"
 import { Helmet } from "react-helmet-async"
 import API from "../../services/api"
 import { useLanguage } from "../../context/LanguageContext"
+import { SkeletonTable, SkeletonCards } from "../../components/Skeleton/Skeleton"
+import { useNavigate } from 'react-router-dom'
+import TradingViewModal from "../../components/Chart/TradingViewModal"
 
 function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const { t } = useLanguage()
@@ -18,6 +21,9 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
   const [refreshing, setRefreshing] = useState(false)
   const [telegramEnabled, setTelegramEnabled] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [tvSymbol, setTvSymbol] = useState(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     API.get('/api/telegram/status').then(res => setTelegramEnabled(res.data.enabled)).catch(() => {})
@@ -31,8 +37,12 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   }
 
   const exportCSV = () => {
-    const headers = ['Symbol','Price','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Volume','52W High','52W Low','Yest High','Yest Low']
-    const rows = filteredSignals.map(s => [s.symbol,s.price,s.pChange||'',s.signal,s.rsi,s.ema5,s.ema10,s.ema15,s.ema20,s.volume||'',s.week52High||'',s.week52Low||'',s.yesterdayHigh||'',s.yesterdayLow||''])
+    const headers = ['Symbol','Price','Target','SL','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Volume','52W High','52W Low']
+    const rows = filteredSignals.map(s => {
+      const p = parseFloat(s.price)
+      const isSell = s.signal === 'SELL'
+      return [s.symbol,s.price,isSell ? (p*0.988).toFixed(2) : (p*1.012).toFixed(2),isSell ? (p*1.004).toFixed(2) : (p*0.996).toFixed(2),s.pChange||'',s.signal,s.rsi,s.ema5,s.ema10,s.ema15,s.ema20,s.volume||'',s.week52High||'',s.week52Low||'']
+    })
     const csv = [headers,...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const a = document.createElement('a')
@@ -77,8 +87,10 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
     if (cached && Date.now() - cached.time < 60000) {
       setSignals(cached.data)
       setFetchTime(new Date(cached.time).toISOString())
+      setLoading(false)
       return
     }
+    setLoading(true)
     API.get(`/api/signals/${t}`)
       .then(res => {
         cacheRef.current[t] = { data: res.data, time: Date.now() }
@@ -86,11 +98,27 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         setFetchTime(new Date().toISOString())
       })
       .catch(() => {})
+      .finally(() => setLoading(false))
   }, [assetTab])
 
   useEffect(() => {
     fetchTabData()
   }, [fetchTabData])
+
+  // Auto-refresh every 60s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      cacheRef.current[assetTab] = null
+      API.get(`/api/signals/${assetTab}`)
+        .then(res => {
+          cacheRef.current[assetTab] = { data: res.data, time: Date.now() }
+          setSignals(res.data)
+          setFetchTime(new Date().toISOString())
+        })
+        .catch(() => {})
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [assetTab])
 
   const refreshCurrentTab = () => {
     setRefreshing(true)
@@ -281,7 +309,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         </div>
         <div className="d-none d-md-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
           <div className="d-flex gap-2 align-items-center flex-wrap">
-            <div className="btn-group" role="group">
+            <div className="d-flex gap-1" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
               <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
@@ -313,7 +341,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         </div>
         <div className="d-md-none d-flex flex-column gap-3 mb-3">
           <div className="d-flex gap-2 align-items-center">
-            <div className="btn-group flex-grow-1" role="group">
+            <div className="d-flex gap-1 flex-grow-1" role="group">
               <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
               <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
               <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
@@ -334,12 +362,15 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
           </div>
         </div>
         <div className="d-md-none" style={{paddingBottom: '80px'}}>
-          {filteredSignals.map((item, index) => (
+          {loading ? <SkeletonCards count={4} /> : filteredSignals.map((item, index) => (
             <div key={index} className="card mb-3 shadow-sm position-relative">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start mb-3">
                   <div>
-                    <h5 className="card-title mb-1 fw-bold">{item.symbol}</h5>
+                    <h5 className="card-title mb-1 fw-bold">
+                      <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={() => setTvSymbol(item.symbol)}>{item.symbol}</span>
+                      <i className="bi bi-graph-up ms-2" style={{cursor:'pointer',fontSize:'14px',color:'#2962FF'}} onClick={() => navigate(`/chart/${item.symbol}?mode=dashboard`)}></i>
+                    </h5>
                     <h6 className="text-primary fw-bold mb-0">₹{item.price}</h6>
                     {item.pChange != null && (
                       <small className="fw-bold" style={{color: item.pChange >= 0 ? '#198754' : '#dc3545'}}>
@@ -377,6 +408,14 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                     <small className="text-muted d-block">52W Low</small>
                     <strong>₹{item.week52Low || '-'}</strong>
                   </div>
+                  <div className="col-6">
+                    <small style={{color: '#198754'}} className="d-block">Target {item.signal === 'SELL' ? '-' : '+'}1.20%</small>
+                    <strong style={{color: '#198754'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2)}</strong>
+                  </div>
+                  <div className="col-6">
+                    <small style={{color: '#dc3545'}} className="d-block">SL {item.signal === 'SELL' ? '+' : '-'}0.40%</small>
+                    <strong style={{color: '#dc3545'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2)}</strong>
+                  </div>
                 </div>
 
                 <div className="row g-3 border-top mt-3">
@@ -401,6 +440,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             </div>
           ))}
         </div>
+        {loading ? <SkeletonTable rows={8} cols={16} /> : (
         <div className="d-none d-md-block table-responsive">
           <table className="table table-hover" style={{fontSize: '14px'}}>
             <thead className="table-dark">
@@ -421,13 +461,13 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                 <th style={{color: 'green'}}>EMA10</th>
                 <th style={{color: 'blue'}}>EMA15</th>
                 <th style={{color: '#ffc107'}}>EMA20</th>
+                <th style={{color: '#198754'}}>Target</th>
+                <th style={{color: '#dc3545'}}>SL</th>
                 <th onClick={() => handleSort('volume')} style={{cursor: 'pointer'}}>
                   Volume (K) {sortConfig.key === 'volume' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
                 <th>52W High</th>
                 <th>52W Low</th>
-                <th style={{color: '#28a745'}}>Yest High</th>
-                <th style={{color: '#dc3545'}}>Yest Low</th>
                 <th onClick={() => handleSort('pChange')} style={{cursor: 'pointer'}}>
                   % Chg {sortConfig.key === 'pChange' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
@@ -438,7 +478,10 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             <tbody>
               {filteredSignals.map((item, index) => (
                 <tr key={index} style={{verticalAlign: 'middle'}}>
-                  <td className="fw-bold">{item.symbol}</td>
+                  <td className="fw-bold">
+                    <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={() => setTvSymbol(item.symbol)}>{item.symbol}</span>
+                    <i className="bi bi-graph-up ms-2" style={{cursor:'pointer',fontSize:'13px',color:'#2962FF'}} onClick={() => navigate(`/chart/${item.symbol}?mode=dashboard`)}></i>
+                  </td>
                   <td>₹{item.price}</td>
                   <td>
                     <span className={`badge ${item.signal === "BUY" ? "bg-success" : item.signal === "SELL" ? "bg-danger" : "bg-secondary"}`}>
@@ -450,11 +493,11 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                   <td style={{color: 'green'}}>₹{item.ema10}</td>
                   <td style={{color: 'blue'}}>₹{item.ema15}</td>
                   <td style={{color: '#ffc107'}}>₹{item.ema20}</td>
+                  <td style={{color: '#198754', fontWeight: 'bold'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2)}</td>
+                  <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2)}</td>
                   <td>{item.volume || '-'}</td>
                   <td>₹{item.week52High || '-'}</td>
                   <td>₹{item.week52Low || '-'}</td>
-                  <td style={{color: '#28a745', fontWeight: 'bold'}}>₹{item.yesterdayHigh || '-'}</td>
-                  <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.yesterdayLow || '-'}</td>
                   <td style={{color: item.pChange >= 0 ? '#198754' : '#dc3545', fontWeight: 'bold'}}>
                     {item.pChange != null ? `${item.pChange >= 0 ? '+' : ''}${item.pChange}%` : '-'}
                   </td>
@@ -467,6 +510,8 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             </tbody>
           </table>
         </div>
+        )}
+        {tvSymbol && <TradingViewModal symbol={tvSymbol} onClose={() => setTvSymbol(null)} />}
       </div>
     </>
   )

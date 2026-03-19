@@ -11,11 +11,12 @@ const Header = () => {
 
   const navItems = [
     { path: '/', label: t('dashboard'), icon: '📊' },
-    { path: '/equity', label: 'Equity Tool', icon: '📈' },
+    { path: '/equity', label: t('equityTool'), icon: '📈' },
     { path: '/options', label: t('options'), icon: '⚙️' },
     { path: '/optionchain', label: t('optionChain'), icon: '🔗' },
     { path: '/sectors', label: t('sectors'), icon: '🏢' },
     { path: '/news', label: t('news'), icon: '📰' },
+    { path: '/chart/INFY', label: t('charts'), icon: '📉' },
   ];
 
   return (
