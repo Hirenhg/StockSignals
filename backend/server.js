@@ -5,8 +5,8 @@ const express = require("express");
 const fs = require('fs');
 const path = require('path');
 const getStockHistory = require("./services/stockService");
+const { getStockFull } = require("./services/stockService");
 const generateSignal = require("./services/signalService");
-const { generateMultiTimeframeSignal } = require("./services/signalService");
 const { generateEquitySignal } = require("./services/equitySignalService");
 const { initTelegram, sendBulkSignals, setTelegramEnabled, isTelegramEnabled } = require("./services/telegramService");
 
@@ -63,129 +63,60 @@ app.get("/api/signals/:type", async (req, res) => {
   try {
     const type = req.params.type || 'stocks';
     let stocks = [];
-    
     switch(type) {
-      case 'indices':
-        stocks = getIndices();
-        break;
-      case 'commodities':
-        stocks = getCommodities();
-        break;
-      case 'crypto':
-        stocks = getCrypto();
-        break;
-      case 'nifty50':
-        stocks = getNifty50();
-        break;
-      case 'niftynext50':
-        stocks = getNiftyNext50();
-        break;
-      default:
-        stocks = getStocks();
+      case 'indices': stocks = getIndices(); break;
+      case 'commodities': stocks = getCommodities(); break;
+      case 'crypto': stocks = getCrypto(); break;
+      case 'nifty50': stocks = getNifty50(); break;
+      case 'niftynext50': stocks = getNiftyNext50(); break;
+      default: stocks = getStocks();
     }
-    
-    if (!stocks || stocks.length === 0) {
-      return res.json([]);
-    }
-    
-    const results = [];
-    const batchSize = 3;
-    const errors = [];
+    if (!stocks || stocks.length === 0) return res.json([]);
 
+    const results = [];
+    const batchSize = 10;
     for (let i = 0; i < stocks.length; i += batchSize) {
       const batch = stocks.slice(i, i + batchSize);
       const batchResults = await Promise.all(
         batch.map(async (stock) => {
           try {
-            // Fetch multiple timeframes
-            const prices1m = await getStockHistory(stock.symbol, '1m', '1d');
-            const prices5m = await getStockHistory(stock.symbol, '5m', '5d');
-            const prices15m = await getStockHistory(stock.symbol, '15m', '5d');
-            
-            if (!prices1m || prices1m.length < 20 || !prices5m || prices5m.length < 20 || !prices15m || prices15m.length < 20) {
-              errors.push(`${stock.symbol}: Insufficient data`);
-              return null;
-            }
+            const data = await getStockFull(stock.symbol, '5m', '5d');
+            if (!data || !data.closes || data.closes.length < 20) return null;
 
-            // Generate multi-timeframe signal
-            const result = generateMultiTimeframeSignal(prices1m, prices5m, prices15m);
-            
-            let stockInfo = { week52High: null, week52Low: null };
-            let volumeData = null;
-            let prevClose = null;
-            
-            try {
-              stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
-              volumeData = await getStockHistory(stock.symbol, '1d', '1y', false, true);
-            } catch (err) {}
-            try {
-              const dailyPrices = await getStockHistory(stock.symbol, '1d', '5d');
-              if (dailyPrices && dailyPrices.length >= 2) {
-                prevClose = dailyPrices[dailyPrices.length - 2];
-              }
-            } catch (err) {}
-            
-            let yesterdayHigh = null;
-            let yesterdayLow = null;
-            try {
-              const yesterdayData = await getStockHistory(stock.symbol, '1d', '5d', false, false, true);
-              if (yesterdayData) {
-                yesterdayHigh = yesterdayData.high;
-                yesterdayLow = yesterdayData.low;
-              }
-            } catch (err) {}
-            
-            const currentPrice = parseFloat(prices5m[prices5m.length - 1].toFixed(2));
-            const change = prevClose ? parseFloat((currentPrice - prevClose).toFixed(2)) : null;
+            const result = generateSignal(data.closes);
+            const currentPrice = parseFloat(data.closes[data.closes.length - 1].toFixed(2));
+            const prevClose = data.prevClose;
             const pChange = prevClose ? parseFloat(((currentPrice - prevClose) / prevClose * 100).toFixed(2)) : null;
 
             return {
               symbol: stock.symbol,
               signal: result.signal,
-              rsi: result.rsi.toFixed(2),
-              ema5: result.ema5.toFixed(2),
-              ema10: result.ema10.toFixed(2),
-              ema15: result.ema15.toFixed(2),
-              ema20: result.ema20.toFixed(2),
+              rsi: result.rsi?.toFixed(2) || '0',
+              ema5: result.ema5?.toFixed(2) || '0',
+              ema10: result.ema10?.toFixed(2) || '0',
+              ema15: result.ema15?.toFixed(2) || '0',
+              ema20: result.ema20?.toFixed(2) || '0',
               price: currentPrice.toFixed(2),
-              prevClose: prevClose ? prevClose.toFixed(2) : null,
-              change,
               pChange,
-              week52High: stockInfo?.week52High || null,
-              week52Low: stockInfo?.week52Low || null,
-              volume: volumeData || null,
-              yesterdayHigh: yesterdayHigh,
-              yesterdayLow: yesterdayLow,
+              week52High: data.week52High,
+              week52Low: data.week52Low,
+              volume: data.volume,
               timestamp: new Date().toISOString()
             };
-          } catch (err) {
-            errors.push(`${stock.symbol}: ${err.message}`);
-            if (err.response?.status === 429) {
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-            return null;
-          }
+          } catch { return null; }
         })
       );
       results.push(...batchResults.filter(r => r !== null));
     }
-
-    if (errors.length > 0) {
-      console.log(`Errors: ${errors.slice(0, 5).join(', ')}`);
-    }
-    
     res.json(results);
-    
+
     if (type === 'stocks') {
       const buySignals = results.filter(r => r.signal === 'BUY');
       const sellSignals = results.filter(r => r.signal === 'SELL');
-      if (buySignals.length > 0 || sellSignals.length > 0) {
-        sendBulkSignals(results);
-      }
+      if (buySignals.length > 0 || sellSignals.length > 0) sendBulkSignals(results);
     }
   } catch (error) {
-    console.error('API Error:', error.message);
-    res.status(500).json({ error: "Failed to fetch signals", message: error.message });
+    res.status(500).json({ error: "Failed to fetch signals" });
   }
 });
 
@@ -204,7 +135,7 @@ app.get("/api/equity-signals/:type", async (req, res) => {
     if (!stocks || stocks.length === 0) return res.json([]);
 
     const results = [];
-    const batchSize = 3;
+    const batchSize = 10;
     for (let i = 0; i < stocks.length; i += batchSize) {
       const batch = stocks.slice(i, i + batchSize);
       const batchResults = await Promise.all(
@@ -216,14 +147,8 @@ app.get("/api/equity-signals/:type", async (req, res) => {
             const result = generateEquitySignal(ohlc5m);
             const currentPrice = parseFloat(ohlc5m[ohlc5m.length - 1].close.toFixed(2));
 
-            let stockInfo = { week52High: null, week52Low: null };
-            let prevClose = null;
-            try { stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true); } catch (err) {}
-            try {
-              const dailyPrices = await getStockHistory(stock.symbol, '1d', '5d');
-              if (dailyPrices && dailyPrices.length >= 2) prevClose = dailyPrices[dailyPrices.length - 2];
-            } catch (err) {}
-
+            const data = await getStockFull(stock.symbol, '1d', '5d');
+            const prevClose = data?.prevClose || null;
             const pChange = prevClose ? parseFloat(((currentPrice - prevClose) / prevClose * 100).toFixed(2)) : null;
 
             return {
@@ -240,11 +165,11 @@ app.get("/api/equity-signals/:type", async (req, res) => {
               goldenCross: result.goldenCross,
               deathCross: result.deathCross,
               pChange,
-              week52High: stockInfo?.week52High || null,
-              week52Low: stockInfo?.week52Low || null,
+              week52High: data?.week52High || null,
+              week52Low: data?.week52Low || null,
               timestamp: new Date().toISOString()
             };
-          } catch (err) { return null; }
+          } catch { return null; }
         })
       );
       results.push(...batchResults.filter(r => r !== null));
@@ -252,6 +177,34 @@ app.get("/api/equity-signals/:type", async (req, res) => {
     res.json(results);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch equity signals" });
+  }
+});
+
+app.get("/api/chart/:symbol", async (req, res) => {
+  try {
+    const symbol = decodeURIComponent(req.params.symbol);
+    const interval = req.query.interval || '5m';
+    const range = req.query.range || '5d';
+    const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
+    const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(fullSymbol)}?range=${range}&interval=${interval}`;
+    const response = await axios.get(url, { timeout: 15000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const result = response.data?.chart?.result?.[0];
+    if (!result) return res.json({ candles: [] });
+    const timestamps = result.timestamp || [];
+    const q = result.indicators.quote[0];
+    const candles = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      if (q.open[i] != null && q.high[i] != null && q.low[i] != null && q.close[i] != null) {
+        candles.push({ time: timestamps[i], open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume?.[i] || 0 });
+      }
+    }
+    res.json({ candles, symbol });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch chart data' });
   }
 });
 
