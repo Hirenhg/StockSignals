@@ -38,15 +38,11 @@ const SectorPE = () => {
   const [loadingSector, setLoadingSector] = useState(true)
   const [sortConfig, setSortConfig] = useState({ key: 'pe', direction: 'asc' })
   const [statusFilter, setStatusFilter] = useState('all')
-  const [liveStatus, setLiveStatus] = useState(false)
   const { darkMode } = useTheme()
 
   useEffect(() => {
     API.get('/api/nifty-pe').then(res => setPeData(res.data)).catch(() => {}).finally(() => setLoadingPE(false))
-    API.get('/api/sector-pe').then(res => {
-      setSectorData(res.data)
-      if (res.data?.length > 0) setLiveStatus(true)
-    }).catch(() => {}).finally(() => setLoadingSector(false))
+    API.get('/api/sector-pe').then(res => setSectorData(res.data)).catch(() => {}).finally(() => setLoadingSector(false))
   }, [])
 
   // Nifty 50 PE stats
@@ -85,12 +81,10 @@ const SectorPE = () => {
 
   const handleSort = (key) => setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }))
 
-  const bg = darkMode ? '#1a1a2e' : '#fff'
   const bg2 = darkMode ? '#16213e' : '#f8f9fa'
   const border = darkMode ? '#2a2a4a' : '#e9ecef'
   const text = darkMode ? '#e0e0e0' : '#212529'
   const textMuted = darkMode ? '#8a8a9a' : '#6c757d'
-  const headerBg = darkMode ? '#0f3460' : '#212529'
   const yearBg = darkMode ? '#16213e' : '#f1f3f5'
   const currentYearBg = darkMode ? '#1a3a6e' : '#e3f2fd'
 
@@ -99,7 +93,7 @@ const SectorPE = () => {
       <Helmet><title>Sector PE Ratio - StockSignal</title></Helmet>
       <div className="p-1">
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <h5 className="fw-bold mb-0">Sector PE Ratio <span style={{ fontSize: '10px', color: '#4caf50', fontWeight: 600, verticalAlign: 'middle' }}>● LIVE</span></h5>
+          <h5 className="fw-bold mb-0">Sector PE Ratio {sectorData.length > 0 && <span style={{ fontSize: '10px', color: '#4caf50', fontWeight: 600, verticalAlign: 'middle' }}>● LIVE</span>}</h5>
           <div className="d-flex gap-1">
             <button className={`btn btn-sm ${tab === 'allpe' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('allpe')} style={{ fontSize: '13px', padding: '8px 16px' }}>All PE</button>
             <button className={`btn btn-sm ${tab === 'nifty50' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('nifty50')} style={{ fontSize: '13px', padding: '8px 16px' }}>Nifty 50 Ratio</button>
