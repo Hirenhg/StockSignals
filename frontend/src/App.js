@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
+const EquityTool = lazy(() => import('./pages/EquityTool/EquityTool'));
 const Options = lazy(() => import('./pages/Options/Options'));
 const OptionChain = lazy(() => import('./pages/OptionChain/OptionChain'));
 const Sectors = lazy(() => import('./pages/Sectors/Sectors'));
@@ -35,6 +36,7 @@ function App() {
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route index element={<Dashboard assetTab={assetTab} setAssetTab={setAssetTab} />} />
+                <Route path="/equity" element={<EquityTool />} />
                 <Route path="/options" element={<Options />} />
                 <Route path="/optionchain" element={<OptionChain />} />
                 <Route path="/sectors" element={<Sectors />} />
