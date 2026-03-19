@@ -9,10 +9,16 @@ const { getStockFull } = require("./services/stockService");
 const generateSignal = require("./services/signalService");
 const { generateEquitySignal } = require("./services/equitySignalService");
 const { initTelegram, sendBulkSignals, setTelegramEnabled, isTelegramEnabled } = require("./services/telegramService");
+const { requestOTP, verifyOTP, authMiddleware, optionalAuth, getUserByMobile, updateUser } = require("./services/authService");
+const TelegramBot = require('node-telegram-bot-api');
 
 const { initializeWebSocket, getLiveData, updateSubscription } = require("./services/angelWebSocket");
 
 initTelegram();
+
+// Telegram bot instance for OTP
+const otpBot = process.env.TELEGRAM_BOT_TOKEN ? new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false }) : null;
+const otpChatId = process.env.TELEGRAM_CHAT_ID;
 
 const app = express();
 const stocksPath = path.join(__dirname, './data/stocks.json');
@@ -789,6 +795,78 @@ app.get("/api/symbol-master", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Failed to load symbol master data" });
   }
+});
+
+// Nifty PE data
+app.get("/api/nifty-pe", (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(__dirname, './data/niftype.json'), 'utf8'));
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load Nifty PE data' });
+  }
+});
+
+app.get("/api/sector-pe", async (req, res) => {
+  try {
+    const { fetchLiveSectorPE } = require('./services/sectorPEService');
+    const liveData = await fetchLiveSectorPE();
+    res.json(liveData || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch Sector PE data' });
+  }
+});
+
+// Auth routes
+app.post("/api/auth/send-otp", (req, res) => {
+  const { mobile } = req.body;
+  const result = requestOTP(mobile, otpBot, otpChatId);
+  res.status(result.success ? 200 : 400).json(result);
+});
+
+app.post("/api/auth/verify-otp", (req, res) => {
+  const { mobile, otp } = req.body;
+  const result = verifyOTP(mobile, otp);
+  res.status(result.success ? 200 : 400).json(result);
+});
+
+app.get("/api/auth/me", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ id: user.id, mobile: user.mobile, name: user.name, watchlist: user.watchlist });
+});
+
+app.put("/api/auth/profile", authMiddleware, (req, res) => {
+  const { name } = req.body;
+  const user = updateUser(req.user.mobile, { name });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ id: user.id, mobile: user.mobile, name: user.name });
+});
+
+// User watchlist routes
+app.get("/api/auth/watchlist", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  res.json(user?.watchlist || []);
+});
+
+app.post("/api/auth/watchlist", authMiddleware, (req, res) => {
+  const { symbol } = req.body;
+  if (!symbol) return res.status(400).json({ error: 'Symbol required' });
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.watchlist.find(s => s.symbol === symbol.toUpperCase())) return res.status(400).json({ error: 'Already in watchlist' });
+  user.watchlist.push({ symbol: symbol.toUpperCase() });
+  updateUser(req.user.mobile, { watchlist: user.watchlist });
+  res.json({ message: 'Added to watchlist', watchlist: user.watchlist });
+});
+
+app.delete("/api/auth/watchlist/:symbol", authMiddleware, (req, res) => {
+  const { symbol } = req.params;
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  user.watchlist = user.watchlist.filter(s => s.symbol !== symbol.toUpperCase());
+  updateUser(req.user.mobile, { watchlist: user.watchlist });
+  res.json({ message: 'Removed from watchlist', watchlist: user.watchlist });
 });
 
 const PORT = process.env.PORT || 5000;
