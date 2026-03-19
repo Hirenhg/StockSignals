@@ -12,7 +12,6 @@ const Login = () => {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [otpSent, setOtpSent] = useState(false)
 
   const handleSendOTP = async (e) => {
     e.preventDefault()
@@ -20,7 +19,6 @@ const Login = () => {
     setLoading(true); setError('')
     try {
       await sendOTP(mobile)
-      setOtpSent(true)
       setStep('otp')
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to send OTP')
