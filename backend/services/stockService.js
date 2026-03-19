@@ -4,7 +4,7 @@ const https = require("https");
 const agent = new https.Agent({ rejectUnauthorized: false });
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = false, getVolume = false, getHighLow = false) {
+async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = false, getVolume = false, getHighLow = false, getOHLC = false) {
   const maxRetries = 3;
   let lastError;
   
@@ -57,6 +57,18 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
         return null;
       }
       
+      if (getOHLC) {
+        const q = response.data.chart.result[0].indicators.quote[0];
+        const len = q.close.length;
+        const ohlc = [];
+        for (let i = 0; i < len; i++) {
+          if (q.close[i] != null && q.open[i] != null && q.high[i] != null && q.low[i] != null) {
+            ohlc.push({ open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i] });
+          }
+        }
+        return ohlc;
+      }
+
       const prices = response.data.chart.result[0].indicators.quote[0].close;
       return prices.filter((p) => p !== null);
       

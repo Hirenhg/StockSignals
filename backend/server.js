@@ -7,6 +7,7 @@ const path = require('path');
 const getStockHistory = require("./services/stockService");
 const generateSignal = require("./services/signalService");
 const { generateMultiTimeframeSignal } = require("./services/signalService");
+const { generateEquitySignal } = require("./services/equitySignalService");
 const { initTelegram, sendBulkSignals, setTelegramEnabled, isTelegramEnabled } = require("./services/telegramService");
 
 const { initializeWebSocket, getLiveData, updateSubscription } = require("./services/angelWebSocket");
@@ -117,7 +118,6 @@ app.get("/api/signals/:type", async (req, res) => {
               stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
               volumeData = await getStockHistory(stock.symbol, '1d', '1y', false, true);
             } catch (err) {}
-
             try {
               const dailyPrices = await getStockHistory(stock.symbol, '1d', '5d');
               if (dailyPrices && dailyPrices.length >= 2) {
@@ -186,6 +186,72 @@ app.get("/api/signals/:type", async (req, res) => {
   } catch (error) {
     console.error('API Error:', error.message);
     res.status(500).json({ error: "Failed to fetch signals", message: error.message });
+  }
+});
+
+app.get("/api/equity-signals/:type", async (req, res) => {
+  try {
+    const type = req.params.type || 'stocks';
+    let stocks = [];
+    switch(type) {
+      case 'indices': stocks = getIndices(); break;
+      case 'commodities': stocks = getCommodities(); break;
+      case 'crypto': stocks = getCrypto(); break;
+      case 'nifty50': stocks = getNifty50(); break;
+      case 'niftynext50': stocks = getNiftyNext50(); break;
+      default: stocks = getStocks();
+    }
+    if (!stocks || stocks.length === 0) return res.json([]);
+
+    const results = [];
+    const batchSize = 3;
+    for (let i = 0; i < stocks.length; i += batchSize) {
+      const batch = stocks.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(async (stock) => {
+          try {
+            const ohlc5m = await getStockHistory(stock.symbol, '5m', '5d', false, false, false, true);
+            if (!ohlc5m || ohlc5m.length < 40) return null;
+
+            const result = generateEquitySignal(ohlc5m);
+            const currentPrice = parseFloat(ohlc5m[ohlc5m.length - 1].close.toFixed(2));
+
+            let stockInfo = { week52High: null, week52Low: null };
+            let prevClose = null;
+            try { stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true); } catch (err) {}
+            try {
+              const dailyPrices = await getStockHistory(stock.symbol, '1d', '5d');
+              if (dailyPrices && dailyPrices.length >= 2) prevClose = dailyPrices[dailyPrices.length - 2];
+            } catch (err) {}
+
+            const pChange = prevClose ? parseFloat(((currentPrice - prevClose) / prevClose * 100).toFixed(2)) : null;
+
+            return {
+              symbol: stock.symbol,
+              signal: result.signal,
+              price: currentPrice.toFixed(2),
+              ema10: result.ema10?.toFixed(2),
+              ema20: result.ema20?.toFixed(2),
+              sma40: result.sma40?.toFixed(2),
+              channelTop: result.channelTop?.toFixed(2),
+              channelBot: result.channelBot?.toFixed(2),
+              dirTrend: result.dirTrend,
+              barColor: result.barColor,
+              goldenCross: result.goldenCross,
+              deathCross: result.deathCross,
+              pChange,
+              week52High: stockInfo?.week52High || null,
+              week52Low: stockInfo?.week52Low || null,
+              timestamp: new Date().toISOString()
+            };
+          } catch (err) { return null; }
+        })
+      );
+      results.push(...batchResults.filter(r => r !== null));
+    }
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch equity signals" });
   }
 });
 
