@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
 import { useTheme } from "../../context/ThemeContext";
+import { SkeletonTable, SkeletonCards } from "../../components/Skeleton/Skeleton";
 
 const SYMBOLS = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'NYKAA', 'MAZDOCK'];
 
@@ -122,9 +123,7 @@ const OptionChain = () => {
         </div>
 
         {loading ? (
-          <div className="d-flex justify-content-center p-5">
-            <div className="spinner-border" role="status"></div>
-          </div>
+          <><SkeletonCards count={4} /><SkeletonTable rows={10} cols={9} /></>
         ) : chain.length === 0 ? (
           <div className="text-center text-muted p-5">No option chain data found for {symbol}</div>
         ) : (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import API from "../../services/api";
+import { SkeletonTable, SkeletonCards } from "../../components/Skeleton/Skeleton";
 
 const sectorsCache = { data: null, time: 0 };
 
@@ -53,7 +54,60 @@ const Sectors = () => {
   const arrow = (key) => sortConfig.key === key ? (sortConfig.direction === 'asc' ? ' ↑' : ' ↓') : '';
 
   if (loading) {
-    return (<div className="d-flex justify-content-center p-5"><div className="spinner-border" role="status"></div></div>);
+    return (
+      <>
+        <Helmet><title>Sector Indices - Live Market</title></Helmet>
+        <div>
+         {/* Header */}
+        <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
+          <h4 className="mb-0 fw-bold me-auto">Live Market Indices</h4>
+          <button className="btn btn-sm btn-outline-primary" onClick={() => fetchSectors(true)} disabled={refreshing}>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+
+        {/* Summary Bar */}
+        <div className="d-flex gap-3 mb-3 flex-wrap">
+          <div className="d-flex align-items-center gap-2">
+            <span className="badge bg-success px-3 py-2">▲ Advances: {advancers}</span>
+            <span className="badge bg-danger px-3 py-2">▼ Declines: {decliners}</span>
+            <span className="badge bg-secondary px-3 py-2">● Unchanged: {unchanged}</span>
+          </div>
+        </div>
+
+        {/* Category Tabs - Desktop */}
+        <div className="d-none d-md-flex gap-2 mb-3 overflow-auto" style={{scrollbarWidth: 'none'}}>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              className={`btn btn-sm flex-shrink-0 ${categoryTab === cat ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setCategoryTab(cat)}
+              style={{fontSize: '13px', padding: '6px 14px', whiteSpace: 'nowrap'}}
+            >
+              {cat === 'all' ? 'All Indices' : cat}
+            </button>
+          ))}
+        </div>
+              {/* Mobile Bottom Bar */}
+        <div className="d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg bottom-nav" style={{zIndex: 1000}}>
+          <div className="d-flex">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                className={`btn flex-fill rounded-0 border-0 py-3 ${categoryTab === cat ? 'btn-primary' : 'btn-light'}`}
+                onClick={() => setCategoryTab(cat)}
+                style={{fontSize: '13px', fontWeight: '600'}}
+              >
+                {cat === 'all' ? 'All' : cat}
+              </button>
+            ))}
+          </div>
+        </div>
+          <SkeletonCards count={4} />
+          <SkeletonTable rows={8} cols={8} />
+        </div>
+      </>
+    );
   }
 
   return (

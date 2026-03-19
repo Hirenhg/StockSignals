@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { Helmet } from "react-helmet-async"
 import API from "../../services/api"
+import { SkeletonTable, SkeletonCards } from "../../components/Skeleton/Skeleton"
+import { useNavigate } from 'react-router-dom'
+import TradingViewModal from "../../components/Chart/TradingViewModal"
 
 const TREND_COLORS = {
   green: '#006400', greenLight: '#388e3c',
@@ -18,6 +21,9 @@ function EquityTool() {
   const [refreshing, setRefreshing] = useState(false)
   const [fetchTime, setFetchTime] = useState(null)
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
+  const [loading, setLoading] = useState(true)
+  const [tvSymbol, setTvSymbol] = useState(null)
+  const navigate = useNavigate()
 
   const cacheRef = React.useRef({})
 
@@ -32,8 +38,10 @@ function EquityTool() {
     if (cached && Date.now() - cached.time < 60000) {
       setSignals(cached.data)
       setFetchTime(new Date(cached.time).toISOString())
+      setLoading(false)
       return
     }
+    setLoading(true)
     API.get(`/api/equity-signals/${t}`)
       .then(res => {
         cacheRef.current[t] = { data: res.data, time: Date.now() }
@@ -41,9 +49,25 @@ function EquityTool() {
         setFetchTime(new Date().toISOString())
       })
       .catch((err) => { console.error('Equity fetch error:', err) })
+      .finally(() => setLoading(false))
   }, [assetTab])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // Auto-refresh every 60s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      cacheRef.current[assetTab] = null
+      API.get(`/api/equity-signals/${assetTab}`)
+        .then(res => {
+          cacheRef.current[assetTab] = { data: res.data, time: Date.now() }
+          setSignals(res.data)
+          setFetchTime(new Date().toISOString())
+        })
+        .catch(() => {})
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [assetTab])
 
   const refresh = () => {
     setRefreshing(true)
@@ -80,8 +104,12 @@ function EquityTool() {
   }
 
   const exportCSV = () => {
-    const headers = ['Symbol','Price','%Chg','Signal','EMA10','EMA20','SMA40','Ch Top','Ch Bot','Trend','52W High','52W Low']
-    const rows = filtered.map(s => [s.symbol,s.price,s.pChange||'',s.signal,s.ema10,s.ema20,s.sma40,s.channelTop,s.channelBot,s.dirTrend,s.week52High||'',s.week52Low||''])
+    const headers = ['Symbol','Price','Target','SL','%Chg','Signal','EMA10','EMA20','SMA40','Ch Top','Ch Bot','Trend','52W High','52W Low']
+    const rows = filtered.map(s => {
+      const p = parseFloat(s.price)
+      const isExit = s.signal === 'EXIT'
+      return [s.symbol,s.price,isExit ? (p*0.988).toFixed(2) : (p*1.012).toFixed(2),isExit ? (p*1.004).toFixed(2) : (p*0.996).toFixed(2),s.pChange||'',s.signal,s.ema10,s.ema20,s.sma40,s.channelTop,s.channelBot,s.dirTrend,s.week52High||'',s.week52Low||'']
+    })
     const csv = [headers,...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const a = document.createElement('a')
@@ -145,9 +173,9 @@ function EquityTool() {
         {/* Controls */}
         <div className="d-md-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
           <div className="d-flex gap-2 align-items-center flex-wrap mb-3">
-          <div className="btn-group" role="group">
+          <div className="d-flex gap-1" role="group">
             <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
-            <button className={`btn btn-sm ${signalTab === 'entry' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('entry')}>Entry</button>
+            <button className={`btn btn-sm ${signalTab === 'entry' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('entry')}>Buy</button>
             <button className={`btn btn-sm ${signalTab === 'exit' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('exit')}>Exit</button>
             <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
           </div>
@@ -157,9 +185,9 @@ function EquityTool() {
           <button className="btn btn-sm btn-outline-secondary" onClick={exportCSV}>CSV</button>
           </div>
          <div className="d-flex align-items-center gap-2 mb-3">
-          <input type="text" className="form-control flex-grow-1" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{maxWidth: '180px'}} />
+          <input type="text" className="form-control flex-grow-1" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{minWidth: '150px'}} />
           <div className="d-flex gap-2">
-            <span className="badge bg-success p-2">ENTRY: {entryCount}</span>
+            <span className="badge bg-success p-2">BUY: {entryCount}</span>
             <span className="badge bg-danger p-2">EXIT: {exitCount}</span>
             <span className="badge bg-secondary p-2">HOLD: {holdCount}</span>
             </div>
@@ -168,12 +196,15 @@ function EquityTool() {
 
         {/* Mobile Cards */}
         <div className="d-md-none" style={{paddingBottom: '80px'}}>
-          {filtered.map((item, i) => (
+          {loading ? <SkeletonCards count={4} /> : filtered.map((item, i) => (
             <div key={i} className="card mb-3 shadow-sm">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start mb-2">
                   <div>
-                    <h5 className="card-title mb-1 fw-bold">{item.symbol}</h5>
+                    <h5 className="card-title mb-1 fw-bold">
+                      <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={() => setTvSymbol(item.symbol)}>{item.symbol}</span>
+                      <i className="bi bi-graph-up ms-2" style={{cursor:'pointer',fontSize:'14px',color:'#2962FF'}} onClick={() => navigate(`/chart/${item.symbol}?mode=equity`)}></i>
+                    </h5>
                     <h6 className="text-primary fw-bold mb-0">₹{item.price}</h6>
                     {item.pChange != null && (
                       <small className="fw-bold" style={{color: item.pChange >= 0 ? '#198754' : '#dc3545'}}>
@@ -194,6 +225,8 @@ function EquityTool() {
                   <div className="col-4"><small className="text-muted d-block">Ch Top</small><strong>₹{item.channelTop}</strong></div>
                   <div className="col-4"><small className="text-muted d-block">Ch Bot</small><strong>₹{item.channelBot}</strong></div>
                   <div className="col-4"><small className="text-muted d-block">52W H/L</small><strong>₹{item.week52High || '-'} / ₹{item.week52Low || '-'}</strong></div>
+                  <div className="col-6"><small style={{color: '#198754'}} className="d-block">Target {item.signal === 'EXIT' ? '-' : '+'}1.20%</small><strong style={{color: '#198754'}}>₹{item.signal === 'EXIT' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2)}</strong></div>
+                  <div className="col-6"><small style={{color: '#dc3545'}} className="d-block">SL {item.signal === 'EXIT' ? '+' : '-'}0.40%</small><strong style={{color: '#dc3545'}}>₹{item.signal === 'EXIT' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2)}</strong></div>
                 </div>
               </div>
             </div>
@@ -201,6 +234,7 @@ function EquityTool() {
         </div>
 
         {/* Desktop Table */}
+        {loading ? <SkeletonTable rows={8} cols={14} /> : (
         <div className="d-none d-md-block table-responsive">
           <table className="table table-hover" style={{fontSize: '14px'}}>
             <thead className="table-dark">
@@ -213,6 +247,8 @@ function EquityTool() {
                 <th style={{color: '#4fc3f7'}}>EMA 10</th>
                 <th style={{color: '#81c784'}}>EMA 20</th>
                 <th style={{color: '#ffb74d'}}>SMA 40</th>
+                <th style={{color: '#198754'}}>Target</th>
+                <th style={{color: '#dc3545'}}>SL</th>
                 <th>Ch Top</th>
                 <th>Ch Bot</th>
                 <th>52W High</th>
@@ -224,7 +260,10 @@ function EquityTool() {
             <tbody>
               {filtered.map((item, i) => (
                 <tr key={i} style={{verticalAlign: 'middle'}}>
-                  <td className="fw-bold">{item.symbol}</td>
+                  <td className="fw-bold">
+                    <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={() => setTvSymbol(item.symbol)}>{item.symbol}</span>
+                    <i className="bi bi-graph-up ms-2" style={{cursor:'pointer',fontSize:'13px',color:'#2962FF'}} onClick={() => navigate(`/chart/${item.symbol}?mode=equity`)}></i>
+                  </td>
                   <td>₹{item.price}</td>
                   <td><SignalBadge signal={item.signal} /></td>
                   <td><TrendText dirTrend={item.dirTrend} barColor={item.barColor} /></td>
@@ -232,6 +271,8 @@ function EquityTool() {
                   <td style={{color: '#4fc3f7'}}>₹{item.ema10}</td>
                   <td style={{color: '#81c784'}}>₹{item.ema20}</td>
                   <td style={{color: '#ffb74d'}}>₹{item.sma40}</td>
+                  <td style={{color: '#198754', fontWeight: 'bold'}}>₹{item.signal === 'EXIT' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2)}</td>
+                  <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.signal === 'EXIT' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2)}</td>
                   <td>₹{item.channelTop}</td>
                   <td>₹{item.channelBot}</td>
                   <td>₹{item.week52High || '-'}</td>
@@ -245,6 +286,8 @@ function EquityTool() {
             </tbody>
           </table>
         </div>
+        )}
+        {tvSymbol && <TradingViewModal symbol={tvSymbol} onClose={() => setTvSymbol(null)} />}
       </div>
     </>
   )
