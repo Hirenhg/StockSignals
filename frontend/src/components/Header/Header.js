@@ -11,6 +11,7 @@ const Header = () => {
 
   const navItems = [
     { path: '/', label: t('dashboard'), icon: '📊' },
+    { path: '/equity', label: 'Equity Tool', icon: '📈' },
     { path: '/options', label: t('options'), icon: '⚙️' },
     { path: '/optionchain', label: t('optionChain'), icon: '🔗' },
     { path: '/sectors', label: t('sectors'), icon: '🏢' },
@@ -49,10 +50,10 @@ const Header = () => {
                 </div>
               </div>
             </button>
-            <select className="form-select form-select-sm border-0 p-0" style={{width: 'auto', fontSize: '16px'}} value={lang} onChange={e => setLang(e.target.value)} aria-label="Language">
-              <option value="en">English</option>
-              <option value="hi">हिन्दी</option>
-              <option value="gu">ગુજરાતી</option>
+            <select className="border-0 bg-transparent" style={{width: '32px', fontSize: '16px', appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none', textAlign: 'center', outline: 'none', cursor: 'pointer'}} value={lang} onChange={e => setLang(e.target.value)} aria-label="Language">
+              <option value="en">ENG</option>
+              <option value="hi">HIN</option>
+              <option value="gu">GUJ</option>
             </select>
             <button 
               className="btn btn-link p-0 text-dark text-decoration-none" 
