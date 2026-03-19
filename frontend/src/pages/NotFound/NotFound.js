@@ -12,8 +12,8 @@ export default function NotFound() {
     <div className='notfound_page'>
       <div className='d-flex align-items-center justify-content-center min-vh-100'>
         <div className='bg-white rounded-2 text-center p-4 mw-sm-380'>
-          <h1 className="mb-3 text-primary fw-semibold">404</h1>
-          <p className="mb-3 text-primary">Page Not Found</p>
+          <h1 className="mb-3 fw-semibold">404</h1>
+          <p className="mb-3">Page Not Found</p>
           <p className='f-size-14 text-gray-400 margin-b-30'>
             Sorry, the page you are looking for doesn’t exist or has been moved.
           </p>

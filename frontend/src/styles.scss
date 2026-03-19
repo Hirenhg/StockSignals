@@ -156,6 +156,13 @@ html, body {
   border-color: $gray600;
 }
 
+[data-theme="dark"] .form-select {
+  background-image: url('./images//arrow-down.svg');
+  background-size: 12px;
+  background-position: 70px center;
+  background-repeat: no-repeat;
+}
+
 * {
   forced-color-adjust: none;
   box-sizing: border-box;

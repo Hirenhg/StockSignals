@@ -2,22 +2,35 @@ import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 
 const Header = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { darkMode, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLanguage();
+  const auth = useAuth();
+  const user = auth?.user;
+  const isLoggedIn = auth?.isLoggedIn || false;
+  const logout = auth?.logout || (() => {});
 
-  const navItems = [
-    { path: '/', label: t('dashboard'), icon: '📊' },
-    { path: '/equity', label: t('equityTool'), icon: '📈' },
-    { path: '/options', label: t('options'), icon: '⚙️' },
-    { path: '/optionchain', label: t('optionChain'), icon: '🔗' },
-    { path: '/sectors', label: t('sectors'), icon: '🏢' },
-    { path: '/news', label: t('news'), icon: '📰' },
-    { path: '/chart/INFY', label: t('charts'), icon: '📉' },
-  ];
+  const navItems = isLoggedIn
+    ? [
+        { path: '/', label: t('dashboard'), icon: '📊' },
+        { path: '/equity', label: t('equityTool'), icon: '📈' },
+        { path: '/options', label: t('options'), icon: '⚙️' },
+        { path: '/optionchain', label: t('optionChain'), icon: '🔗' },
+        { path: '/chart/INFY', label: t('charts'), icon: '📉' },
+        { path: '/sectors', label: t('sectors'), icon: '🏢' },
+        { path: '/news', label: t('news'), icon: '📰' },
+        { path: '/sector-pe', label: 'Sector PE', icon: '📊' },
+      ]
+    : [
+        { path: '/', label: t('dashboard'), icon: '📊' },
+        { path: '/sectors', label: t('sectors'), icon: '🏢' },
+        { path: '/news', label: t('news'), icon: '📰' },
+        { path: '/sector-pe', label: 'Sector PE', icon: '📊' },
+      ];
 
   return (
     <header className="bg-white shadow-sm sticky-top border-bottom app-header">
@@ -106,12 +119,20 @@ const Header = () => {
               <option value="hi">हिन्दी</option>
               <option value="gu">ગુજરાતી</option>
             </select>
+            {isLoggedIn ? (
+              <div className="d-flex align-items-center gap-2">
+                <span className="text-muted" style={{fontSize: '13px'}}>👤 {user?.name || user?.mobile}</span>
+                <button className="btn btn-sm btn-outline-danger" onClick={logout}>Logout</button>
+              </div>
+            ) : (
+              <Link to="/login" className="btn btn-sm btn-primary">Login</Link>
+            )}
           </nav>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <nav className="d-md-none">
+          <nav className="d-md-none pb-2">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -126,6 +147,16 @@ const Header = () => {
                 <span>{item.label}</span>
               </Link>
             ))}
+            <div className="py-2 px-3 border-top mt-2">
+              {isLoggedIn ? (
+                <div className="d-flex justify-content-between align-items-center">
+                  <span style={{fontSize: '14px'}}>👤 {user?.name || user?.mobile}</span>
+                  <button className="btn btn-sm btn-outline-danger" onClick={() => { logout(); setIsMenuOpen(false); }}>Logout</button>
+                </div>
+              ) : (
+                <Link to="/login" className="btn btn-primary w-100" onClick={() => setIsMenuOpen(false)}>Login</Link>
+              )}
+            </div>
           </nav>
         )}
       </div>
