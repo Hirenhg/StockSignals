@@ -10,7 +10,7 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await delay(100 * (attempt + 1));
+      await delay(50 * (attempt + 1));
       
       const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
       const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
@@ -74,10 +74,8 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
       
     } catch (error) {
       lastError = error;
-      console.error(`Attempt ${attempt + 1} failed for ${symbol}:`, error.message);
-      
       if (attempt < maxRetries - 1) {
-        await delay(1000 * (attempt + 1));
+        await delay(500 * (attempt + 1));
       }
     }
   }
@@ -85,4 +83,32 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
   throw lastError;
 }
 
+async function getStockFull(symbol, interval = '5m', range = '5d') {
+  try {
+    await delay(50);
+    const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
+    const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${fullSymbol}?range=${range}&interval=${interval}`;
+    const response = await axios.get(url, {
+      timeout: 10000, httpsAgent: agent,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Accept': 'application/json' }
+    });
+    if (!response.data?.chart?.result?.[0]) return null;
+    const result = response.data.chart.result[0];
+    const meta = result.meta;
+    const q = result.indicators.quote[0];
+    const closes = q.close.filter(p => p !== null);
+    const volumes = q.volume ? q.volume.filter(v => v !== null && v !== undefined) : [];
+    const latestVolume = volumes.length > 0 ? volumes[volumes.length - 1] : null;
+    return {
+      closes,
+      volume: latestVolume ? (latestVolume >= 1000 ? (latestVolume / 1000).toFixed(0) : latestVolume.toFixed(0)) : null,
+      week52High: meta.fiftyTwoWeekHigh ? meta.fiftyTwoWeekHigh.toFixed(2) : null,
+      week52Low: meta.fiftyTwoWeekLow ? meta.fiftyTwoWeekLow.toFixed(2) : null,
+      prevClose: meta.chartPreviousClose ? meta.chartPreviousClose : null
+    };
+  } catch { return null; }
+}
+
 module.exports = getStockHistory;
+module.exports.getStockFull = getStockFull;
