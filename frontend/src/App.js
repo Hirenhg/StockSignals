@@ -14,6 +14,8 @@ const OptionChain = lazy(() => import('./pages/OptionChain/OptionChain'));
 const Sectors = lazy(() => import('./pages/Sectors/Sectors'));
 const News = lazy(() => import('./pages/News/News'));
 const SectorPE = lazy(() => import('./pages/SectorPE/SectorPE'));
+const PEGRatio = lazy(() => import('./pages/SectorPE/PEGRatio'));
+const Portfolio = lazy(() => import('./pages/Portfolio/Portfolio'));
 const ChartPage = lazy(() => import('./pages/Chart/ChartPage'));
 const Login = lazy(() => import('./pages/Login/Login'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
@@ -46,6 +48,8 @@ function AppRoutes() {
             <Route path="/sectors" element={<Sectors />} />
             <Route path="/news" element={<News />} />
             <Route path="/sector-pe" element={<SectorPE />} />
+            <Route path="/peg" element={<Protected><PEGRatio /></Protected>} />
+            <Route path="/portfolio" element={<Protected><Portfolio /></Protected>} />
             <Route path="/chart/:symbol" element={<Protected><ChartPage /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

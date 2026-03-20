@@ -16,6 +16,8 @@ const Options = () => {
   const [deleteSymbol, setDeleteSymbol] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [refreshing, setRefreshing] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
 
   const exportCSV = () => {
     const headers = ['Symbol','LotSize','LTP','Target','SL','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Open','High','Low']
@@ -81,9 +83,19 @@ const Options = () => {
   const handleAddOption = () => {
     if (!newOption.trim()) { showToast('Symbol is required', 'error'); return; }
     API.post('/api/options', { symbol: newOption })
-      .then(() => { setNewOption(''); setShowAddModal(false); showToast('Option added successfully!', 'success'); fetchOptionsData(); })
+      .then(() => { setNewOption(''); setSuggestions([]); setShowAddModal(false); showToast('Option added successfully!', 'success'); fetchOptionsData(); })
       .catch(err => showToast(err.response?.data?.error || 'Error adding option', 'error'));
   };
+
+  const searchSuggestions = useCallback(async (val) => {
+    if (val.length < 2) { setSuggestions([]); return; }
+    setSuggestLoading(true);
+    try {
+      const res = await API.get(`/api/options/search?q=${val}`);
+      setSuggestions(res.data);
+    } catch { setSuggestions([]); }
+    finally { setSuggestLoading(false); }
+  }, []);
 
   const handleDeleteOption = () => {
     API.delete(`/api/options/${deleteSymbol}`)
@@ -159,14 +171,36 @@ const Options = () => {
               <div className="modal-content">
                 <div className="modal-header">
                   <h5 className="modal-title">Add Option</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
+                  <button type="button" className="btn-close" onClick={() => { setShowAddModal(false); setSuggestions([]); setNewOption(''); }}></button>
                 </div>
                 <div className="modal-body">
                   <label className="form-label">Option Symbol</label>
-                  <input type="text" className="form-control" placeholder="e.g., NIFTY30MAR2623500CE" value={newOption} onChange={(e) => setNewOption(e.target.value.toUpperCase())} onKeyPress={(e) => e.key === 'Enter' && handleAddOption()} />
+                  <div className="position-relative">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g., NIFTY or BANKNIFTY25500CE"
+                      value={newOption}
+                      onChange={(e) => { const v = e.target.value.toUpperCase(); setNewOption(v); searchSuggestions(v); }}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddOption()}
+                      autoComplete="off"
+                    />
+                    {suggestLoading && <small className="text-muted ms-1">Searching...</small>}
+                    {suggestions.length > 0 && (
+                      <ul className="list-group position-absolute w-100 shadow" style={{ zIndex: 9999, maxHeight: '220px', overflowY: 'auto', top: '100%' }}>
+                        {suggestions.map((s, i) => (
+                          <li key={i} className="list-group-item list-group-item-action py-2 px-3" style={{ cursor: 'pointer', fontSize: '13px' }}
+                            onClick={() => { setNewOption(s.symbol); setSuggestions([]); }}>
+                            <span className={`fw-bold ${s.symbol.endsWith('CE') ? 'text-success' : 'text-danger'}`}>{s.symbol}</span>
+                            <span className="text-muted ms-2">Lot: {s.lotSize} | Exp: {s.expiry}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => { setShowAddModal(false); setSuggestions([]); setNewOption(''); }}>Cancel</button>
                   <button type="button" className="btn btn-primary" onClick={handleAddOption}>Add Option</button>
                 </div>
               </div>

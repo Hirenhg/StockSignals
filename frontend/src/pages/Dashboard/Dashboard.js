@@ -23,6 +23,8 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [telegramEnabled, setTelegramEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [tvSymbol, setTvSymbol] = useState(null)
+  const [suggestions, setSuggestions] = useState([])
+  const [suggestLoading, setSuggestLoading] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -37,11 +39,11 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   }
 
   const exportCSV = () => {
-    const headers = ['Symbol','Price','Target','SL','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Volume','52W High','52W Low']
+    const headers = ['Symbol','Price','Target','SL','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','52W High','52W Low']
     const rows = filteredSignals.map(s => {
       const p = parseFloat(s.price)
       const isSell = s.signal === 'SELL'
-      return [s.symbol,s.price,isSell ? (p*0.988).toFixed(2) : (p*1.012).toFixed(2),isSell ? (p*1.004).toFixed(2) : (p*0.996).toFixed(2),s.pChange||'',s.signal,s.rsi,s.ema5,s.ema10,s.ema15,s.ema20,s.volume||'',s.week52High||'',s.week52Low||'']
+      return [s.symbol,s.price,isSell ? (p*0.988).toFixed(2) : (p*1.012).toFixed(2),isSell ? (p*1.004).toFixed(2) : (p*0.996).toFixed(2),s.pChange||'',s.signal,s.rsi,s.ema5,s.ema10,s.ema15,s.ema20,s.week52High||'',s.week52Low||'']
     })
     const csv = [headers,...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -120,6 +122,34 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
     return () => clearInterval(interval)
   }, [assetTab])
 
+  // Fast price-only refresh every 15s during market hours
+  useEffect(() => {
+    const isMarketOpen = () => {
+      const now = new Date()
+      const day = now.getDay()
+      if (day === 0 || day === 6) return false
+      const t = now.getHours() * 60 + now.getMinutes()
+      return t >= 555 && t <= 930
+    }
+    if (!isMarketOpen()) return
+    const interval = setInterval(() => {
+      if (!isMarketOpen() || !signals.length) return
+      const symbols = signals.map(s => s.symbol)
+      API.post('/api/prices', { symbols })
+        .then(res => {
+          const priceMap = res.data
+          setSignals(prev => prev.map(s => {
+            const p = priceMap[s.symbol]
+            if (!p) return s
+            return { ...s, price: p.price.toFixed(2), pChange: p.pChange }
+          }))
+          setFetchTime(new Date().toISOString())
+        })
+        .catch(() => {})
+    }, 15000)
+    return () => clearInterval(interval)
+  }, [assetTab, signals.length])
+
   const refreshCurrentTab = () => {
     setRefreshing(true)
     cacheRef.current[assetTab] = null
@@ -134,6 +164,16 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
       .finally(() => setRefreshing(false))
   }
 
+  const searchSuggestions = useCallback(async (val) => {
+    if (val.length < 1) { setSuggestions([]); return; }
+    setSuggestLoading(true);
+    try {
+      const res = await API.get(`/api/search?q=${val}&type=${assetTab}`)
+      setSuggestions(res.data)
+    } catch { setSuggestions([]) }
+    finally { setSuggestLoading(false) }
+  }, [assetTab])
+
   const handleAddStock = () => {
     if (!newStock.trim()) {
       showToast('Symbol is required', 'error')
@@ -143,6 +183,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
     API.post(`/api/${assetType}`, { symbol: newStock })
       .then(() => {
         setNewStock('')
+        setSuggestions([])
         setShowAddModal(false)
         const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
         showToast(`${displayName} added successfully!`, 'success')
@@ -213,21 +254,36 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
               <div className="modal-content">
                 <div className="modal-header">
                   <h5 className="modal-title">Add {assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab}</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
+                  <button type="button" className="btn-close" onClick={() => { setShowAddModal(false); setSuggestions([]); setNewStock(''); }}></button>
                 </div>
                 <div className="modal-body">
                   <label className="form-label">Symbol</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder={`Enter ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab} symbol`}
-                    value={newStock}
-                    onChange={(e) => setNewStock(e.target.value.toUpperCase())}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddStock()}
-                  />
+                  <div className="position-relative">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder={`Search ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab} symbol`}
+                      value={newStock}
+                      onChange={(e) => { setNewStock(e.target.value.toUpperCase()); searchSuggestions(e.target.value.toUpperCase()); }}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddStock()}
+                      autoComplete="off"
+                    />
+                    {suggestLoading && <small className="text-muted ms-1">Searching...</small>}
+                    {suggestions.length > 0 && (
+                      <ul className="list-group position-absolute w-100 shadow" style={{ zIndex: 9999, maxHeight: '220px', overflowY: 'auto', top: '100%' }}>
+                        {suggestions.map((s, i) => (
+                          <li key={i} className="list-group-item list-group-item-action py-2 px-3" style={{ cursor: 'pointer', fontSize: '13px' }}
+                            onClick={() => { setNewStock(s.symbol); setSuggestions([]); }}>
+                            <span className="fw-bold">{s.symbol}</span>
+                            {s.name && s.name !== s.symbol && <span className="text-muted ms-2">{s.name}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => { setShowAddModal(false); setSuggestions([]); setNewStock(''); }}>Cancel</button>
                   <button type="button" className="btn btn-primary" onClick={handleAddStock}>Add</button>
                 </div>
               </div>
@@ -397,10 +453,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                     <strong>{item.rsi}</strong>
                   </div>
                   <div className="col-6">
-                    <small className="text-muted d-block">Volume (K)</small>
-                    <strong>{item.volume || '-'}</strong>
-                  </div>
-                  <div className="col-6">
                     <small className="text-muted d-block">52W High</small>
                     <strong>₹{item.week52High || '-'}</strong>
                   </div>
@@ -463,9 +515,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                 <th style={{color: '#ffc107'}}>EMA20</th>
                 <th style={{color: '#198754'}}>Target</th>
                 <th style={{color: '#dc3545'}}>SL</th>
-                <th onClick={() => handleSort('volume')} style={{cursor: 'pointer'}}>
-                  Volume (K) {sortConfig.key === 'volume' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </th>
                 <th>52W High</th>
                 <th>52W Low</th>
                 <th onClick={() => handleSort('pChange')} style={{cursor: 'pointer'}}>
@@ -495,7 +544,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                   <td style={{color: '#ffc107'}}>₹{item.ema20}</td>
                   <td style={{color: '#198754', fontWeight: 'bold'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2)}</td>
                   <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2)}</td>
-                  <td>{item.volume || '-'}</td>
                   <td>₹{item.week52High || '-'}</td>
                   <td>₹{item.week52Low || '-'}</td>
                   <td style={{color: item.pChange >= 0 ? '#198754' : '#dc3545', fontWeight: 'bold'}}>

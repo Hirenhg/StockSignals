@@ -115,13 +115,83 @@ html, body {
   background-color: $primary;
 }
 
-[data-theme="dark"] .app-header .text-dark,
-[data-theme="dark"] .app-header .text-primary {
-  color: $graye2e8 !important;
+[data-theme="dark"] .app-header {
+  background-color: #262626 !important;
 }
 
-[data-theme="dark"] .app-header h1 {
-  color: $graye2e8 !important;
+.app-header .nav-link-item {
+  color: $gray300;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.app-header .nav-link-item:hover {
+  color: $primary;
+}
+
+.app-header .nav-link-item.active {
+  color: $white;
+  font-weight: 600;
+  background: $primary;
+}
+
+[data-theme="dark"] .app-header .nav-link-item {
+  color: $gray400;
+}
+
+[data-theme="dark"] .app-header .nav-link-item:hover {
+  color: $graye2e8;
+}
+
+[data-theme="dark"] .app-header .nav-link-item.active {
+  color: $white;
+  background: $secondary;
+}
+
+.app-header .nav-grid-item {
+  color: $gray600;
+  font-size: 12px;
+  text-decoration: none;
+  border-radius: 6px;
+  padding: 8px 4px;
+}
+
+.app-header .nav-grid-item.active {
+  color: $white;
+  font-weight: 600;
+  background: $primary;
+}
+
+[data-theme="dark"] .app-header .nav-grid-item {
+  color: $gray400;
+}
+
+[data-theme="dark"] .app-header .nav-grid-item.active {
+  color: $white;
+  background: $secondary;
+}
+
+.app-header .header-text {
+  color: $primary;
+}
+
+[data-theme="dark"] .app-header .header-text {
+  color: $graye2e8;
+}
+
+.app-header .header-muted {
+  color: $gray300;
+}
+
+[data-theme="dark"] .app-header .header-muted {
+  color: $gray400;
+}
+
+[data-theme="dark"] .app-header .header-divider {
+  border-color: $gray600 !important;
 }
 
 [data-theme="dark"] .strike-col {
