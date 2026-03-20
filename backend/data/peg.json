@@ -1,0 +1,393 @@
+[
+  {
+    "name": "5PAISA",
+    "category": "PEG",
+    "epsGrowth": 20.77,
+    "manualDivYield": 0
+  },
+  {
+    "name": "AAVAS",
+    "category": "PEG",
+    "epsGrowth": 21.81,
+    "manualDivYield": 0
+  },
+  {
+    "name": "APTUS",
+    "category": "PEG",
+    "epsGrowth": 21.87
+  },
+  {
+    "name": "ASHOKA",
+    "category": "PEG",
+    "epsGrowth": 49.79,
+    "manualDivYield": 0
+  },
+  {
+    "name": "AWHCL",
+    "category": "PEG",
+    "epsGrowth": 3.8,
+    "manualDivYield": 0
+  },
+  {
+    "name": "AWL",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "epsGrowth": 17.32
+  },
+  {
+    "name": "AXISBANK",
+    "category": "PEG",
+    "epsGrowth": 20.53
+  },
+  {
+    "name": "BAJAJCON",
+    "category": "PEG",
+    "epsGrowth": 13.85
+  },
+  {
+    "name": "BSOFT",
+    "category": "PEG",
+    "epsGrowth": 20.63
+  },
+  {
+    "name": "CAPACITE",
+    "category": "PEG",
+    "epsGrowth": 29.39,
+    "manualDivYield": 0
+  },
+  {
+    "name": "CEIGALL",
+    "category": "PEG",
+    "epsGrowth": 30.89
+  },
+  {
+    "name": "CGCL",
+    "category": "PEG",
+    "epsGrowth": 35.29
+  },
+  {
+    "name": "COALINDIA",
+    "category": "PEG",
+    "epsGrowth": 3.06
+  },
+  {
+    "name": "DRREDDY",
+    "category": "PEG",
+    "epsGrowth": 20
+  },
+  {
+    "name": "FINPIPE",
+    "category": "PEG",
+    "epsGrowth": 17.51
+  },
+  {
+    "name": "FIVESTAR",
+    "category": "PEG"
+  },
+  {
+    "name": "GAIL",
+    "category": "PEG"
+  },
+  {
+    "name": "GESHIP",
+    "category": "PEG"
+  },
+  {
+    "name": "GICRE",
+    "category": "PEG"
+  },
+  {
+    "name": "GPPL",
+    "category": "PEG"
+  },
+  {
+    "name": "HAPPSTMNDS",
+    "category": "PEG"
+  },
+  {
+    "name": "IEX",
+    "category": "PEG"
+  },
+  {
+    "name": "IGL",
+    "category": "PEG"
+  },
+  {
+    "name": "IRB",
+    "category": "PEG"
+  },
+  {
+    "name": "IREDA",
+    "category": "PEG"
+  },
+  {
+    "name": "ITC",
+    "category": "PEG"
+  },
+  {
+    "name": "JINDALSAW",
+    "category": "PEG"
+  },
+  {
+    "name": "JKPAPER",
+    "category": "PEG"
+  },
+  {
+    "name": "JSFB",
+    "category": "PEG"
+  },
+  {
+    "name": "KNRCON",
+    "category": "PEG"
+  },
+  {
+    "name": "LICHSGFIN",
+    "category": "PEG"
+  },
+  {
+    "name": "MOTHERSON",
+    "category": "PEG"
+  },
+  {
+    "name": "NATCOPHARM",
+    "category": "PEG"
+  },
+  {
+    "name": "NIITMTS",
+    "category": "PEG"
+  },
+  {
+    "name": "NMDC",
+    "category": "PEG"
+  },
+  {
+    "name": "NORTHARC",
+    "category": "PEG"
+  },
+  {
+    "name": "NTPC",
+    "category": "PEG"
+  },
+  {
+    "name": "ONGC",
+    "category": "PEG"
+  },
+  {
+    "name": "PATELENG",
+    "category": "PEG"
+  },
+  {
+    "name": "PNCINFRA",
+    "category": "PEG"
+  },
+  {
+    "name": "STERTOOLS",
+    "category": "PEG"
+  },
+  {
+    "name": "SURYODAY",
+    "category": "PEG"
+  },
+  {
+    "name": "TVSMOTOR",
+    "category": "PEG"
+  },
+  {
+    "name": "USHAMART",
+    "category": "PEG"
+  },
+  {
+    "name": "CENTENKA",
+    "category": "Watchlist"
+  },
+  {
+    "name": "DABUR",
+    "category": "Watchlist"
+  },
+  {
+    "name": "NIITLTD",
+    "category": "Watchlist"
+  },
+  {
+    "name": "HEROMOTOCO",
+    "category": "Watchlist"
+  },
+  {
+    "name": "EMAMILTD",
+    "category": "Watchlist"
+  },
+  {
+    "name": "TVTODAY",
+    "category": "Watchlist"
+  },
+  {
+    "name": "TATAPOWER",
+    "category": "Watchlist"
+  },
+  {
+    "name": "ADANIPOWER",
+    "category": "Adani"
+  },
+  {
+    "name": "ADANIGREEN",
+    "category": "Adani"
+  },
+  {
+    "name": "ADANIENT",
+    "category": "Adani"
+  },
+  {
+    "name": "ADANIPORTS",
+    "category": "Adani"
+  },
+  {
+    "name": "ATGL",
+    "category": "Adani"
+  },
+  {
+    "name": "AWL",
+    "category": "Adani"
+  },
+  {
+    "name": "AMBUJACEM",
+    "category": "Adani"
+  },
+  {
+    "name": "ACC",
+    "category": "Adani"
+  },
+  {
+    "name": "NDTV",
+    "category": "Adani"
+  },
+  {
+    "name": "ADANIENSOL",
+    "category": "Adani"
+  },
+  {
+    "name": "TATAMOTORS",
+    "category": "Tata"
+  },
+  {
+    "name": "TATASTEEL",
+    "category": "Tata"
+  },
+  {
+    "name": "TATACONSUM",
+    "category": "Tata"
+  },
+  {
+    "name": "TATAPOWER",
+    "category": "Tata"
+  },
+  {
+    "name": "TATACOMM",
+    "category": "Tata"
+  },
+  {
+    "name": "TATAINVEST",
+    "category": "Tata"
+  },
+  {
+    "name": "INDHOTEL",
+    "category": "Tata"
+  },
+  {
+    "name": "TCS",
+    "category": "Tata"
+  },
+  {
+    "name": "TITAN",
+    "category": "Tata"
+  },
+  {
+    "name": "TRENT",
+    "category": "Tata"
+  },
+  {
+    "name": "TATACHEM",
+    "category": "Tata"
+  },
+  {
+    "name": "VOLTAS",
+    "category": "Tata"
+  },
+  {
+    "name": "TATATECH",
+    "category": "Tata"
+  },
+  {
+    "name": "NELCO",
+    "category": "Tata"
+  },
+  {
+    "name": "TTML",
+    "category": "Tata"
+  },
+  {
+    "name": "RALLIS",
+    "category": "Tata"
+  },
+  {
+    "name": "TATAELXSI",
+    "category": "Tata"
+  },
+  {
+    "name": "TEJASNET",
+    "category": "Tata"
+  },
+  {
+    "name": "ANANTRAJ",
+    "category": "PEG",
+    "epsGrowth": 39.31,
+    "manualDivYield": 0.16
+  },
+  {
+    "name": "GARUDA",
+    "category": "PEG"
+  },
+  {
+    "name": "MOSCHIP",
+    "category": "PEG"
+  },
+  {
+    "name": "REFEX",
+    "category": "PEG"
+  },
+  {
+    "name": "SBFC",
+    "category": "PEG"
+  },
+  {
+    "name": "HCC",
+    "category": "PEG"
+  },
+  {
+    "name": "THOMASCOOK",
+    "category": "PEG"
+  },
+  {
+    "name": "CARYSIL",
+    "category": "PEG"
+  },
+  {
+    "name": "RICOAUTO",
+    "category": "PEG"
+  },
+  {
+    "name": "RPOWER",
+    "category": "PEG"
+  },
+  {
+    "name": "GSFC",
+    "category": "PEG"
+  },
+  {
+    "name": "JMFINANCIL",
+    "category": "PEG"
+  },
+  {
+    "name": "NYKAA",
+    "category": "PEG"
+  }
+]

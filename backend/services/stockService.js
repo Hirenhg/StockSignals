@@ -5,12 +5,12 @@ const agent = new https.Agent({ rejectUnauthorized: false });
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = false, getVolume = false, getHighLow = false, getOHLC = false) {
-  const maxRetries = 3;
+  const maxRetries = 2;
   let lastError;
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await delay(50 * (attempt + 1));
+      if (attempt > 0) await delay(300 * attempt);
       
       const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
       const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
@@ -74,9 +74,7 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
       
     } catch (error) {
       lastError = error;
-      if (attempt < maxRetries - 1) {
-        await delay(500 * (attempt + 1));
-      }
+      if (attempt < maxRetries - 1) await delay(300);
     }
   }
   
@@ -85,7 +83,6 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
 
 async function getStockFull(symbol, interval = '5m', range = '5d') {
   try {
-    await delay(50);
     const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
     const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${fullSymbol}?range=${range}&interval=${interval}`;
@@ -98,11 +95,8 @@ async function getStockFull(symbol, interval = '5m', range = '5d') {
     const meta = result.meta;
     const q = result.indicators.quote[0];
     const closes = q.close.filter(p => p !== null);
-    const volumes = q.volume ? q.volume.filter(v => v !== null && v !== undefined) : [];
-    const latestVolume = volumes.length > 0 ? volumes[volumes.length - 1] : null;
     return {
       closes,
-      volume: latestVolume ? (latestVolume >= 1000 ? (latestVolume / 1000).toFixed(0) : latestVolume.toFixed(0)) : null,
       week52High: meta.fiftyTwoWeekHigh ? meta.fiftyTwoWeekHigh.toFixed(2) : null,
       week52Low: meta.fiftyTwoWeekLow ? meta.fiftyTwoWeekLow.toFixed(2) : null,
       prevClose: meta.chartPreviousClose ? meta.chartPreviousClose : null

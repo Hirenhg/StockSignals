@@ -53,7 +53,7 @@ function verifyOTP(mobile, otp) {
 
   // Create/get user
   const user = getOrCreateUser(mobile);
-  const token = jwt.sign({ mobile, userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
+  const token = jwt.sign({ mobile, userId: user.id }, JWT_SECRET, { expiresIn: '365d' });
 
   return { success: true, token, user: { id: user.id, mobile: user.mobile, name: user.name } };
 }
