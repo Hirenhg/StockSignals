@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const sendOTP = async (mobile) => {

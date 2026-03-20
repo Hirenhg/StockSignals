@@ -43,7 +43,7 @@ export default function PEGRatio() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-refresh prices every 30s during market hours
   useEffect(() => {
