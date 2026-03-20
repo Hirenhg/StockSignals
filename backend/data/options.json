@@ -19,5 +19,12 @@
     "exchange": "NFO",
     "lotSize": "350",
     "tickSize": "5.000000"
+  },
+  {
+    "symbol": "FINNIFTY30MAR2623850PE",
+    "token": "40417",
+    "exchange": "NFO",
+    "lotSize": "60",
+    "tickSize": "5.000000"
   }
 ]

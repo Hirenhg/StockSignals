@@ -1,28 +1,56 @@
 [
-  { "symbol": "INFY" },
-  { "symbol": "TCS" },
-  { "symbol": "WIPRO" },
-  { "symbol": "HCLTECH" },
-  { "symbol": "HDFCBANK" },
-  { "symbol": "ICICIBANK" },
-  { "symbol": "KOTAKBANK" },
-  { "symbol": "AXISBANK" },
-  { "symbol": "RELIANCE" },
-  { "symbol": "ONGC" },
-  { "symbol": "OIL" },
-  { "symbol": "MANAPPURAM" },
-  { "symbol": "NAZARA" },
-  { "symbol": "UBL" },
-  { "symbol": "BEML" },
-  { "symbol": "MAZDOCK" },
-  { "symbol": "SCI" },
-  { "symbol": "JIOFIN" },
-  { "symbol": "MMTC" },
-  { "symbol": "JBMA" },
-  { "symbol": "SBIN" },
-  { "symbol": "LT" },
-  { "symbol": "SURYODAY" },
-  { "symbol": "GRSE" },
-  { "symbol": "NFL" },
-  { "symbol": "OBEROIRLTY" }
+  {
+    "symbol": "KOTAKBANK"
+  },
+  {
+    "symbol": "OIL"
+  },
+  {
+    "symbol": "IOC"
+  },
+  {
+    "symbol": "NTPC"
+  },
+  {
+    "symbol": "BAJFINANCE"
+  },
+  {
+    "symbol": "ATHER"
+  },
+  {
+    "symbol": "ACMESOLAR"
+  },
+  {
+    "symbol": "BHARTIARTL"
+  },
+  {
+    "symbol": "DLF"
+  },
+  {
+    "symbol": "PETRONET"
+  },
+  {
+    "symbol": "INDIQUBE"
+  },
+  {
+    "symbol": "JSWCEMENT"
+  },
+  {
+    "symbol": "TATAELXSI"
+  },
+  {
+    "symbol": "GILLETTE"
+  },
+  {
+    "symbol": "BSE"
+  },
+  {
+    "symbol": "SURYODAY"
+  },
+  {
+    "symbol": "NFL"
+  },
+  {
+    "symbol": "OBEROIRLTY"
+  }
 ]

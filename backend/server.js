@@ -80,7 +80,7 @@ app.get("/api/signals/:type", async (req, res) => {
     if (!stocks || stocks.length === 0) return res.json([]);
 
     const results = [];
-    const batchSize = 10;
+    const batchSize = 20;
     for (let i = 0; i < stocks.length; i += batchSize) {
       const batch = stocks.slice(i, i + batchSize);
       const batchResults = await Promise.all(
@@ -106,7 +106,6 @@ app.get("/api/signals/:type", async (req, res) => {
               pChange,
               week52High: data.week52High,
               week52Low: data.week52Low,
-              volume: data.volume,
               timestamp: new Date().toISOString()
             };
           } catch { return null; }
@@ -214,6 +213,52 @@ app.get("/api/chart/:symbol", async (req, res) => {
   }
 });
 
+app.get("/api/search", (req, res) => {
+  const q = (req.query.q || '').toUpperCase().trim();
+  const type = req.query.type || 'stocks';
+  if (q.length < 1) return res.json([]);
+  try {
+    if (type === 'indices') {
+      const indexSuggestions = [
+        { symbol: '^NSEI', name: 'Nifty 50' },
+        { symbol: '^BSESN', name: 'BSE Sensex' },
+        { symbol: '^NSEBANK', name: 'Bank Nifty' },
+        { symbol: '^CNXIT', name: 'Nifty IT' },
+        { symbol: '^CNXPHARMA', name: 'Nifty Pharma' },
+        { symbol: '^CNXAUTO', name: 'Nifty Auto' },
+        { symbol: '^CNXFMCG', name: 'Nifty FMCG' },
+        { symbol: '^CNXMETAL', name: 'Nifty Metal' },
+        { symbol: '^CNXREALTY', name: 'Nifty Realty' },
+        { symbol: '^CNXENERGY', name: 'Nifty Energy' },
+        { symbol: '^CNXFIN', name: 'Nifty Fin Service' },
+        { symbol: '^CNXPSUBANK', name: 'Nifty PSU Bank' },
+        { symbol: '^CNXPVTBANK', name: 'Nifty Pvt Bank' },
+        { symbol: '^NSEMDCP50', name: 'Nifty Midcap 50' },
+      ].filter(s => s.symbol.toUpperCase().includes(q) || s.name.toUpperCase().includes(q));
+      return res.json(indexSuggestions.slice(0, 10));
+    }
+    const symbolMaster = JSON.parse(fs.readFileSync(path.join(__dirname, './data/OpenAPIScripMaster.json'), 'utf8'));
+    const results = symbolMaster
+      .filter(s => s.exch_seg === 'NSE' && s.instrumenttype === '' && s.symbol.endsWith('-EQ') && s.name.includes(q))
+      .slice(0, 20)
+      .map(s => ({ symbol: s.name, name: s.symbol.replace('-EQ', '') }));
+    res.json(results);
+  } catch { res.json([]); }
+});
+
+app.get("/api/options/search", (req, res) => {
+  const q = (req.query.q || '').toUpperCase().trim();
+  if (q.length < 2) return res.json([]);
+  try {
+    const symbolMaster = JSON.parse(fs.readFileSync(path.join(__dirname, './data/OpenAPIScripMaster.json'), 'utf8'));
+    const results = symbolMaster
+      .filter(s => s.exch_seg === 'NFO' && (s.instrumenttype === 'OPTIDX' || s.instrumenttype === 'OPTSTK') && s.symbol.includes(q))
+      .slice(0, 20)
+      .map(s => ({ symbol: s.symbol, lotSize: s.lotsize, expiry: s.expiry }));
+    res.json(results);
+  } catch { res.json([]); }
+});
+
 app.get("/api/options/data", (req, res) => {
   const options = getOptions();
   res.json(options);
@@ -259,7 +304,7 @@ app.get("/api/options/live", async (req, res) => {
       const restData = await getAngelOptionData(tokens);
       
       const enrichedOptions = await Promise.all(options.map(async (opt) => {
-        const live = restData.find(d => d.exchange === opt.exchange && d.tradingSymbol === opt.symbol);
+        const live = restData.find(d => d.tradingSymbol === opt.symbol);
         
         let signal = 'HOLD';
         let rsi = null;
@@ -328,15 +373,19 @@ app.get("/api/options/live", async (req, res) => {
       return res.json(enrichedOptions);
     }
     
-    const enrichedOptions = await Promise.all(options.map(async (opt) => {
-      const live = liveData[opt.token];
+    const wsTokens = options.map(opt => opt.token);
+    const wsRestData = await getAngelOptionData(wsTokens).catch(() => []);
 
-      let signal = 'HOLD';
-      let rsi = null;
-      let ema5 = null;
-      let ema10 = null;
-      let ema15 = null;
-      let ema20 = null;
+    const enrichedOptions = await Promise.all(options.map(async (opt) => {
+      const wsLive = liveData[opt.token];
+      const restLive = wsRestData.find(d => d.tradingSymbol === opt.symbol);
+      const ltp = wsLive?.ltp || restLive?.ltp || 0;
+      const open = restLive?.open || 0;
+      const high = restLive?.high || 0;
+      const low = restLive?.low || 0;
+      const close = restLive?.close || 0;
+
+      let signal = 'HOLD', rsi = null, ema5 = null, ema10 = null, ema15 = null, ema20 = null;
 
       try {
         const symbolMatch = opt.symbol.match(/^([A-Z]+)/);
@@ -359,8 +408,9 @@ app.get("/api/options/live", async (req, res) => {
 
       return {
         ...opt,
-        ltp: live?.ltp || 0,
-        timestamp: live?.timestamp || null,
+        ltp, open, high, low, close,
+        pChange: ltp && close ? parseFloat(((ltp - close) / close * 100).toFixed(2)) : null,
+        timestamp: wsLive?.timestamp || null,
         signal, rsi, ema5, ema10, ema15, ema20
       };
     }));
@@ -797,6 +847,212 @@ app.get("/api/symbol-master", async (req, res) => {
   }
 });
 
+// Fast price-only endpoint for all pages
+app.post("/api/prices", async (req, res) => {
+  try {
+    const { fetchPriceOnly } = require('./services/pegService');
+    const { symbols } = req.body;
+    if (!symbols || !symbols.length) return res.json({});
+    const unique = [...new Set(symbols)];
+    const priceMap = {};
+    await Promise.all(
+      unique.map(async (sym) => {
+        try {
+          const skipNS = sym.startsWith('^') || sym.includes('-') || sym.includes('=');
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${skipNS ? sym : sym + '.NS'}?interval=1d&range=1d`;
+          const axios = require('axios');
+          const https = require('https');
+          const agent = new https.Agent({ rejectUnauthorized: false });
+          const r = await axios.get(url, { timeout: 5000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' } });
+          const m = r.data?.chart?.result?.[0]?.meta;
+          const price = m?.regularMarketPrice || 0;
+          const prevClose = m?.chartPreviousClose || 0;
+          const pChange = prevClose ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : null;
+          priceMap[sym] = { price, prevClose, pChange };
+        } catch { priceMap[sym] = null; }
+      })
+    );
+    res.json(priceMap);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch prices' });
+  }
+});
+
+// PEG Ratio (Peter Lynch) routes
+const pegPath = path.join(__dirname, './data/peg.json');
+const getPEG = () => JSON.parse(fs.readFileSync(pegPath, 'utf8'));
+
+app.get("/api/peg", (req, res) => {
+  const data = getPEG();
+  const category = req.query.category;
+  res.json(category ? data.filter(d => d.category === category) : data);
+});
+
+app.get("/api/peg/categories", (req, res) => {
+  const data = getPEG();
+  res.json([...new Set(data.map(d => d.category))]);
+});
+
+app.get("/api/peg/live", async (req, res) => {
+  try {
+    const { fetchStockFundamentals } = require('./services/pegService');
+    const data = getPEG();
+    const category = req.query.category;
+    const filtered = category ? data.filter(d => d.category === category) : data;
+    if (!filtered.length) return res.json([]);
+
+    const results = await Promise.all(
+      filtered.map(async (stock) => {
+        try {
+          const live = await fetchStockFundamentals(stock.name);
+          const epsGrowth = stock.epsGrowth || null;
+          const dy = live.dividendYield ?? stock.manualDivYield ?? null;
+          const peg = live.pe && epsGrowth ? parseFloat((live.pe / (epsGrowth + (dy || 0))).toFixed(2)) : null;
+          let pegStatus = null;
+          if (peg !== null) pegStatus = peg < 1 ? 'Undervalued' : peg <= 2 ? 'Fairly Valued' : 'Overvalued';
+          return { ...stock, ...live, dividendYield: dy, epsGrowth, peg, pegStatus };
+        } catch { return { ...stock, price: 0, pe: null, epsGrowth: stock.epsGrowth || null, peg: null, pegStatus: null }; }
+      })
+    );
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch PEG live data' });
+  }
+});
+
+app.get("/api/peg/prices", async (req, res) => {
+  try {
+    const { fetchPriceOnly } = require('./services/pegService');
+    const data = getPEG();
+    const category = req.query.category;
+    const filtered = category ? data.filter(d => d.category === category) : data;
+    const uniqueNames = [...new Set(filtered.map(s => s.name))];
+    const priceMap = {};
+    await Promise.all(
+      uniqueNames.map(async (name) => {
+        try { priceMap[name] = await fetchPriceOnly(name); }
+        catch { priceMap[name] = null; }
+      })
+    );
+    res.json(priceMap);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch prices' });
+  }
+});
+
+app.post("/api/peg", (req, res) => {
+  const data = getPEG();
+  const entry = req.body;
+  if (!entry.name) return res.status(400).json({ error: 'Name is required' });
+  if (data.find(d => d.name.toUpperCase() === entry.name.toUpperCase()))
+    return res.status(400).json({ error: 'Entry already exists' });
+  data.push({ ...entry, name: entry.name.toUpperCase(), category: entry.category || 'PEG' });
+  fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Added successfully' });
+});
+
+app.put("/api/peg/:name", (req, res) => {
+  const data = getPEG();
+  const idx = data.findIndex(d => d.name.toUpperCase() === req.params.name.toUpperCase());
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  data[idx] = { ...data[idx], ...req.body };
+  fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Updated successfully' });
+});
+
+app.delete("/api/peg/:name", (req, res) => {
+  const data = getPEG();
+  const idx = data.findIndex(d => d.name.toUpperCase() === req.params.name.toUpperCase());
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  data.splice(idx, 1);
+  fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Deleted successfully' });
+});
+
+// Portfolio (COVID) routes
+const portfolioPath = path.join(__dirname, './data/portfolio.json');
+const getPortfolio = () => JSON.parse(fs.readFileSync(portfolioPath, 'utf8'));
+
+app.get("/api/portfolio", (req, res) => {
+  res.json(getPortfolio());
+});
+
+app.get("/api/portfolio/live", async (req, res) => {
+  try {
+    const { fetchStockFundamentals } = require('./services/pegService');
+    const data = getPortfolio();
+    if (!data.length) return res.json([]);
+
+    // Fetch unique symbols only (cache handles duplicates)
+    const uniqueNames = [...new Set(data.map(s => s.name))];
+    const liveMap = {};
+    await Promise.all(
+      uniqueNames.map(async (name) => {
+        try { liveMap[name] = await fetchStockFundamentals(name); }
+        catch { liveMap[name] = { price: 0, pChange: null }; }
+      })
+    );
+
+    const results = data.map((stock) => {
+      const live = liveMap[stock.name] || { price: 0, pChange: null };
+      const holding = parseFloat((stock.buy * stock.qty).toFixed(2));
+      const portfolioToday = parseFloat((live.price * stock.qty).toFixed(2));
+      const pnl = parseFloat((portfolioToday - holding).toFixed(2));
+      const pnlPct = holding ? parseFloat(((pnl / holding) * 100).toFixed(2)) : 0;
+      return { ...stock, lastPrice: live.price, pChange: live.pChange, holding, portfolioToday, pnl, pnlPct };
+    });
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch portfolio live data' });
+  }
+});
+
+app.get("/api/portfolio/prices", async (req, res) => {
+  try {
+    const { fetchPriceOnly } = require('./services/pegService');
+    const data = getPortfolio();
+    if (!data.length) return res.json({});
+    const uniqueNames = [...new Set(data.map(s => s.name))];
+    const priceMap = {};
+    await Promise.all(
+      uniqueNames.map(async (name) => {
+        try { priceMap[name] = await fetchPriceOnly(name); }
+        catch { priceMap[name] = null; }
+      })
+    );
+    res.json(priceMap);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch prices' });
+  }
+});
+
+app.post("/api/portfolio", (req, res) => {
+  const data = getPortfolio();
+  const { name, buy, qty } = req.body;
+  if (!name || !buy || !qty) return res.status(400).json({ error: 'Name, buy price and quantity required' });
+  data.push({ name: name.toUpperCase(), buy: parseFloat(buy), qty: parseInt(qty) });
+  fs.writeFileSync(portfolioPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Added successfully' });
+});
+
+app.put("/api/portfolio/:index", (req, res) => {
+  const data = getPortfolio();
+  const idx = parseInt(req.params.index);
+  if (idx < 0 || idx >= data.length) return res.status(404).json({ error: 'Not found' });
+  data[idx] = { ...data[idx], ...req.body };
+  fs.writeFileSync(portfolioPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Updated successfully' });
+});
+
+app.delete("/api/portfolio/:index", (req, res) => {
+  const data = getPortfolio();
+  const idx = parseInt(req.params.index);
+  if (idx < 0 || idx >= data.length) return res.status(404).json({ error: 'Not found' });
+  data.splice(idx, 1);
+  fs.writeFileSync(portfolioPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Deleted successfully' });
+});
+
 // Nifty PE data
 app.get("/api/nifty-pe", (req, res) => {
   try {
@@ -834,6 +1090,15 @@ app.get("/api/auth/me", authMiddleware, (req, res) => {
   const user = getUserByMobile(req.user.mobile);
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ id: user.id, mobile: user.mobile, name: user.name, watchlist: user.watchlist });
+});
+
+app.post("/api/auth/refresh", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const { jwt: jwtLib } = require('jsonwebtoken');
+  const JWT_SECRET = process.env.JWT_SECRET || 'stocksignal-secret-key-2024';
+  const newToken = require('jsonwebtoken').sign({ mobile: user.mobile, userId: user.id }, JWT_SECRET, { expiresIn: '365d' });
+  res.json({ token: newToken, user: { id: user.id, mobile: user.mobile, name: user.name } });
 });
 
 app.put("/api/auth/profile", authMiddleware, (req, res) => {

@@ -14,7 +14,8 @@
     "node-telegram-bot-api": "^0.66.0",
     "smartapi-javascript": "^1.0.27",
     "technicalindicators": "^3.1.0",
-    "totp-generator": "^2.0.1"
+    "totp-generator": "^2.0.1",
+    "yahoo-finance2": "^3.13.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
