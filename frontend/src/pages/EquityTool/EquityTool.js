@@ -69,6 +69,34 @@ function EquityTool() {
     return () => clearInterval(interval)
   }, [assetTab])
 
+  // Fast price-only refresh every 15s during market hours
+  useEffect(() => {
+    const isMarketOpen = () => {
+      const now = new Date()
+      const day = now.getDay()
+      if (day === 0 || day === 6) return false
+      const t = now.getHours() * 60 + now.getMinutes()
+      return t >= 555 && t <= 930
+    }
+    if (!isMarketOpen()) return
+    const interval = setInterval(() => {
+      if (!isMarketOpen() || !signals.length) return
+      const symbols = signals.map(s => s.symbol)
+      API.post('/api/prices', { symbols })
+        .then(res => {
+          const priceMap = res.data
+          setSignals(prev => prev.map(s => {
+            const p = priceMap[s.symbol]
+            if (!p) return s
+            return { ...s, price: p.price.toFixed(2), pChange: p.pChange }
+          }))
+          setFetchTime(new Date().toISOString())
+        })
+        .catch(() => {})
+    }, 15000)
+    return () => clearInterval(interval)
+  }, [assetTab, signals.length])
+
   const refresh = () => {
     setRefreshing(true)
     cacheRef.current[assetTab] = null

@@ -14,13 +14,23 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       API.defaults.headers.common['Authorization'] = `Bearer ${token}`
       API.get('/api/auth/me')
-        .then(res => setUser(res.data))
+        .then(res => {
+          setUser(res.data)
+          // Refresh token on every load to keep session alive
+          API.post('/api/auth/refresh')
+            .then(r => {
+              localStorage.setItem('token', r.data.token)
+              API.defaults.headers.common['Authorization'] = `Bearer ${r.data.token}`
+              setToken(r.data.token)
+            })
+            .catch(() => {})
+        })
         .catch(() => { logout() })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
     }
-  }, [token])
+  }, [])
 
   const sendOTP = async (mobile) => {
     const res = await API.post('/api/auth/send-otp', { mobile })
