@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import API from '../../services/api'
 import { SkeletonTable } from '../../components/Skeleton/Skeleton'
-import { useNavigate } from 'react-router-dom'
-import TradingViewModal from '../../components/Chart/TradingViewModal'
 import { useTheme } from '../../context/ThemeContext'
 
 function StatusBadge({ status }) {
@@ -17,17 +15,15 @@ export default function PEGRatio() {
   const [categories, setCategories] = useState([])
   const [category, setCategory] = useState('PEG')
   const [loading, setLoading] = useState(true)
-  const [tvSymbol, setTvSymbol] = useState(null)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [editingEps, setEditingEps] = useState(null)
   const [epsInput, setEpsInput] = useState('')
   const [editingDiv, setEditingDiv] = useState(null)
   const [divInput, setDivInput] = useState('')
-  const navigate = useNavigate()
   const { darkMode } = useTheme()
 
-  const bg2 = darkMode ? '#16213e' : '#f8f9fa'
-  const border = darkMode ? '#2a2a4a' : '#e9ecef'
+  const bg2 = darkMode ? '#262626' : '#f8f9fa'
+  const border = darkMode ? '#3a3a3a' : '#e9ecef'
   const text = darkMode ? '#e0e0e0' : '#212529'
   const textMuted = darkMode ? '#8a8a9a' : '#6c757d'
 
@@ -209,9 +205,9 @@ export default function PEGRatio() {
 
         {/* Category - Mobile Bottom Bar */}
         <div className="d-md-none position-fixed bottom-0 start-0 end-0 border-top shadow-lg bottom-nav" style={{ zIndex: 1000, background: darkMode ? '#1a1a2e' : '#fff' }}>
-          <div className="d-flex overflow-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="d-flex justify-content-between">
             {categories.map(c => (
-              <button key={c} className={`btn flex-shrink-0 rounded-0 border-0 py-3 ${category === c ? 'btn-primary' : darkMode ? 'btn-dark' : 'btn-light'}`} onClick={() => switchCategory(c)} style={{ fontSize: '13px', fontWeight: '600', minWidth: 'fit-content', padding: '12px 16px' }}>
+              <button key={c} className={`btn flex-grow-1 rounded-0 border-0 py-3 ${category === c ? 'btn-primary' : darkMode ? 'btn-dark' : 'btn-light'}`} onClick={() => switchCategory(c)} style={{ fontSize: '11px', fontWeight: '600', padding: '12px 4px' }}>
                 {c}
               </button>
             ))}
@@ -240,10 +236,7 @@ export default function PEGRatio() {
                     const fairPrice = row.peg && row.peg > 0 ? Math.round(row.price / row.peg) : null
                     return (
                     <tr key={i} style={{ verticalAlign: 'middle' }}>
-                      <td className="fw-bold">
-                        <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setTvSymbol(row.name)}>{row.name}</span>
-                        <i className="bi bi-graph-up ms-2" style={{ cursor: 'pointer', fontSize: '13px', color: '#2962FF' }} onClick={() => navigate(`/chart/${row.name}`)} />
-                      </td>
+                      <td className="fw-bold">{row.name}</td>
                       <td>₹{row.price || '-'}</td>
                       <td>{renderEpsCell(row)}</td>
                       <td className="fw-bold">{row.pe || '-'}</td>
@@ -260,32 +253,52 @@ export default function PEGRatio() {
 
             {/* Mobile Cards */}
             <div className="d-md-none" style={{ paddingBottom: '80px' }}>
-              {sorted.map((row, i) => (
+              {sorted.map((row, i) => {
+                const fairPrice = row.peg && row.peg > 0 ? Math.round(row.price / row.peg) : null
+                const statusColor = row.pegStatus === 'Undervalued' ? '#198754' : row.pegStatus === 'Fairly Valued' ? '#ffc107' : row.pegStatus === 'Overvalued' ? '#dc3545' : textMuted
+                return (
                 <div key={i} className="card mb-2 shadow-sm" style={{ background: bg2, border: `1px solid ${border}` }}>
                   <div className="card-body py-2 px-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <div>
-                        <span className="fw-bold" style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setTvSymbol(row.name)}>{row.name}</span>
-                        <i className="bi bi-graph-up ms-2" style={{ cursor: 'pointer', fontSize: '13px', color: '#2962FF' }} onClick={() => navigate(`/chart/${row.name}`)} />
-                      </div>
-                      <StatusBadge status={row.pegStatus} />
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <div className="fw-bold" style={{ fontSize: '15px', color: text }}>{row.name}</div>
+                      <span className="fw-bold" style={{ fontSize: '14px', color: statusColor }}>{row.pegStatus || '-'}</span>
                     </div>
-                    <div className="row g-1" style={{ fontSize: '13px' }}>
-                      <div className="col-3"><small className="text-muted">Price</small><div className="fw-bold">₹{row.price || '-'}</div></div>
-                      <div className="col-3"><small className="text-muted">PE</small><div className="fw-bold">{row.pe || '-'}</div></div>
-                      <div className="col-3"><small className="text-muted">EPS Gr.</small><div>{renderEpsCell(row)}</div></div>
-                      <div className="col-3"><small className="text-muted">Div</small><div>{renderDivCell(row)}</div></div>
-                      <div className="col-4"><small className="text-muted">PEG</small><div className="fw-bold">{row.peg ?? '-'}</div></div>
-                      <div className="col-4"><small className="text-muted">Fair Price</small><div className="fw-bold" style={{ color: row.pegStatus === 'Undervalued' ? '#198754' : row.pegStatus === 'Fairly Valued' ? '#ffc107' : row.pegStatus === 'Overvalued' ? '#dc3545' : undefined }}>{row.peg ? `₹${Math.round(row.price / row.peg)}` : '-'}</div></div>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <div>
+                        <div style={{ fontSize: '12px', color: textMuted }}>Price</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: text }}>₹{row.price || '-'}</div>
+                      </div>
+                      <div className="text-end">
+                        <div style={{ fontSize: '12px', color: textMuted }}>Fair Price</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: statusColor }}>{fairPrice ? `₹${fairPrice}` : '-'}</div>
+                      </div>
+                    </div>
+                    <div className="row g-2">
+                      <div className="col-3 text-center">
+                        <div style={{ fontSize: '11px', color: textMuted }}>PE</div>
+                        <div className="fw-bold" style={{ fontSize: '15px', color: text }}>{row.pe || '-'}</div>
+                      </div>
+                      <div className="col-3 text-center">
+                        <div style={{ fontSize: '11px', color: textMuted }}>EPS Gr.</div>
+                        <div style={{ fontSize: '14px' }}>{renderEpsCell(row)}</div>
+                      </div>
+                      <div className="col-3 text-center">
+                        <div style={{ fontSize: '11px', color: textMuted }}>Div Yield</div>
+                        <div style={{ fontSize: '14px' }}>{renderDivCell(row)}</div>
+                      </div>
+                      <div className="col-3 text-center">
+                        <div style={{ fontSize: '11px', color: textMuted }}>PEG</div>
+                        <div className="fw-bold" style={{ fontSize: '15px', color: statusColor }}>{row.peg ?? '-'}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </>
         )}
       </div>
-      {tvSymbol && <TradingViewModal symbol={tvSymbol} onClose={() => setTvSymbol(null)} />}
     </>
   )
 }
