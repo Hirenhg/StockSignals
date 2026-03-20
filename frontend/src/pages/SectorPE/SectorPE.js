@@ -81,12 +81,12 @@ const SectorPE = () => {
 
   const handleSort = (key) => setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }))
 
-  const bg2 = darkMode ? '#16213e' : '#f8f9fa'
-  const border = darkMode ? '#2a2a4a' : '#e9ecef'
+  const bg2 = darkMode ? '#262626' : '#f8f9fa'
+  const border = darkMode ? '#3a3a3a' : '#e9ecef'
   const text = darkMode ? '#e0e0e0' : '#212529'
   const textMuted = darkMode ? '#8a8a9a' : '#6c757d'
-  const yearBg = darkMode ? '#16213e' : '#f1f3f5'
-  const currentYearBg = darkMode ? '#1a3a6e' : '#e3f2fd'
+  const yearBg = darkMode ? '#262626' : '#f1f3f5'
+  const currentYearBg = darkMode ? '#333333' : '#e3f2fd'
 
   return (
     <>
@@ -150,12 +150,12 @@ const SectorPE = () => {
                         const isCurrentYear = row.year === lastRow?.year
                         return (
                           <tr key={row.year} style={{ verticalAlign: 'middle' }}>
-                            <td className="fw-bold" style={{ position: 'sticky', left: 0, zIndex: 1, background: isCurrentYear ? currentYearBg : yearBg, color: isCurrentYear ? (darkMode ? '#64b5f6' : '#1565c0') : text }}>{row.year}</td>
+                            <td className="fw-bold" style={{ position: 'sticky', left: 0, zIndex: 1, background: isCurrentYear ? currentYearBg : yearBg, color: isCurrentYear ? (darkMode ? '#e0e0e0' : '#1565c0') : text }}>{row.year}</td>
                             {MONTHS.map(m => {
                               const v = row[m]
                               const isCurrent = isCurrentYear && lastMonths.length && m === lastMonths[lastMonths.length - 1]
                               return (
-                                <td key={m} style={{ color: v != null ? getPEColor(v) : textMuted, fontWeight: v != null ? 600 : 400, background: isCurrent ? (darkMode ? '#1a3a6e' : '#e3f2fd') : 'transparent' }}>
+                                <td key={m} style={{ color: v != null ? getPEColor(v) : textMuted, fontWeight: v != null ? 600 : 400, background: isCurrent ? (darkMode ? '#333333' : '#e3f2fd') : 'transparent' }}>
                                   {v != null ? v : '—'}
                                 </td>
                               )
@@ -173,18 +173,18 @@ const SectorPE = () => {
                     const months = MONTHS.filter(m => row[m] != null)
                     const isCurrentYear = row.year === lastRow?.year
                     return (
-                      <div key={row.year} className="mb-2 rounded" style={{ background: bg2, border: `1px solid ${isCurrentYear ? (darkMode ? '#64b5f6' : '#1565c0') : border}` }}>
+                      <div key={row.year} className="mb-2 rounded" style={{ background: bg2, border: `1px solid ${isCurrentYear ? (darkMode ? '#e0e0e0' : '#1565c0') : border}` }}>
                         <div className="px-3 py-2" style={{ borderBottom: `1px solid ${border}` }}>
-                          <span className="fw-bold" style={{ color: isCurrentYear ? (darkMode ? '#64b5f6' : '#1565c0') : text }}>{row.year}</span>
+                          <span className="fw-bold" style={{ color: isCurrentYear ? (darkMode ? '#e0e0e0' : '#1565c0') : text }}>{row.year}</span>
                         </div>
                         <div className="px-2 py-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2px' }}>
                           {months.map(m => {
                             const v = row[m]
                             const isCurrent = isCurrentYear && lastMonths.length && m === lastMonths[lastMonths.length - 1]
                             return (
-                              <div key={m} className="text-center py-1 rounded" style={{ background: isCurrent ? (darkMode ? '#1a3a6e' : '#e3f2fd') : 'transparent' }}>
-                                <div style={{ fontSize: '9px', color: textMuted }}>{m}</div>
-                                <div className="fw-bold" style={{ fontSize: '13px', color: getPEColor(v) }}>{v}</div>
+                              <div key={m} className="text-center py-1 rounded" style={{ background: isCurrent ? (darkMode ? '#333333' : '#e3f2fd') : 'transparent' }}>
+                                <div style={{ fontSize: '12px', color: textMuted }}>{m}</div>
+                                <div className="fw-bold" style={{ fontSize: '15px', color: getPEColor(v) }}>{v}</div>
                               </div>
                             )
                           })}
