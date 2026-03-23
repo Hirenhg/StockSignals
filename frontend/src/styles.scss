@@ -226,6 +226,28 @@ html, body {
   border-color: $gray600;
 }
 
+[data-theme="dark"] .list-group-item {
+  background-color: $primary-hover;
+  color: $graye2e8;
+  border-color: $gray600;
+}
+
+[data-theme="dark"] .list-group-item-action:hover,
+[data-theme="dark"] .list-group-item-action:focus {
+  background-color: $gray600;
+  color: #fff;
+}
+
+[data-theme="dark"] .alert-light {
+  background-color: $primary !important;
+  color: $graye2e8 !important;
+  border-color: $gray600;
+}
+
+[data-theme="dark"] .form-label {
+  color: $graye2e8;
+}
+
 [data-theme="dark"] .form-select {
   background-image: url('./images//arrow-down.svg');
   background-size: 12px;

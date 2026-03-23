@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 const Login = () => {
-  const { sendOTP, verifyOTP, updateProfile } = useAuth()
+  const { sendOTP, verifyOTP, updateProfile, isLoggedIn, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState('mobile') // mobile -> otp -> name
   const [mobile, setMobile] = useState('')
@@ -12,6 +12,10 @@ const Login = () => {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!authLoading && isLoggedIn) navigate('/', { replace: true })
+  }, [authLoading, isLoggedIn, navigate])
 
   const handleSendOTP = async (e) => {
     e.preventDefault()
@@ -123,7 +127,7 @@ const Login = () => {
                   <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={() => { setStep('mobile'); setOtp(''); setError('') }}>
                     ← Change number
                   </button>
-                  <button type="button" className="btn btn-link btn-sm p-0" onClick={handleSendOTP} disabled={loading}>
+                  <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={handleSendOTP} disabled={loading}>
                     Resend OTP
                   </button>
                 </div>

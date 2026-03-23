@@ -25,6 +25,8 @@ const Header = () => {
         { path: '/news', label: t('news'), icon: 'bi-newspaper' },
         { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
         { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
+        // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
+        { path: '/paper-trade', label: 'Paper Trade', icon: 'bi-wallet2' },
       ]
     : [
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
