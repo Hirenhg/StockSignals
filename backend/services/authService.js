@@ -68,6 +68,9 @@ function getOrCreateUser(mobile) {
     mobile,
     name: '',
     watchlist: [],
+    wallet: { balance: 1000000, initialBalance: 1000000 },
+    positions: [],
+    trades: [],
     createdAt: new Date().toISOString()
   };
   fs.writeFileSync(userFile, JSON.stringify(user, null, 2));
