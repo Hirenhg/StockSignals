@@ -1134,6 +1134,77 @@ app.delete("/api/auth/watchlist/:symbol", authMiddleware, (req, res) => {
   res.json({ message: 'Removed from watchlist', watchlist: user.watchlist });
 });
 
+// Paper Trading routes
+app.get("/api/paper-trade/wallet", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user.wallet) {
+    user.wallet = { balance: 1000000, initialBalance: 1000000 };
+    user.positions = [];
+    user.trades = [];
+    updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
+  }
+  res.json({ wallet: user.wallet, positions: user.positions || [], trades: (user.trades || []).slice(-50).reverse() });
+});
+
+app.post("/api/paper-trade/buy", authMiddleware, (req, res) => {
+  const { symbol, price, qty } = req.body;
+  if (!symbol || !price || !qty) return res.status(400).json({ error: 'Symbol, price and qty required' });
+  const buyPrice = parseFloat(price);
+  const buyQty = parseInt(qty);
+  const cost = buyPrice * buyQty;
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user.wallet) { user.wallet = { balance: 1000000, initialBalance: 1000000 }; user.positions = []; user.trades = []; }
+  if (user.wallet.balance < cost) return res.status(400).json({ error: 'Insufficient balance' });
+
+  user.wallet.balance = parseFloat((user.wallet.balance - cost).toFixed(2));
+  const existing = (user.positions || []).find(p => p.symbol === symbol.toUpperCase());
+  if (existing) {
+    const totalQty = existing.qty + buyQty;
+    existing.avgPrice = parseFloat(((existing.avgPrice * existing.qty + buyPrice * buyQty) / totalQty).toFixed(2));
+    existing.qty = totalQty;
+  } else {
+    if (!user.positions) user.positions = [];
+    user.positions.push({ symbol: symbol.toUpperCase(), avgPrice: buyPrice, qty: buyQty });
+  }
+  if (!user.trades) user.trades = [];
+  user.trades.push({ symbol: symbol.toUpperCase(), type: 'BUY', price: buyPrice, qty: buyQty, total: cost, date: new Date().toISOString() });
+  updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
+  res.json({ message: 'Buy order executed', wallet: user.wallet, positions: user.positions });
+});
+
+app.post("/api/paper-trade/sell", authMiddleware, (req, res) => {
+  const { symbol, price, qty } = req.body;
+  if (!symbol || !price || !qty) return res.status(400).json({ error: 'Symbol, price and qty required' });
+  const sellPrice = parseFloat(price);
+  const sellQty = parseInt(qty);
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user.positions) return res.status(400).json({ error: 'No positions to sell' });
+  const pos = user.positions.find(p => p.symbol === symbol.toUpperCase());
+  if (!pos || pos.qty < sellQty) return res.status(400).json({ error: 'Insufficient quantity' });
+
+  const proceeds = sellPrice * sellQty;
+  user.wallet.balance = parseFloat((user.wallet.balance + proceeds).toFixed(2));
+  pos.qty -= sellQty;
+  if (pos.qty === 0) user.positions = user.positions.filter(p => p.symbol !== symbol.toUpperCase());
+  if (!user.trades) user.trades = [];
+  user.trades.push({ symbol: symbol.toUpperCase(), type: 'SELL', price: sellPrice, qty: sellQty, total: proceeds, date: new Date().toISOString() });
+  updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
+  res.json({ message: 'Sell order executed', wallet: user.wallet, positions: user.positions });
+});
+
+app.post("/api/paper-trade/reset", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  user.wallet = { balance: 1000000, initialBalance: 1000000 };
+  user.positions = [];
+  user.trades = [];
+  updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
+  res.json({ message: 'Paper trading account reset', wallet: user.wallet });
+});
+
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
