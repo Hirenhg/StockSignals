@@ -112,7 +112,7 @@ function PaperTrade() {
 
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-          <h4 className="mb-0 fw-bold">📝 Paper Trading</h4>
+          <h4 className="mb-0 fw-bold">Paper Trading</h4>
           <div className="d-flex gap-2">
             <button className="btn btn-success btn-sm" onClick={() => openBuySell('BUY')}>Buy</button>
             <button className="btn btn-danger btn-sm" onClick={() => openBuySell('SELL')}>Sell</button>

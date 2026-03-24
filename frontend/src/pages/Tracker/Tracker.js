@@ -4,23 +4,14 @@ import API from "../../services/api"
 import { useLanguage } from "../../context/LanguageContext"
 import { SkeletonTable, SkeletonCards } from "../../components/Skeleton/Skeleton"
 
-const STORAGE_KEY = 'signal-tracker'
-const CATEGORIES = ['indices', 'stocks', 'nifty50', 'niftynext50']
+const CATEGORIES = ['stocks', 'nifty50', 'niftynext50']
 
 const isMarketOpen = () => {
   const now = new Date()
   const day = now.getDay()
   if (day === 0 || day === 6) return false
   const t = now.getHours() * 60 + now.getMinutes()
-  return t >= 555 && t <= 930 // 9:15 AM - 3:30 PM IST
-}
-
-const loadState = () => {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { hits: [] } }
-  catch { return { hits: [] } }
-}
-const saveHits = (hits) => {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ hits })) } catch {}
+  return t >= 555 && t <= 930
 }
 
 function Tracker() {
@@ -28,7 +19,6 @@ function Tracker() {
   const [active, setActive] = useState([])
   const [hits, setHits] = useState([])
   const [viewTab, setViewTab] = useState('active')
-  const [filterTab, setFilterTab] = useState('all')
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
   const targetPct = 1.2
@@ -37,16 +27,15 @@ function Tracker() {
   const [lastRefresh, setLastRefresh] = useState(null)
   const audioRef = useRef(null)
   const activeRef = useRef([])
+  const hitsRef = useRef([])
 
   useEffect(() => { activeRef.current = active }, [active])
+  useEffect(() => { hitsRef.current = hits }, [hits])
 
-
+  // Load hits from backend
   useEffect(() => {
-    const saved = loadState()
-    setHits(saved.hits || [])
+    API.get('/api/tracker/hits').then(res => setHits(res.data || [])).catch(() => {})
   }, [])
-
-  useEffect(() => { saveHits(hits) }, [hits])
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type })
@@ -91,33 +80,41 @@ function Tracker() {
       } catch {}
     }))
 
-    setActive(allTrades)
+    // Filter out trades that already hit target/SL in history
+    const hitIds = new Set(hitsRef.current.map(h => h.id))
+    const filtered = allTrades.filter(t => !hitIds.has(t.id))
+    setActive(filtered)
     setLastRefresh(new Date())
     setLoading(false)
+
+    // Immediately fetch live prices after loading signals
+    if (filtered.length) {
+      const symbols = [...new Set(filtered.map(a => a.symbol))]
+      try {
+        const priceRes = await API.post('/api/prices', { symbols })
+        const priceMap = priceRes.data
+        setActive(prev => prev.map(trade => {
+          const p = priceMap[trade.symbol]
+          if (!p) return trade
+          return { ...trade, currentPrice: p.price, pChange: p.pChange }
+        }))
+      } catch {}
+    }
   }, [targetPct, slPct])
 
-  // Auto-fetch on mount + every 60s only during market hours
+  // Auto-fetch signals on mount only (not every 60s — price check handles live updates)
   useEffect(() => { fetchAllSignals() }, [fetchAllSignals])
-  useEffect(() => {
-    if (!isMarketOpen()) return
-    const interval = setInterval(() => {
-      if (!isMarketOpen()) return
-      fetchAllSignals()
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [fetchAllSignals])
 
-  // Price check every 15s — only during market hours
+  // Price check + hit detection every 15s
   useEffect(() => {
-    if (!isMarketOpen()) return
     const check = () => {
-      if (!isMarketOpen()) return
       const current = activeRef.current
       if (!current.length) return
       const symbols = [...new Set(current.map(a => a.symbol))]
       API.post('/api/prices', { symbols })
         .then(res => {
           const priceMap = res.data
+          if (!priceMap || !Object.keys(priceMap).length) return
           const newHits = []
           const remaining = []
 
@@ -128,12 +125,12 @@ function Tracker() {
             const updated = { ...trade, currentPrice: ltp, pChange: p.pChange }
 
             if (trade.signal === 'BUY') {
-              if (ltp >= trade.target) newHits.push({ ...updated, result: 'TARGET', hitTime: new Date().toISOString(), pnlPct: parseFloat(((trade.target - trade.entry) / trade.entry * 100).toFixed(2)) })
-              else if (ltp <= trade.sl) newHits.push({ ...updated, result: 'SL', hitTime: new Date().toISOString(), pnlPct: parseFloat(((trade.sl - trade.entry) / trade.entry * 100).toFixed(2)) })
+              if (ltp >= trade.target) newHits.push({ ...updated, result: 'TARGET', hitTime: new Date().toISOString(), pnlPct: parseFloat(((ltp - trade.entry) / trade.entry * 100).toFixed(2)) })
+              else if (ltp <= trade.sl) newHits.push({ ...updated, result: 'SL', hitTime: new Date().toISOString(), pnlPct: parseFloat(((ltp - trade.entry) / trade.entry * 100).toFixed(2)) })
               else remaining.push(updated)
             } else {
-              if (ltp <= trade.target) newHits.push({ ...updated, result: 'TARGET', hitTime: new Date().toISOString(), pnlPct: parseFloat(((trade.entry - trade.target) / trade.entry * 100).toFixed(2)) })
-              else if (ltp >= trade.sl) newHits.push({ ...updated, result: 'SL', hitTime: new Date().toISOString(), pnlPct: parseFloat(((trade.entry - trade.sl) / trade.entry * 100).toFixed(2)) })
+              if (ltp <= trade.target) newHits.push({ ...updated, result: 'TARGET', hitTime: new Date().toISOString(), pnlPct: parseFloat(((trade.entry - ltp) / trade.entry * 100).toFixed(2)) })
+              else if (ltp >= trade.sl) newHits.push({ ...updated, result: 'SL', hitTime: new Date().toISOString(), pnlPct: parseFloat(((trade.entry - ltp) / trade.entry * 100).toFixed(2)) })
               else remaining.push(updated)
             }
           })
@@ -145,27 +142,19 @@ function Tracker() {
             if (targets.length) showToast(`Target hit: ${targets.map(h => h.symbol).join(', ')}`, 'success')
             if (sls.length) showToast(`SL hit: ${sls.map(h => h.symbol).join(', ')}`, 'error')
             setHits(prev => [...newHits, ...prev])
-            setViewTab('hits')
-            setFilterTab('all')
+            API.post('/api/tracker/hits', { hits: newHits }).catch(() => {})
           }
           setActive(remaining)
           setLastRefresh(new Date())
         })
         .catch(() => {})
     }
-    check()
     const interval = setInterval(check, 15000)
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active.length])
 
-  const clearHits = () => { setHits([]); showToast('History cleared', 'success') }
-
-  const filteredHits = hits.filter(h => {
-    const matchSearch = h.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchFilter = filterTab === 'all' || h.result === filterTab.toUpperCase()
-    return matchSearch && matchFilter
-  })
+  const filteredHits = hits.filter(h => h.symbol.toLowerCase().includes(searchTerm.toLowerCase()))
   const filteredActive = active.filter(a => a.symbol.toLowerCase().includes(searchTerm.toLowerCase()))
 
   const targetCount = hits.filter(h => h.result === 'TARGET').length
@@ -241,13 +230,6 @@ function Tracker() {
               {loading ? t('refreshing') : t('refresh')}
             </button>
           </div>
-          {viewTab === 'hits' && (
-            <div className="d-flex gap-1">
-              <button className={`btn btn-sm ${filterTab === 'all' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setFilterTab('all')}>{t('all')}</button>
-              <button className={`btn btn-sm ${filterTab === 'target' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setFilterTab('target')}>Target</button>
-              <button className={`btn btn-sm ${filterTab === 'sl' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setFilterTab('sl')}>Stop Loss</button>
-            </div>
-          )}
           <div className="position-relative ms-auto" style={{ maxWidth: '180px' }}>
             <input className="form-control" placeholder={t('search')} value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)} />
@@ -256,9 +238,6 @@ function Tracker() {
                 onClick={() => setSearchTerm('')} style={{ fontSize: '13px' }}>✕</button>
             )}
           </div>
-          {viewTab === 'hits' && hits.length > 0 && (
-            <button className="btn btn-sm btn-outline-danger" onClick={clearHits}>{t('trClearHistory')}</button>
-          )}
         </div>
 
         {loading && <><SkeletonCards count={4} /><SkeletonTable rows={6} cols={9} /></>}
@@ -293,7 +272,7 @@ function Tracker() {
                       return (
                         <tr key={trade.id}>
                           <td className="fw-bold">{trade.symbol}</td>
-                          <td><span className="badge bg-light text-dark" style={{ fontSize: '11px' }}>{catLabel(trade.category)}</span></td>
+                          <td><span className="badge bg-light text-dark" style={{ fontSize: '13px' }}>{catLabel(trade.category)}</span></td>
                           <td><span className={`badge ${trade.signal === 'BUY' ? 'bg-success' : 'bg-danger'}`}>{trade.signal}</span></td>
                           <td>₹{trade.entry.toFixed(2)}</td>
                           <td style={{ color: '#198754', fontWeight: 'bold' }}>₹{trade.target} <small className="text-muted">{trade.signal === 'BUY' ? '+' : '-'}{targetPct}%</small></td>
@@ -324,7 +303,7 @@ function Tracker() {
                         <div className="d-flex justify-content-between align-items-start mb-2">
                           <div>
                             <h5 className="fw-bold mb-0" style={{ fontSize: '18px' }}>{trade.symbol}</h5>
-                            <span className="text-muted" style={{ fontSize: '12px' }}>{catLabel(trade.category)}</span>
+                            <span className="text-muted" style={{ fontSize: '14px' }}>{catLabel(trade.category)}</span>
                           </div>
                           <div className="text-end">
                             <span className={`badge rounded-pill px-3 py-2 ${trade.signal === 'BUY' ? 'bg-success' : 'bg-danger'}`} style={{ fontSize: '13px' }}>
@@ -338,13 +317,13 @@ function Tracker() {
 
                         {/* Row 2: Price large */}
                         <div className="mb-3">
-                          <span className="text-muted" style={{ fontSize: '12px' }}>LTP</span>
+                          <span className="text-muted" style={{ fontSize: '14px' }}>LTP</span>
                           <h4 className="fw-bold text-primary mb-0" style={{ fontSize: '22px' }}>₹{trade.currentPrice?.toFixed(2)}</h4>
                         </div>
 
                         {/* Row 3: Progress bar SL ← → Target */}
                         <div className="mb-3">
-                          <div className="d-flex justify-content-between mb-1" style={{ fontSize: '12px' }}>
+                          <div className="d-flex justify-content-between mb-1" style={{ fontSize: '14px' }}>
                             <span style={{ color: '#dc3545' }}>SL {trade.signal === 'BUY' ? '-' : '+'}{slPct}% · ₹{trade.sl}</span>
                             <span style={{ color: '#198754' }}>Target {trade.signal === 'BUY' ? '+' : '-'}{targetPct}% · ₹{trade.target}</span>
                           </div>
@@ -361,11 +340,11 @@ function Tracker() {
                         {/* Row 4: Entry + RSI */}
                         <div className="row g-2">
                           <div className="col-6">
-                            <small className="text-muted d-block" style={{ fontSize: '11px' }}>{t('btEntry')}</small>
+                            <small className="text-muted d-block" style={{ fontSize: '13px' }}>{t('Entry')}</small>
                             <strong style={{ fontSize: '15px' }}>₹{trade.entry.toFixed(2)}</strong>
                           </div>
                           <div className="col-6">
-                            <small className="text-muted d-block" style={{ fontSize: '11px' }}>RSI</small>
+                            <small className="text-muted d-block" style={{ fontSize: '13px' }}>RSI</small>
                             <strong style={{ fontSize: '15px' }}>{trade.rsi || '-'}</strong>
                           </div>
                         </div>
@@ -395,8 +374,8 @@ function Tracker() {
                 <table className="table table-hover" style={{ fontSize: '13px' }}>
                   <thead className="table-dark">
                     <tr>
-                      <th>{t('symbol')}</th><th>Category</th><th>{t('signal')}</th><th>{t('btResult')}</th>
-                      <th>{t('btEntry')}</th><th>{t('btTarget')}</th><th>SL</th>
+                      <th>{t('symbol')}</th><th>Category</th><th>{t('signal')}</th><th>{t('Result')}</th>
+                      <th>{t('Entry')}</th><th>{t('Target')}</th><th>SL</th>
                       <th>LTP</th><th>P&L %</th><th>{t('trHitTime')}</th>
                     </tr>
                   </thead>
@@ -404,9 +383,9 @@ function Tracker() {
                     {filteredHits.map((h, i) => (
                       <tr key={i} style={{ background: h.result === 'TARGET' ? 'rgba(25,135,84,0.05)' : 'rgba(220,53,69,0.05)' }}>
                         <td className="fw-bold">{h.symbol}</td>
-                        <td><span className="badge bg-light text-dark" style={{ fontSize: '11px' }}>{catLabel(h.category)}</span></td>
+                        <td><span className="text-dark">{catLabel(h.category)}</span></td>
                         <td><span className={`badge ${h.signal === 'BUY' ? 'bg-success' : 'bg-danger'}`}>{h.signal}</span></td>
-                        <td><span className={`badge ${h.result === 'TARGET' ? 'bg-success' : 'bg-danger'}`}>{h.result === 'TARGET' ? 'Target' : 'SL'}</span></td>
+                        <td><span className={`${h.result === 'TARGET' ? 'text-success' : 'text-danger'}`}>{h.result === 'TARGET' ? 'Target' : 'SL'}</span></td>
                         <td>₹{h.entry.toFixed(2)}</td>
                         <td style={{ color: '#198754' }}>₹{h.target} <small className="text-muted">{h.signal === 'BUY' ? '+' : '-'}{targetPct}%</small></td>
                         <td style={{ color: '#dc3545' }}>₹{h.sl} <small className="text-muted">{h.signal === 'BUY' ? '-' : '+'}{slPct}%</small></td>
@@ -430,7 +409,7 @@ function Tracker() {
                       <div className="d-flex justify-content-between align-items-start mb-2">
                         <div>
                           <h5 className="fw-bold mb-0" style={{ fontSize: '18px' }}>{h.symbol}</h5>
-                          <span className="text-muted" style={{ fontSize: '12px' }}>{catLabel(h.category)}</span>
+                          <span className="text-muted" style={{ fontSize: '14px' }}>{catLabel(h.category)}</span>
                         </div>
                         <div className="text-end">
                           <span className={`badge rounded-pill px-3 py-2 ${h.result === 'TARGET' ? 'bg-success' : 'bg-danger'}`} style={{ fontSize: '13px' }}>
@@ -441,7 +420,7 @@ function Tracker() {
 
                       {/* Row 2: P&L large */}
                       <div className="mb-3 text-center py-2 rounded" style={{ background: h.result === 'TARGET' ? 'rgba(25,135,84,0.08)' : 'rgba(220,53,69,0.08)' }}>
-                        <span className="text-muted" style={{ fontSize: '12px' }}>P&L</span>
+                        <span className="text-muted" style={{ fontSize: '14px' }}>P&L</span>
                         <h3 className="fw-bold mb-0" style={{ color: pnlColor(h.pnlPct), fontSize: '26px' }}>
                           {h.pnlPct >= 0 ? '+' : ''}{h.pnlPct}%
                         </h3>
@@ -450,32 +429,32 @@ function Tracker() {
                       {/* Row 3: Details grid */}
                       <div className="row g-2 mb-2">
                         <div className="col-4">
-                          <small className="text-muted d-block" style={{ fontSize: '11px' }}>{t('signal')}</small>
+                          <small className="text-muted d-block" style={{ fontSize: '13px' }}>{t('signal')}</small>
                           <span className={`badge ${h.signal === 'BUY' ? 'bg-success' : 'bg-danger'}`}>{h.signal}</span>
                         </div>
                         <div className="col-4">
-                          <small className="text-muted d-block" style={{ fontSize: '11px' }}>{t('btEntry')}</small>
+                          <small className="text-muted d-block" style={{ fontSize: '13px' }}>{t('Entry')}</small>
                           <strong style={{ fontSize: '15px' }}>₹{h.entry.toFixed(2)}</strong>
                         </div>
                         <div className="col-4">
-                          <small className="text-muted d-block" style={{ fontSize: '11px' }}>LTP</small>
+                          <small className="text-muted d-block" style={{ fontSize: '13px' }}>LTP</small>
                           <strong style={{ fontSize: '15px' }}>₹{h.currentPrice?.toFixed(2)}</strong>
                         </div>
                       </div>
 
                       <div className="row g-2 mb-2">
                         <div className="col-6">
-                          <small style={{ color: '#198754', fontSize: '11px' }} className="d-block">Target {h.signal === 'BUY' ? '+' : '-'}{targetPct}%</small>
+                          <small style={{ color: '#198754', fontSize: '13px' }} className="d-block">Target {h.signal === 'BUY' ? '+' : '-'}{targetPct}%</small>
                           <strong style={{ fontSize: '15px', color: '#198754' }}>₹{h.target}</strong>
                         </div>
                         <div className="col-6">
-                          <small style={{ color: '#dc3545', fontSize: '11px' }} className="d-block">SL {h.signal === 'BUY' ? '-' : '+'}{slPct}%</small>
+                          <small style={{ color: '#dc3545', fontSize: '13px' }} className="d-block">SL {h.signal === 'BUY' ? '-' : '+'}{slPct}%</small>
                           <strong style={{ fontSize: '15px', color: '#dc3545' }}>₹{h.sl}</strong>
                         </div>
                       </div>
 
                       {/* Row 4: Time */}
-                      <div className="text-muted text-end" style={{ fontSize: '11px' }}>
+                      <div className="text-muted text-end" style={{ fontSize: '13px' }}>
                         {h.hitTime ? new Date(h.hitTime).toLocaleString() : ''}
                       </div>
                     </div>
