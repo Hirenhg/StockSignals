@@ -302,7 +302,8 @@
   },
   {
     "name": "TRENT",
-    "category": "Tata"
+    "category": "Tata",
+    "epsGrowth": 14.5
   },
   {
     "name": "TATACHEM",
@@ -389,5 +390,10 @@
   {
     "name": "NYKAA",
     "category": "PEG"
+  },
+  {
+    "name": "VEDL",
+    "category": "PEG",
+    "epsGrowth": 41.33
   }
 ]

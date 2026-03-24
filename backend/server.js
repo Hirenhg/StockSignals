@@ -630,6 +630,59 @@ app.delete("/api/options/:symbol", (req, res) => {
   res.json({ message: "Option deleted successfully" });
 });
 
+// Tracker hits — global for all users
+const trackerHitsPath = path.join(__dirname, './data/tracker-hits.json');
+const getTrackerHits = () => { try { return JSON.parse(fs.readFileSync(trackerHitsPath, 'utf8')) } catch { return [] } };
+const saveTrackerHits = (hits) => fs.writeFileSync(trackerHitsPath, JSON.stringify(hits, null, 2));
+
+app.get("/api/tracker/hits", (req, res) => {
+  res.json(getTrackerHits());
+});
+
+app.post("/api/tracker/hits", (req, res) => {
+  const { hits: newHits } = req.body;
+  if (!newHits || !Array.isArray(newHits) || !newHits.length) return res.json({ saved: 0 });
+  const existing = getTrackerHits();
+  const existingIds = new Set(existing.map(h => h.id + h.hitTime));
+  const unique = newHits.filter(h => !existingIds.has(h.id + h.hitTime));
+  if (unique.length) {
+    const updated = [...unique, ...existing];
+    saveTrackerHits(updated);
+  }
+  res.json({ saved: unique.length });
+});
+
+// Fast price-only endpoint for all pages
+app.post("/api/prices", async (req, res) => {
+  try {
+    const { symbols } = req.body;
+    if (!symbols || !Array.isArray(symbols) || !symbols.length) return res.json({});
+    const unique = [...new Set(symbols)];
+    const priceMap = {};
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    await Promise.all(
+      unique.map(async (sym) => {
+        try {
+          const skipNS = sym.startsWith('^') || sym.includes('-') || sym.includes('=');
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${skipNS ? sym : sym + '.NS'}?interval=1d&range=1d`;
+          const r = await axios.get(url, { timeout: 5000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' } });
+          const m = r.data?.chart?.result?.[0]?.meta;
+          if (!m) { priceMap[sym] = null; return; }
+          const price = m.regularMarketPrice || 0;
+          const prevClose = m.chartPreviousClose || 0;
+          const pChange = prevClose ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : null;
+          priceMap[sym] = { price, prevClose, pChange };
+        } catch { priceMap[sym] = null; }
+      })
+    );
+    res.json(priceMap);
+  } catch (error) {
+    res.json({});
+  }
+});
+
 app.post("/api/:type", (req, res) => {
   const { type } = req.params;
   const { symbol } = req.body;
@@ -844,37 +897,6 @@ app.get("/api/symbol-master", async (req, res) => {
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: "Failed to load symbol master data" });
-  }
-});
-
-// Fast price-only endpoint for all pages
-app.post("/api/prices", async (req, res) => {
-  try {
-    const { fetchPriceOnly } = require('./services/pegService');
-    const { symbols } = req.body;
-    if (!symbols || !symbols.length) return res.json({});
-    const unique = [...new Set(symbols)];
-    const priceMap = {};
-    await Promise.all(
-      unique.map(async (sym) => {
-        try {
-          const skipNS = sym.startsWith('^') || sym.includes('-') || sym.includes('=');
-          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${skipNS ? sym : sym + '.NS'}?interval=1d&range=1d`;
-          const axios = require('axios');
-          const https = require('https');
-          const agent = new https.Agent({ rejectUnauthorized: false });
-          const r = await axios.get(url, { timeout: 5000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' } });
-          const m = r.data?.chart?.result?.[0]?.meta;
-          const price = m?.regularMarketPrice || 0;
-          const prevClose = m?.chartPreviousClose || 0;
-          const pChange = prevClose ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : null;
-          priceMap[sym] = { price, prevClose, pChange };
-        } catch { priceMap[sym] = null; }
-      })
-    );
-    res.json(priceMap);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch prices' });
   }
 });
 
