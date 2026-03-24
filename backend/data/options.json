@@ -7,24 +7,31 @@
     "tickSize": "5.000000"
   },
   {
-    "symbol": "BANKNIFTY30MAR2655500CE",
-    "token": "58548",
+    "symbol": "FINNIFTY30MAR2623850PE",
+    "token": "40417",
+    "exchange": "NFO",
+    "lotSize": "60",
+    "tickSize": "5.000000"
+  },
+  {
+    "symbol": "PGEL30MAR26480PE",
+    "token": "149900",
+    "exchange": "NFO",
+    "lotSize": "950",
+    "tickSize": "5.000000"
+  },
+  {
+    "symbol": "BANKNIFTY30MAR2654000CE",
+    "token": "58534",
     "exchange": "NFO",
     "lotSize": "30",
     "tickSize": "5.000000"
   },
   {
-    "symbol": "OBEROIRLTY30MAR261400PE",
-    "token": "145734",
+    "symbol": "NIFTY30MAR2622600CE",
+    "token": "54482",
     "exchange": "NFO",
-    "lotSize": "350",
-    "tickSize": "5.000000"
-  },
-  {
-    "symbol": "FINNIFTY30MAR2623850PE",
-    "token": "40417",
-    "exchange": "NFO",
-    "lotSize": "60",
+    "lotSize": "65",
     "tickSize": "5.000000"
   }
 ]
