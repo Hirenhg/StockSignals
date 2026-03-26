@@ -38,12 +38,44 @@ const SectorPE = () => {
   const [loadingSector, setLoadingSector] = useState(true)
   const [sortConfig, setSortConfig] = useState({ key: 'pe', direction: 'asc' })
   const [statusFilter, setStatusFilter] = useState('all')
+  const [editing, setEditing] = useState(null) // { sector, field }
+  const [editInput, setEditInput] = useState('')
   const { darkMode } = useTheme()
 
   useEffect(() => {
     API.get('/api/nifty-pe').then(res => setPeData(res.data)).catch(() => {}).finally(() => setLoadingPE(false))
     API.get('/api/sector-pe').then(res => setSectorData(res.data)).catch(() => {}).finally(() => setLoadingSector(false))
   }, [])
+
+  const saveSectorField = (sector, field) => {
+    const val = parseFloat(editInput)
+    if (isNaN(val)) { setEditing(null); return }
+    API.put(`/api/sector-pe/${encodeURIComponent(sector)}`, { [field]: val })
+      .then(() => {
+        setSectorData(prev => prev.map(s => s.sector !== sector ? s : { ...s, [field]: val }))
+        setEditing(null)
+      })
+      .catch(() => {})
+  }
+
+  const renderEditable = (row, field) => {
+    if (editing && editing.sector === row.sector && editing.field === field) {
+      return (
+        <input type="number" step="0.01" className="form-control form-control-sm" style={{ width: '80px', fontSize: '13px', margin: '0 auto' }}
+          value={editInput} onChange={e => setEditInput(e.target.value)} autoFocus
+          onBlur={() => saveSectorField(row.sector, field)}
+          onKeyDown={e => { if (e.key === 'Enter') saveSectorField(row.sector, field); if (e.key === 'Escape') setEditing(null) }} />
+      )
+    }
+    const val = row[field]
+    if (val == null) return <span style={{ cursor: 'pointer', color: textMuted }} onClick={() => { setEditing({ sector: row.sector, field }); setEditInput('') }}>click to set</span>
+    return (
+      <span style={{ cursor: 'pointer', color: field === 'pe' ? getPEColor(val) : textMuted, fontWeight: field === 'pe' ? 600 : 400 }}
+        onClick={() => { setEditing({ sector: row.sector, field }); setEditInput(val) }}>
+        {val}
+      </span>
+    )
+  }
 
   // Nifty 50 PE stats
   const allEntries = peData.flatMap(r => MONTHS.map(m => r[m] != null ? { year: r.year, month: m, pe: r[m] } : null).filter(Boolean))
@@ -245,8 +277,8 @@ const SectorPE = () => {
                       {filteredSectors.map(s => (
                         <tr key={s.sector} style={{ verticalAlign: 'middle' }}>
                           <td className="fw-bold">{s.sector}</td>
-                          <td className="text-center fw-bold" style={{ color: getPEColor(s.pe) }}>{s.pe}</td>
-                          <td className="text-center" style={{ color: textMuted }}>{s.pb || '-'}</td>
+                          <td className="text-center">{renderEditable(s, 'pe')}</td>
+                          <td className="text-center">{renderEditable(s, 'pb')}</td>
                           <td className="text-center">
                             <span style={{ color: getPEColor(s.pe), fontWeight: 600 }}>{getPELabel(s.pe)}</span>
                           </td>
@@ -266,8 +298,8 @@ const SectorPE = () => {
                         <div style={{ fontSize: '13px', color: textMuted }}>{s.category} · <span style={{ color: getPEColor(s.pe) }}>{getPELabel(s.pe)}</span></div>
                       </div>
                       <div className="text-end">
-                        <div className="fw-bold" style={{ fontSize: '20px', color: getPEColor(s.pe) }}>{s.pe}</div>
-                        {s.pb && <div style={{ fontSize: '13px', color: textMuted }}>PB: {s.pb}</div>}
+                        <div style={{ fontSize: '20px' }}>{renderEditable(s, 'pe')}</div>
+                        <div style={{ fontSize: '13px' }}>{renderEditable(s, 'pb')}</div>
                       </div>
                     </div>
                   ))}

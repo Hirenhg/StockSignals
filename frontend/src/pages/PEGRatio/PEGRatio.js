@@ -20,6 +20,8 @@ export default function PEGRatio() {
   const [epsInput, setEpsInput] = useState('')
   const [editingDiv, setEditingDiv] = useState(null)
   const [divInput, setDivInput] = useState('')
+  const [editingPe, setEditingPe] = useState(null)
+  const [peInput, setPeInput] = useState('')
   const { darkMode } = useTheme()
 
   const bg2 = darkMode ? '#262626' : '#f8f9fa'
@@ -70,8 +72,9 @@ export default function PEGRatio() {
 
   const switchCategory = (c) => { setCategory(c); load(c) }
 
-  const recalcPEG = (d, epsG, dy) => {
-    const peg = d.pe && epsG ? parseFloat((d.pe / (epsG + (dy || 0))).toFixed(2)) : null
+  const recalcPEG = (d, epsG, dy, peOverride) => {
+    const pe = peOverride ?? d.pe
+    const peg = pe && epsG ? parseFloat((pe / (epsG + (dy || 0))).toFixed(2)) : null
     const pegStatus = peg !== null ? (peg < 1 ? 'Undervalued' : peg <= 2 ? 'Fairly Valued' : 'Overvalued') : null
     return { peg, pegStatus }
   }
@@ -79,7 +82,7 @@ export default function PEGRatio() {
   const saveEps = (name) => {
     const val = parseFloat(epsInput)
     if (isNaN(val)) { setEditingEps(null); return }
-    API.put(`/api/peg/${name}`, { epsGrowth: val })
+    API.put(`/api/peg/${encodeURIComponent(name)}`, { epsGrowth: val })
       .then(() => {
         setData(prev => prev.map(d => {
           if (d.name !== name) return d
@@ -94,7 +97,7 @@ export default function PEGRatio() {
   const saveDiv = (name) => {
     const val = parseFloat(divInput)
     if (isNaN(val)) { setEditingDiv(null); return }
-    API.put(`/api/peg/${name}`, { manualDivYield: val })
+    API.put(`/api/peg/${encodeURIComponent(name)}`, { manualDivYield: val })
       .then(() => {
         setData(prev => prev.map(d => {
           if (d.name !== name) return d
@@ -102,6 +105,21 @@ export default function PEGRatio() {
           return { ...d, dividendYield: val, peg, pegStatus }
         }))
         setEditingDiv(null)
+      })
+      .catch(() => {})
+  }
+
+  const savePe = (name) => {
+    const val = parseFloat(peInput)
+    if (isNaN(val)) { setEditingPe(null); return }
+    API.put(`/api/peg/${encodeURIComponent(name)}`, { manualPE: val })
+      .then(() => {
+        setData(prev => prev.map(d => {
+          if (d.name !== name) return d
+          const { peg, pegStatus } = recalcPEG(d, d.epsGrowth, d.dividendYield, val)
+          return { ...d, pe: val, peg, pegStatus }
+        }))
+        setEditingPe(null)
       })
       .catch(() => {})
   }
@@ -152,6 +170,20 @@ export default function PEGRatio() {
     )
   }
 
+  const renderPeCell = (row) => {
+    if (editingPe === row.name) {
+      return (
+        <input type="number" step="0.1" className="form-control form-control-sm" style={{ width: '80px', fontSize: '13px' }}
+          value={peInput} onChange={e => setPeInput(e.target.value)} autoFocus
+          onBlur={() => savePe(row.name)} onKeyDown={e => { if (e.key === 'Enter') savePe(row.name); if (e.key === 'Escape') setEditingPe(null) }} />
+      )
+    }
+    return (
+      <span style={{ cursor: 'pointer' }} onClick={() => { setEditingPe(row.name); setPeInput(row.pe ?? '') }}>
+        {row.pe != null ? <span className="fw-bold">{row.pe}</span> : <span className="text-muted">click to set</span>}
+      </span>
+    )
+  }
   const renderEpsCell = (row) => renderEditableCell(row, 'epsGrowth', editingEps, setEditingEps, epsInput, setEpsInput, saveEps)
   const renderDivCell = (row) => renderEditableCell(row, 'dividendYield', editingDiv, setEditingDiv, divInput, setDivInput, saveDiv)
 
@@ -239,7 +271,7 @@ export default function PEGRatio() {
                       <td className="fw-bold">{row.name}</td>
                       <td>₹{row.price || '-'}</td>
                       <td>{renderEpsCell(row)}</td>
-                      <td className="fw-bold">{row.pe || '-'}</td>
+                      <td>{renderPeCell(row)}</td>
                       <td>{renderDivCell(row)}</td>
                       <td className="fw-bold">{row.peg ?? '-'}</td>
                       <td className="fw-bold" style={{ color: row.pegStatus === 'Undervalued' ? '#198754' : row.pegStatus === 'Fairly Valued' ? '#ffc107' : row.pegStatus === 'Overvalued' ? '#dc3545' : undefined }}>{fairPrice ? `₹${fairPrice}` : '-'}</td>
@@ -276,7 +308,7 @@ export default function PEGRatio() {
                     <div className="row g-2">
                       <div className="col-3 text-center">
                         <div style={{ fontSize: '11px', color: textMuted }}>PE</div>
-                        <div className="fw-bold" style={{ fontSize: '15px', color: text }}>{row.pe || '-'}</div>
+                        <div style={{ fontSize: '14px' }}>{renderPeCell(row)}</div>
                       </div>
                       <div className="col-3 text-center">
                         <div style={{ fontSize: '11px', color: textMuted }}>EPS Gr.</div>

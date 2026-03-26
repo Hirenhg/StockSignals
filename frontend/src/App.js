@@ -14,7 +14,7 @@ const OptionChain = lazy(() => import('./pages/OptionChain/OptionChain'));
 const Sectors = lazy(() => import('./pages/Sectors/Sectors'));
 const News = lazy(() => import('./pages/News/News'));
 const SectorPE = lazy(() => import('./pages/SectorPE/SectorPE'));
-const PEGRatio = lazy(() => import('./pages/SectorPE/PEGRatio'));
+const PEGRatio = lazy(() => import('./pages/PEGRatio/PEGRatio'));
 const Portfolio = lazy(() => import('./pages/Portfolio/Portfolio'));
 const ChartPage = lazy(() => import('./pages/Chart/ChartPage'));
 const Tracker = lazy(() => import('./pages/Tracker/Tracker'));
