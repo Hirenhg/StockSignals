@@ -928,11 +928,12 @@ app.get("/api/peg/live", async (req, res) => {
         try {
           const live = await fetchStockFundamentals(stock.name);
           const epsGrowth = stock.epsGrowth || null;
-          const dy = live.dividendYield ?? stock.manualDivYield ?? null;
-          const peg = live.pe && epsGrowth ? parseFloat((live.pe / (epsGrowth + (dy || 0))).toFixed(2)) : null;
+          const dy = stock.manualDivYield != null ? stock.manualDivYield : (live.dividendYield ?? null);
+          const pe = stock.manualPE != null ? stock.manualPE : live.pe;
+          const peg = pe && epsGrowth ? parseFloat((pe / (epsGrowth + (dy || 0))).toFixed(2)) : null;
           let pegStatus = null;
           if (peg !== null) pegStatus = peg < 1 ? 'Undervalued' : peg <= 2 ? 'Fairly Valued' : 'Overvalued';
-          return { ...stock, ...live, dividendYield: dy, epsGrowth, peg, pegStatus };
+          return { ...stock, ...live, pe, dividendYield: dy, epsGrowth, peg, pegStatus };
         } catch { return { ...stock, price: 0, pe: null, epsGrowth: stock.epsGrowth || null, peg: null, pegStatus: null }; }
       })
     );
@@ -1089,10 +1090,29 @@ app.get("/api/sector-pe", async (req, res) => {
   try {
     const { fetchLiveSectorPE } = require('./services/sectorPEService');
     const liveData = await fetchLiveSectorPE();
-    res.json(liveData || []);
+    const pegData = getPEG();
+    const merged = (liveData || []).map(s => {
+      const o = pegData.find(p => p.category === 'SectorPE' && p.name === s.sector);
+      if (!o) return s;
+      return { ...s, pe: o.pe != null ? o.pe : s.pe, pb: o.pb != null ? o.pb : s.pb };
+    });
+    res.json(merged);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch Sector PE data' });
   }
+});
+
+app.put("/api/sector-pe/:sector", (req, res) => {
+  const data = getPEG();
+  const sector = decodeURIComponent(req.params.sector);
+  const idx = data.findIndex(d => d.category === 'SectorPE' && d.name === sector);
+  if (idx === -1) {
+    data.push({ name: sector, category: 'SectorPE', ...req.body });
+  } else {
+    data[idx] = { ...data[idx], ...req.body };
+  }
+  fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Updated successfully' });
 });
 
 // Auth routes
