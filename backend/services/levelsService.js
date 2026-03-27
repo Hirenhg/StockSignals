@@ -1,5 +1,6 @@
 const axios = require('axios');
 const https = require('https');
+const { EMA } = require('technicalindicators');
 const agent = new https.Agent({ rejectUnauthorized: false });
 
 async function fetchOHLC(symbol, interval, range) {
@@ -44,6 +45,24 @@ function calcPivots(h, l, c) {
   };
 }
 
+function calcEma7(candles) {
+  if (!candles || candles.length < 7) return { ema7: null, signal: null }
+  const closes = candles.map(c => c.close);
+  const emaValues = EMA.calculate({ period: 7, values: closes });
+  const ema7 = emaValues.length ? parseFloat(emaValues[emaValues.length - 1].toFixed(2)) : null;
+  const price = closes[closes.length - 1];
+  let signal = null;
+  if (ema7) {
+    const prevClose = closes[closes.length - 2];
+    const prevEma = emaValues.length >= 2 ? emaValues[emaValues.length - 2] : null;
+    if (prevEma && prevClose <= prevEma && price > ema7) signal = 'Bullish';
+    else if (prevEma && prevClose >= prevEma && price < ema7) signal = 'Bearish';
+    else if (price > ema7) signal = 'Above';
+    else signal = 'Below';
+  }
+  return { ema7, signal };
+}
+
 async function getLevels(symbol) {
   try {
     const [weekly, monthly] = await Promise.all([
@@ -52,16 +71,18 @@ async function getLevels(symbol) {
     ]);
     if (!weekly || !monthly || weekly.candles.length < 2 || monthly.candles.length < 2) return null;
 
-    // Use previous completed candle for pivots
     const wc = weekly.candles[weekly.candles.length - 2];
     const mc = monthly.candles[monthly.candles.length - 2];
+
+    const weeklyEma = calcEma7(weekly.candles);
+    const monthlyEma = calcEma7(monthly.candles);
 
     return {
       symbol,
       price: parseFloat(weekly.price.toFixed(2)),
       pChange: weekly.pChange,
-      weekly: calcPivots(wc.high, wc.low, wc.close),
-      monthly: calcPivots(mc.high, mc.low, mc.close),
+      weekly: { ...calcPivots(wc.high, wc.low, wc.close), ...weeklyEma },
+      monthly: { ...calcPivots(mc.high, mc.low, mc.close), ...monthlyEma },
     };
   } catch { return null; }
 }
