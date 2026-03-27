@@ -36,7 +36,7 @@ export default function Levels() {
       <Helmet><title>Support & Resistance - StockSignal</title></Helmet>
       <div className="p-1">
         <h5 className="fw-bold mb-0" style={{ color: text }}>Support & Resistance</h5>
-        <div className="fw-bold mb-3" style={{ fontSize: '12px', color: textMuted }}>Fibonacci Pivot Points · Prev High/Low/Close + S3–R3 levels</div>
+        <div className="fw-bold mb-3" style={{ fontSize: '12px', color: textMuted }}>Fibonacci Pivot Points · 7 EMA Strategy · S3–R3 levels</div>
 
         <div className="d-flex gap-2 mb-3 align-items-center">
           {['weekly', 'monthly'].map(t => (
@@ -64,6 +64,8 @@ export default function Levels() {
                     <th>R1</th>
                     <th>R2</th>
                     <th>R3</th>
+                    <th>7 EMA</th>
+                    <th>Signal</th>
                     <th>Prev High</th>
                   </tr>
                 </thead>
@@ -98,6 +100,10 @@ export default function Levels() {
                             </td>
                           )
                         })}
+                        <td className="fw-bold" style={{ color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>{levels.ema7 || '-'}</td>
+                        <td>
+                          {levels.signal && <span className={`badge ${levels.signal === 'Bullish' ? 'bg-success' : levels.signal === 'Bearish' ? 'bg-danger' : levels.signal === 'Above' ? 'text-success' : 'text-danger'}`} style={{ fontSize: '11px' }}>{levels.signal}</span>}
+                        </td>
                         <td className="level-resistance fw-bold">{levels.prevHigh}</td>
                       </tr>
                     )
@@ -122,6 +128,9 @@ export default function Levels() {
                       </div>
                       <div className="d-flex justify-content-between mb-1" style={{ fontSize: '11px', color: textMuted }}>
                         <span>PP %: <span className="fw-bold" style={{ color: row.price >= (tf === 'weekly' ? row.weekly : row.monthly).pp ? '#198754' : '#dc3545' }}>{((row.price - (tf === 'weekly' ? row.weekly : row.monthly).pp) / (tf === 'weekly' ? row.weekly : row.monthly).pp * 100).toFixed(2)}%</span></span>
+                        <span>7 EMA: <span className="fw-bold" style={{ color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>{levels.ema7 || '-'}</span>
+                          {levels.signal && <span className={`ms-1 fw-bold`} style={{ color: levels.signal === 'Bullish' || levels.signal === 'Above' ? '#198754' : '#dc3545' }}>{levels.signal}</span>}
+                        </span>
                       </div>
                       <div className="row g-1 text-center" style={{ fontSize: '12px' }}>
                         {[
