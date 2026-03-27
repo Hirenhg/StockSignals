@@ -1247,6 +1247,27 @@ app.post("/api/paper-trade/reset", authMiddleware, (req, res) => {
   res.json({ message: 'Paper trading account reset', wallet: user.wallet });
 });
 
+// Support & Resistance Levels
+const { getLevels } = require('./services/levelsService');
+
+app.get("/api/levels", optionalAuth, async (req, res) => {
+  try {
+    const indices = getIndices();
+    const stocks = getStocks();
+    let watchlist = [];
+    if (req.user) {
+      const user = getUserByMobile(req.user.mobile);
+      watchlist = (user?.watchlist || []).map(w => w.symbol);
+    }
+    const symbols = [...indices.map(i => i.symbol), ...stocks.map(s => s.symbol), ...watchlist];
+    const unique = [...new Set(symbols)];
+    const results = (await Promise.all(unique.map(s => getLevels(s)))).filter(Boolean);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch levels' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 

@@ -1,14 +1,4 @@
 [
-  { "symbol": "INFY" },
-  { "symbol": "HDFCBANK" },
-  { "symbol": "PETRONET" },
-  { "symbol": "LT" },
-  { "symbol": "POWERGRID" },
-  { "symbol": "TITAN" },
-  { "symbol": "TRENT" },
-  { "symbol": "COALINDIA" },
-  { "symbol": "IRFC" },
-  { "symbol": "PERSISTENT" },
-  { "symbol": "GRINFRA" },
-  { "symbol": "KILITCH" }
+  { "symbol": "AUROPHARMA" },
+  { "symbol": "LUPIN" }
 ]
