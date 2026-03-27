@@ -65,22 +65,27 @@ function calcEma7(candles) {
 
 async function getLevels(symbol) {
   try {
-    const [weekly, monthly] = await Promise.all([
+    const [daily, weekly, monthly] = await Promise.all([
+      fetchOHLC(symbol, '1d', '1mo'),
       fetchOHLC(symbol, '1wk', '3mo'),
       fetchOHLC(symbol, '1mo', '1y'),
     ]);
     if (!weekly || !monthly || weekly.candles.length < 2 || monthly.candles.length < 2) return null;
+    if (!daily || daily.candles.length < 2) return null;
 
+    const dc = daily.candles[daily.candles.length - 2];
     const wc = weekly.candles[weekly.candles.length - 2];
     const mc = monthly.candles[monthly.candles.length - 2];
 
+    const dailyEma = calcEma7(daily.candles);
     const weeklyEma = calcEma7(weekly.candles);
     const monthlyEma = calcEma7(monthly.candles);
 
     return {
       symbol,
-      price: parseFloat(weekly.price.toFixed(2)),
-      pChange: weekly.pChange,
+      price: parseFloat(daily.price.toFixed(2)),
+      pChange: daily.pChange,
+      daily: { ...calcPivots(dc.high, dc.low, dc.close), ...dailyEma },
       weekly: { ...calcPivots(wc.high, wc.low, wc.close), ...weeklyEma },
       monthly: { ...calcPivots(mc.high, mc.low, mc.close), ...monthlyEma },
     };
