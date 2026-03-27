@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import API from '../../services/api'
 import { SkeletonTable } from '../../components/Skeleton/Skeleton'
 import { useTheme } from '../../context/ThemeContext'
+import arrowDown from '../../images/arrow-down.svg'
 
 function StatusBadge({ status }) {
   if (!status) return <span className="text-muted">-</span>
@@ -16,6 +17,7 @@ export default function PEGRatio() {
   const [category, setCategory] = useState('PEG')
   const [loading, setLoading] = useState(true)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+  const [filter, setFilter] = useState('All')
   const [editingEps, setEditingEps] = useState(null)
   const [epsInput, setEpsInput] = useState('')
   const [editingDiv, setEditingDiv] = useState(null)
@@ -147,6 +149,8 @@ export default function PEGRatio() {
 
   const arrow = (key) => sortConfig.key === key ? (sortConfig.direction === 'asc' ? ' ↑' : ' ↓') : ''
 
+  const filtered = filter === 'All' ? sorted : sorted.filter(r => r.pegStatus === filter)
+
   const stats = data.reduce((acc, r) => {
     if (r.pegStatus === 'Undervalued') acc.under++
     else if (r.pegStatus === 'Fairly Valued') acc.fair++
@@ -226,13 +230,30 @@ export default function PEGRatio() {
           </div>
         </div>
 
-        {/* Category Tabs - Desktop */}
-        <div className="d-none d-md-flex gap-1 mb-3 overflow-auto" style={{ scrollbarWidth: 'none' }}>
+        {/* Category Tabs + Filter - Desktop */}
+        <div className="d-none d-md-flex gap-1 mb-3 align-items-center overflow-auto" style={{ scrollbarWidth: 'none' }}>
           {categories.map(c => (
             <button key={c} className={`btn btn-sm flex-shrink-0 ${category === c ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchCategory(c)} style={{ fontSize: '13px', padding: '8px 16px' }}>
               {c}
             </button>
           ))}
+          <div style={{ borderLeft: `2px solid ${border}`, height: '32px', margin: '0 4px' }} />
+          <select className="form-select flex-shrink-0" value={filter} onChange={e => setFilter(e.target.value)} style={{ width: 'auto', fontSize: '14px', ...(darkMode ? { backgroundPosition: '90% center', backgroundImage: `url(${arrowDown})` } : {}) }}>
+            <option value="All">All</option>
+            <option value="Undervalued">Undervalued</option>
+            <option value="Fairly Valued">Fairly Valued</option>
+            <option value="Overvalued">Overvalued</option>
+          </select>
+        </div>
+
+        {/* Filter - Mobile */}
+        <div className="d-md-none mb-3">
+          <select className="form-select" value={filter} onChange={e => setFilter(e.target.value)} style={{ fontSize: '13px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a', backgroundImage: `url(${arrowDown})` } : {}) }}>
+            <option value="All">All</option>
+            <option value="Undervalued">Undervalued</option>
+            <option value="Fairly Valued">Fairly Valued</option>
+            <option value="Overvalued">Overvalued</option>
+          </select>
         </div>
 
         {/* Category - Mobile Bottom Bar */}
@@ -264,7 +285,7 @@ export default function PEGRatio() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sorted.map((row, i) => {
+                  {filtered.map((row, i) => {
                     const fairPrice = row.peg && row.peg > 0 ? Math.round(row.price / row.peg) : null
                     return (
                     <tr key={i} style={{ verticalAlign: 'middle' }}>
@@ -285,7 +306,7 @@ export default function PEGRatio() {
 
             {/* Mobile Cards */}
             <div className="d-md-none" style={{ paddingBottom: '80px' }}>
-              {sorted.map((row, i) => {
+              {filtered.map((row, i) => {
                 const fairPrice = row.peg && row.peg > 0 ? Math.round(row.price / row.peg) : null
                 const statusColor = row.pegStatus === 'Undervalued' ? '#198754' : row.pegStatus === 'Fairly Valued' ? '#ffc107' : row.pegStatus === 'Overvalued' ? '#dc3545' : textMuted
                 return (

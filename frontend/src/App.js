@@ -19,6 +19,7 @@ const Portfolio = lazy(() => import('./pages/Portfolio/Portfolio'));
 const ChartPage = lazy(() => import('./pages/Chart/ChartPage'));
 const Tracker = lazy(() => import('./pages/Tracker/Tracker'));
 const PaperTrade = lazy(() => import('./pages/PaperTrade/PaperTrade'));
+const Levels = lazy(() => import('./pages/Levels/Levels'));
 const Login = lazy(() => import('./pages/Login/Login'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
@@ -55,6 +56,7 @@ function AppRoutes() {
             <Route path="/chart/:symbol" element={<Protected><ChartPage /></Protected>} />
             <Route path="/tracker" element={<Protected><Tracker /></Protected>} />
             <Route path="/paper-trade" element={<Protected><PaperTrade /></Protected>} />
+            <Route path="/levels" element={<Protected><Levels /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
