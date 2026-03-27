@@ -285,3 +285,10 @@ html, body {
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s infinite;
 }
+
+
+// Support & Resistance level colors
+.table td.level-support { color: #dc3545 !important; }
+.table td.level-resistance { color: #198754 !important; }
+.table td.level-pivot { color: #6f42c1 !important; }
+.table td.level-near-dot { color: #ff9800 !important; font-size: 10px; margin-left: 3px; }

@@ -21,8 +21,8 @@ function Tracker() {
   const [viewTab, setViewTab] = useState('active')
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
-  const targetPct = 1.2
-  const slPct = 0.4
+  const targetPct = 2.4
+  const slPct = 1
   const [searchTerm, setSearchTerm] = useState('')
   const [lastRefresh, setLastRefresh] = useState(null)
   const audioRef = useRef(null)

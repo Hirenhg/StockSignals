@@ -19,7 +19,7 @@ const Header = () => {
         { path: '/', label: t('dashboard'), icon: 'bi-speedometer2' },
         { path: '/equity', label: t('equityTool'), icon: 'bi-graph-up-arrow' },
         { path: '/options', label: t('options'), icon: 'bi-gear' },
-        { path: '/optionchain', label: t('optionChain'), icon: 'bi-link-45deg' },
+        // { path: '/optionchain', label: t('optionChain'), icon: 'bi-link-45deg' },
         { path: '/chart/INFY', label: t('charts'), icon: 'bi-bar-chart-line' },
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
         { path: '/news', label: t('news'), icon: 'bi-newspaper' },
@@ -27,6 +27,7 @@ const Header = () => {
         { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
         // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
         { path: '/paper-trade', label: 'Paper Trade', icon: 'bi-wallet2' },
+        { path: '/levels', label: 'Levels', icon: 'bi-arrows-expand' },
       ]
     : [
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
