@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext'
 export default function Levels() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tf, setTf] = useState('weekly')
+  const [tf, setTf] = useState('daily')
   const { darkMode } = useTheme()
 
   const bg2 = darkMode ? '#262626' : '#f8f9fa'
