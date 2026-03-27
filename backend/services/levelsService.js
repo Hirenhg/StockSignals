@@ -73,9 +73,12 @@ async function getLevels(symbol) {
     if (!weekly || !monthly || weekly.candles.length < 2 || monthly.candles.length < 2) return null;
     if (!daily || daily.candles.length < 2) return null;
 
-    const dc = daily.candles[daily.candles.length - 2];
     const wc = weekly.candles[weekly.candles.length - 2];
     const mc = monthly.candles[monthly.candles.length - 2];
+
+    // Daily pivots: use previous week's high/low with previous day's close for meaningful range
+    const prevDay = daily.candles[daily.candles.length - 2];
+    const prevWeek = weekly.candles[weekly.candles.length - 2];
 
     const dailyEma = calcEma7(daily.candles);
     const weeklyEma = calcEma7(weekly.candles);
@@ -85,7 +88,7 @@ async function getLevels(symbol) {
       symbol,
       price: parseFloat(daily.price.toFixed(2)),
       pChange: daily.pChange,
-      daily: { ...calcPivots(dc.high, dc.low, dc.close), ...dailyEma },
+      daily: { ...calcPivots(prevWeek.high, prevWeek.low, prevDay.close), ...dailyEma },
       weekly: { ...calcPivots(wc.high, wc.low, wc.close), ...weeklyEma },
       monthly: { ...calcPivots(mc.high, mc.low, mc.close), ...monthlyEma },
     };
