@@ -39,7 +39,7 @@ export default function Levels() {
         <div className="fw-bold mb-3" style={{ fontSize: '12px', color: textMuted }}>Fibonacci Pivot Points · 7 EMA Strategy · S3–R3 levels</div>
 
         <div className="d-flex gap-2 mb-3 align-items-center">
-          {['weekly', 'monthly'].map(t => (
+          {['daily', 'weekly', 'monthly'].map(t => (
             <button key={t} className={`btn btn-sm ${tf === t ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTf(t)} style={{ fontSize: '13px', padding: '8px 16px', textTransform: 'capitalize' }}>
               {t}
             </button>
@@ -71,7 +71,7 @@ export default function Levels() {
                 </thead>
                 <tbody>
                   {data.map((row, i) => {
-                    const levels = tf === 'weekly' ? row.weekly : row.monthly
+                    const levels = row[tf]
                     return (
                       <tr key={i} style={{ verticalAlign: 'middle' }}>
                         <td className="fw-bold">{row.symbol}</td>
@@ -102,7 +102,7 @@ export default function Levels() {
                         })}
                         <td className="fw-bold" style={{ color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>{levels.ema7 || '-'}</td>
                         <td>
-                          {levels.signal && <span className={`badge ${levels.signal === 'Bullish' ? 'bg-success' : levels.signal === 'Bearish' ? 'bg-danger' : levels.signal === 'Above' ? 'text-success' : 'text-danger'}`} style={{ fontSize: '11px' }}>{levels.signal}</span>}
+                          {levels.signal && <span className={`badge ${levels.signal === 'Bullish' ? 'bg-success' : levels.signal === 'Bearish' ? 'bg-danger' : levels.signal === 'Above' ? 'text-success' : 'text-danger'}`} style={{ fontSize: '14px' }}>{levels.signal}</span>}
                         </td>
                         <td className="level-resistance fw-bold">{levels.prevHigh}</td>
                       </tr>
@@ -115,7 +115,7 @@ export default function Levels() {
             {/* Mobile Cards */}
             <div className="d-md-none" style={{ paddingBottom: '20px' }}>
               {data.map((row, i) => {
-                const levels = tf === 'weekly' ? row.weekly : row.monthly
+                const levels = row[tf]
                 return (
                   <div key={i} className="card mb-2 shadow-sm" style={{ background: bg2, border: `1px solid ${border}` }}>
                     <div className="card-body py-2 px-3">
@@ -127,7 +127,7 @@ export default function Levels() {
                         </div>
                       </div>
                       <div className="d-flex justify-content-between mb-1" style={{ fontSize: '11px', color: textMuted }}>
-                        <span>PP %: <span className="fw-bold" style={{ color: row.price >= (tf === 'weekly' ? row.weekly : row.monthly).pp ? '#198754' : '#dc3545' }}>{((row.price - (tf === 'weekly' ? row.weekly : row.monthly).pp) / (tf === 'weekly' ? row.weekly : row.monthly).pp * 100).toFixed(2)}%</span></span>
+                        <span>PP %: <span className="fw-bold" style={{ color: row.price >= row[tf].pp ? '#198754' : '#dc3545' }}>{((row.price - row[tf].pp) / row[tf].pp * 100).toFixed(2)}%</span></span>
                         <span>7 EMA: <span className="fw-bold" style={{ color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>{levels.ema7 || '-'}</span>
                           {levels.signal && <span className={`ms-1 fw-bold`} style={{ color: levels.signal === 'Bullish' || levels.signal === 'Above' ? '#198754' : '#dc3545' }}>{levels.signal}</span>}
                         </span>
