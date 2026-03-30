@@ -52,9 +52,13 @@ const OptionChain = () => {
     const map = {
       'ce.oi': row.ce?.oi || 0, 'ce.volume': row.ce?.volume || 0,
       'ce.change': row.ce?.change || 0, 'ce.ltp': row.ce?.ltp || 0,
+      'ce.iv': row.ce?.iv || 0, 'ce.delta': row.ce?.delta || 0,
+      'ce.gamma': row.ce?.gamma || 0, 'ce.theta': row.ce?.theta || 0, 'ce.vega': row.ce?.vega || 0,
       'strike': row.strike || 0,
       'pe.ltp': row.pe?.ltp || 0, 'pe.change': row.pe?.change || 0,
-      'pe.volume': row.pe?.volume || 0, 'pe.oi': row.pe?.oi || 0
+      'pe.volume': row.pe?.volume || 0, 'pe.oi': row.pe?.oi || 0,
+      'pe.iv': row.pe?.iv || 0, 'pe.delta': row.pe?.delta || 0,
+      'pe.gamma': row.pe?.gamma || 0, 'pe.theta': row.pe?.theta || 0, 'pe.vega': row.pe?.vega || 0
     };
     return map[key] || 0;
   };
@@ -123,31 +127,31 @@ const OptionChain = () => {
         </div>
 
         {loading ? (
-          <><SkeletonCards count={4} /><SkeletonTable rows={10} cols={9} /></>
+          <><SkeletonCards count={4} /><SkeletonTable rows={10} cols={19} /></>
         ) : chain.length === 0 ? (
           <div className="text-center text-muted p-5">No option chain data found for {symbol}</div>
         ) : (
           <>
             {/* Desktop Table */}
             <div className="d-none d-md-block table-responsive">
-              <table className="table table-hover mb-0" style={{fontSize: '14px'}}>
+              <table className="table table-hover mb-0" style={{fontSize: '13px'}}>
                 <thead>
                   <tr className="text-center">
-                    <th colSpan="4" className="bg-success bg-opacity-10 text-success border-bottom-0">CALLS (CE)</th>
+                    <th colSpan="9" className="bg-success bg-opacity-10 text-success border-bottom-0">CALLS (CE)</th>
                     <th className="border-bottom-0"></th>
-                    <th colSpan="4" className="bg-danger bg-opacity-10 text-danger border-bottom-0">PUTS (PE)</th>
+                    <th colSpan="9" className="bg-danger bg-opacity-10 text-danger border-bottom-0">PUTS (PE)</th>
                   </tr>
-                  <tr className="text-center table-dark" style={{fontSize: '14px'}}>
-                    {[{key:'ce.oi',label:'Open Interest'},{key:'ce.volume',label:'Volume'},{key:'ce.change',label:'Change'},{key:'ce.ltp',label:'LTP'}].map(col => (
-                      <th key={col.key} onClick={() => handleSort(col.key)} style={{cursor:'pointer'}}>
+                  <tr className="text-center table-dark" style={{fontSize: '13px'}}>
+                    {[{key:'ce.oi',label:'OI'},{key:'ce.volume',label:'Volume'},{key:'ce.change',label:'Chg'},{key:'ce.ltp',label:'LTP'},{key:'ce.iv',label:'IV'},{key:'ce.delta',label:'Delta'},{key:'ce.gamma',label:'Gamma'},{key:'ce.theta',label:'Theta'},{key:'ce.vega',label:'Vega'}].map(col => (
+                      <th key={col.key} onClick={() => handleSort(col.key)} style={{cursor:'pointer', whiteSpace:'nowrap'}}>
                         {col.label} {sortConfig.key === col.key && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                       </th>
                     ))}
                     <th onClick={() => handleSort('strike')} style={{background: '#343a40', color: '#ffc107', minWidth: '80px', cursor:'pointer'}}>
                       STRIKE {sortConfig.key === 'strike' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
-                    {[{key:'pe.ltp',label:'LTP'},{key:'pe.change',label:'Change'},{key:'pe.volume',label:'Volume'},{key:'pe.oi',label:'Open Interest'}].map(col => (
-                      <th key={col.key} onClick={() => handleSort(col.key)} style={{cursor:'pointer'}}>
+                    {[{key:'pe.ltp',label:'LTP'},{key:'pe.iv',label:'IV'},{key:'pe.delta',label:'Delta'},{key:'pe.gamma',label:'Gamma'},{key:'pe.theta',label:'Theta'},{key:'pe.vega',label:'Vega'},{key:'pe.change',label:'Chg'},{key:'pe.volume',label:'Volume'},{key:'pe.oi',label:'OI'}].map(col => (
+                      <th key={col.key} onClick={() => handleSort(col.key)} style={{cursor:'pointer', whiteSpace:'nowrap'}}>
                         {col.label} {sortConfig.key === col.key && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                       </th>
                     ))}
@@ -168,12 +172,22 @@ const OptionChain = () => {
                           {row.ce?.change ? row.ce.change.toFixed(2) : '-'}
                         </td>
                         <td className="fw-bold">{row.ce?.ltp ? `₹${row.ce.ltp.toFixed(2)}` : '-'}</td>
+                        <td>{row.ce?.iv ? `${row.ce.iv}%` : '-'}</td>
+                        <td>{row.ce?.delta ?? '-'}</td>
+                        <td>{row.ce?.gamma ?? '-'}</td>
+                        <td>{row.ce?.theta ?? '-'}</td>
+                        <td>{row.ce?.vega ?? '-'}</td>
                         {/* Strike */}
                         <td className="fw-bold" style={{background: isAtm ? '#ffc107' : (darkMode ? '#0f3460' : '#f8f9fa'), color: isAtm ? '#212529' : (darkMode ? '#ffc107' : '#212529')}}>
                           {row.strike}
                         </td>
                         {/* PE Side */}
                         <td className="fw-bold">{row.pe?.ltp ? `₹${row.pe.ltp.toFixed(2)}` : '-'}</td>
+                        <td>{row.pe?.iv ? `${row.pe.iv}%` : '-'}</td>
+                        <td>{row.pe?.delta ?? '-'}</td>
+                        <td>{row.pe?.gamma ?? '-'}</td>
+                        <td>{row.pe?.theta ?? '-'}</td>
+                        <td>{row.pe?.vega ?? '-'}</td>
                         <td style={{color: (row.pe?.change || 0) >= 0 ? '#198754' : '#dc3545'}}>
                           {row.pe?.change ? row.pe.change.toFixed(2) : '-'}
                         </td>
@@ -219,11 +233,27 @@ const OptionChain = () => {
                             <span className="text-muted">Volume</span>
                             <span>{formatNum(row.ce?.volume)}</span>
                           </div>
-                          <div className="d-flex justify-content-between" style={{fontSize: '14px'}}>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '14px'}}>
                             <span className="text-muted">Change</span>
                             <span style={{color: (row.ce?.change || 0) >= 0 ? '#198754' : '#dc3545', fontWeight: 600}}>
                               {row.ce?.change ? row.ce.change.toFixed(2) : '-'}
                             </span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '13px'}}>
+                            <span className="text-muted">IV</span>
+                            <span>{row.ce?.iv ? `${row.ce.iv}%` : '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '13px'}}>
+                            <span className="text-muted">Δ</span><span>{row.ce?.delta ?? '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '13px'}}>
+                            <span className="text-muted">Γ</span><span>{row.ce?.gamma ?? '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '13px'}}>
+                            <span className="text-muted">Θ</span><span>{row.ce?.theta ?? '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between" style={{fontSize: '13px'}}>
+                            <span className="text-muted">V</span><span>{row.ce?.vega ?? '-'}</span>
                           </div>
                         </div>
                         {/* PE Side */}
@@ -243,11 +273,27 @@ const OptionChain = () => {
                             <span className="text-muted">Volume</span>
                             <span>{formatNum(row.pe?.volume)}</span>
                           </div>
-                          <div className="d-flex justify-content-between" style={{fontSize: '14px'}}>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '14px'}}>
                             <span className="text-muted">Change</span>
                             <span style={{color: (row.pe?.change || 0) >= 0 ? '#198754' : '#dc3545', fontWeight: 600}}>
                               {row.pe?.change ? row.pe.change.toFixed(2) : '-'}
                             </span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '13px'}}>
+                            <span className="text-muted">IV</span>
+                            <span>{row.pe?.iv ? `${row.pe.iv}%` : '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '13px'}}>
+                            <span className="text-muted">Δ</span><span>{row.pe?.delta ?? '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '13px'}}>
+                            <span className="text-muted">Γ</span><span>{row.pe?.gamma ?? '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-1" style={{fontSize: '13px'}}>
+                            <span className="text-muted">Θ</span><span>{row.pe?.theta ?? '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between" style={{fontSize: '13px'}}>
+                            <span className="text-muted">V</span><span>{row.pe?.vega ?? '-'}</span>
                           </div>
                         </div>
                       </div>
