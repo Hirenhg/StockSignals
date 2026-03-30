@@ -480,6 +480,45 @@ app.get("/api/sectors", async (req, res) => {
   }
 });
 
+// Black-Scholes Greeks helpers
+const bsNormCdf = (x) => {
+  const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x) / Math.sqrt(2);
+  const t = 1 / (1 + p * x);
+  const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return 0.5 * (1 + sign * y);
+};
+const bsNormPdf = (x) => Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI);
+const bsPrice = (S,K,T,r,sigma,isCall) => {
+  if (T <= 0 || sigma <= 0) return 0;
+  const d1 = (Math.log(S/K) + (r + 0.5*sigma*sigma)*T) / (sigma*Math.sqrt(T));
+  const d2 = d1 - sigma*Math.sqrt(T);
+  return isCall ? S*bsNormCdf(d1) - K*Math.exp(-r*T)*bsNormCdf(d2) : K*Math.exp(-r*T)*bsNormCdf(-d2) - S*bsNormCdf(-d1);
+};
+const bsIV = (S,K,T,r,marketPrice,isCall) => {
+  if (T <= 0 || marketPrice <= 0) return 0;
+  let lo=0.01, hi=5, mid;
+  for (let i=0; i<100; i++) {
+    mid = (lo+hi)/2;
+    const p = bsPrice(S,K,T,r,mid,isCall);
+    if (Math.abs(p - marketPrice) < 0.01) return mid;
+    if (p > marketPrice) hi = mid; else lo = mid;
+  }
+  return mid;
+};
+const bsGreeks = (S,K,T,r,sigma,isCall) => {
+  if (T <= 0 || sigma <= 0) return { iv: 0, delta: 0, gamma: 0, theta: 0, vega: 0 };
+  const sqrtT = Math.sqrt(T);
+  const d1 = (Math.log(S/K) + (r + 0.5*sigma*sigma)*T) / (sigma*sqrtT);
+  const d2 = d1 - sigma*sqrtT;
+  const delta = isCall ? bsNormCdf(d1) : bsNormCdf(d1) - 1;
+  const gamma = bsNormPdf(d1) / (S * sigma * sqrtT);
+  const theta = (-(S*bsNormPdf(d1)*sigma)/(2*sqrtT) - r*K*Math.exp(-r*T)*(isCall ? bsNormCdf(d2) : -bsNormCdf(-d2))) / 365;
+  const vega = S * bsNormPdf(d1) * sqrtT / 100;
+  return { iv: sigma, delta, gamma, theta, vega };
+};
+
 app.get("/api/optionchain/:symbol", async (req, res) => {
   try {
     const { getAngelOptionData } = require("./services/angelOneService");
@@ -552,29 +591,71 @@ app.get("/api/optionchain/:symbol", async (req, res) => {
       } catch (err) {}
     }
 
-    // Build chain rows
+    // Fetch spot price for Greeks calculation
+    let spotPrice = 0;
+    try {
+      const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
+      const yahooSym = indexMap[symbol] || `${symbol}.NS`;
+      const axios = require('axios');
+      const https = require('https');
+      const agent = new https.Agent({ rejectUnauthorized: false });
+      const r = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=1d`, { timeout: 5000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' } });
+      spotPrice = r.data?.chart?.result?.[0]?.meta?.regularMarketPrice || 0;
+    } catch {}
+
+    // Calculate time to expiry in years
+    const expiryDate = parseExpiry(selectedExpiry);
+    expiryDate.setHours(15, 30, 0, 0); // Market close time IST
+    const T = Math.max((expiryDate - new Date()) / (365.25 * 24 * 60 * 60 * 1000), 1/365.25);
+    const riskFreeRate = 0.07; // ~7% India risk-free rate
+
+    // Build chain rows with Greeks
     const chain = strikes.map(strike => {
       const ce = parsed.find(p => p.strike === strike && p.type === 'CE');
       const pe = parsed.find(p => p.strike === strike && p.type === 'PE');
       const ceLive = ce ? liveDataMap[ce.symbol] : null;
       const peLive = pe ? liveDataMap[pe.symbol] : null;
 
+      let ceGreeks = null, peGreeks = null;
+      if (spotPrice > 0) {
+        const ceLtp = ceLive?.ltp || 0;
+        const peLtp = peLive?.ltp || 0;
+        if (ceLtp > 0) {
+          const iv = bsIV(spotPrice, strike, T, riskFreeRate, ceLtp, true);
+          ceGreeks = bsGreeks(spotPrice, strike, T, riskFreeRate, iv, true);
+        }
+        if (peLtp > 0) {
+          const iv = bsIV(spotPrice, strike, T, riskFreeRate, peLtp, false);
+          peGreeks = bsGreeks(spotPrice, strike, T, riskFreeRate, iv, false);
+        }
+      }
+
       return {
         strike,
         ce: ce ? {
           symbol: ce.symbol, token: ce.token, lotSize: ce.lotSize,
           ltp: ceLive?.ltp || 0, oi: ceLive?.opnInterest || 0,
-          volume: ceLive?.tradeVolume || 0, change: ceLive?.netChange || 0
+          volume: ceLive?.tradeVolume || 0, change: ceLive?.netChange || 0,
+          iv: ceGreeks ? parseFloat((ceGreeks.iv * 100).toFixed(2)) : null,
+          delta: ceGreeks ? parseFloat(ceGreeks.delta.toFixed(4)) : null,
+          gamma: ceGreeks ? parseFloat(ceGreeks.gamma.toFixed(4)) : null,
+          theta: ceGreeks ? parseFloat(ceGreeks.theta.toFixed(2)) : null,
+          vega: ceGreeks ? parseFloat(ceGreeks.vega.toFixed(2)) : null
         } : null,
         pe: pe ? {
           symbol: pe.symbol, token: pe.token, lotSize: pe.lotSize,
           ltp: peLive?.ltp || 0, oi: peLive?.opnInterest || 0,
-          volume: peLive?.tradeVolume || 0, change: peLive?.netChange || 0
+          volume: peLive?.tradeVolume || 0, change: peLive?.netChange || 0,
+          iv: peGreeks ? parseFloat((peGreeks.iv * 100).toFixed(2)) : null,
+          delta: peGreeks ? parseFloat(peGreeks.delta.toFixed(4)) : null,
+          gamma: peGreeks ? parseFloat(peGreeks.gamma.toFixed(4)) : null,
+          theta: peGreeks ? parseFloat(peGreeks.theta.toFixed(2)) : null,
+          vega: peGreeks ? parseFloat(peGreeks.vega.toFixed(2)) : null
         } : null
       };
     });
 
-    res.json({ expiries, selectedExpiry, chain, symbol });
+    res.json({ expiries, selectedExpiry, chain, symbol, spotPrice });
   } catch (error) {
     console.error("Option chain error:", error.message);
     res.status(500).json({ error: "Failed to fetch option chain" });
@@ -1245,6 +1326,133 @@ app.post("/api/paper-trade/reset", authMiddleware, (req, res) => {
   user.trades = [];
   updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
   res.json({ message: 'Paper trading account reset', wallet: user.wallet });
+});
+
+// Market Mood Index
+app.get("/api/market-mood", async (req, res) => {
+  try {
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const yahooFetch = async (sym, interval='1d', range='1mo') => {
+      const r = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=${interval}&range=${range}`, { timeout: 8000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const result = r.data?.chart?.result?.[0];
+      if (!result) return null;
+      const q = result.indicators.quote[0];
+      const closes = q.close.filter(c => c != null);
+      return { closes, meta: result.meta };
+    };
+
+    // 1. India VIX (lower = greed, higher = fear)
+    let vixScore = 50;
+    let vixValue = null;
+    try {
+      const vix = await yahooFetch('^INDIAVIX', '1d', '5d');
+      if (vix && vix.closes.length) {
+        vixValue = parseFloat(vix.closes[vix.closes.length - 1].toFixed(2));
+        // VIX 10-15 = extreme greed, 15-20 = greed, 20-25 = neutral, 25-35 = fear, 35+ = extreme fear
+        if (vixValue <= 12) vixScore = 95;
+        else if (vixValue <= 15) vixScore = 80;
+        else if (vixValue <= 20) vixScore = 65;
+        else if (vixValue <= 25) vixScore = 50;
+        else if (vixValue <= 30) vixScore = 35;
+        else if (vixValue <= 35) vixScore = 20;
+        else vixScore = 5;
+      }
+    } catch {}
+
+    // 2. Nifty 50 breadth (% stocks above 20 EMA)
+    const nifty50 = JSON.parse(fs.readFileSync(nifty50Path, 'utf8'));
+    let aboveEma = 0, totalChecked = 0;
+    const { EMA } = require('technicalindicators');
+    const batchSize = 10;
+    for (let i = 0; i < nifty50.length; i += batchSize) {
+      const batch = nifty50.slice(i, i + batchSize);
+      const results = await Promise.all(batch.map(async (s) => {
+        try {
+          const d = await yahooFetch(`${s.symbol}.NS`, '1d', '2mo');
+          if (!d || d.closes.length < 20) return null;
+          const ema20 = EMA.calculate({ period: 20, values: d.closes });
+          const lastEma = ema20[ema20.length - 1];
+          const lastClose = d.closes[d.closes.length - 1];
+          return lastClose > lastEma ? 1 : 0;
+        } catch { return null; }
+      }));
+      results.filter(r => r !== null).forEach(r => { totalChecked++; aboveEma += r; });
+    }
+    const breadthPct = totalChecked > 0 ? parseFloat((aboveEma / totalChecked * 100).toFixed(1)) : 50;
+    const breadthScore = breadthPct; // 0-100 directly maps
+
+    // 3. Nifty momentum (14-period RSI)
+    let momentumScore = 50;
+    let niftyRsi = null;
+    let niftyChange = null;
+    try {
+      const nifty = await yahooFetch('^NSEI', '1d', '2mo');
+      if (nifty && nifty.closes.length >= 15) {
+        const closes = nifty.closes;
+        const price = closes[closes.length - 1];
+        const prevPrice = closes[closes.length - 2];
+        niftyChange = parseFloat(((price - prevPrice) / prevPrice * 100).toFixed(2));
+        // RSI calculation
+        let gains = 0, losses = 0;
+        for (let i = closes.length - 14; i < closes.length; i++) {
+          const diff = closes[i] - closes[i - 1];
+          if (diff > 0) gains += diff; else losses -= diff;
+        }
+        const avgGain = gains / 14;
+        const avgLoss = losses / 14;
+        const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+        niftyRsi = parseFloat((100 - 100 / (1 + rs)).toFixed(2));
+        momentumScore = niftyRsi; // RSI 0-100 maps directly
+      }
+    } catch {}
+
+    // 4. Nifty distance from 52-week high/low
+    let highLowScore = 50;
+    let niftyPrice = null;
+    try {
+      const niftyY = await yahooFetch('^NSEI', '1wk', '1y');
+      if (niftyY && niftyY.closes.length > 10) {
+        const closes = niftyY.closes;
+        niftyPrice = parseFloat(closes[closes.length - 1].toFixed(2));
+        const high52 = Math.max(...closes);
+        const low52 = Math.min(...closes);
+        highLowScore = high52 !== low52 ? parseFloat(((niftyPrice - low52) / (high52 - low52) * 100).toFixed(1)) : 50;
+      }
+    } catch {}
+
+    // Weighted composite score
+    const moodScore = Math.round(
+      vixScore * 0.30 +
+      breadthScore * 0.30 +
+      momentumScore * 0.25 +
+      highLowScore * 0.15
+    );
+
+    let mood;
+    if (moodScore >= 80) mood = 'Extreme Greed';
+    else if (moodScore >= 60) mood = 'Greed';
+    else if (moodScore >= 40) mood = 'Neutral';
+    else if (moodScore >= 20) mood = 'Fear';
+    else mood = 'Extreme Fear';
+
+    res.json({
+      score: moodScore,
+      mood,
+      indicators: {
+        vix: { value: vixValue, score: vixScore, label: 'India VIX' },
+        breadth: { value: breadthPct, score: Math.round(breadthScore), label: 'Market Breadth', detail: `${aboveEma}/${totalChecked} above 20 EMA` },
+        momentum: { value: niftyRsi, score: Math.round(momentumScore), label: 'Nifty RSI' },
+        highLow: { value: niftyPrice, score: Math.round(highLowScore), label: '52W High/Low' },
+      },
+      niftyChange,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Market mood error:', error.message);
+    res.status(500).json({ error: 'Failed to compute market mood' });
+  }
 });
 
 // Support & Resistance Levels
