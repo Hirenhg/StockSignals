@@ -258,9 +258,9 @@ export default function PEGRatio() {
 
         {/* Category - Mobile Bottom Bar */}
         <div className="d-md-none position-fixed bottom-0 start-0 end-0 border-top shadow-lg bottom-nav" style={{ zIndex: 1000, background: darkMode ? '#1a1a2e' : '#fff' }}>
-          <div className="d-flex justify-content-between">
+          <div className="d-flex overflow-auto" style={{ scrollbarWidth: 'none' }}>
             {categories.map(c => (
-              <button key={c} className={`btn flex-grow-1 rounded-0 border-0 py-3 ${category === c ? 'btn-primary' : darkMode ? 'btn-dark' : 'btn-light'}`} onClick={() => switchCategory(c)} style={{ fontSize: '11px', fontWeight: '600', padding: '12px 4px' }}>
+              <button key={c} className={`btn flex-shrink-0 rounded-0 border-0 py-3 ${category === c ? 'btn-primary' : darkMode ? 'btn-dark' : 'btn-light'}`} onClick={() => switchCategory(c)} style={{ fontSize: '11px', fontWeight: '600', padding: '12px 10px', whiteSpace: 'nowrap' }}>
                 {c}
               </button>
             ))}
