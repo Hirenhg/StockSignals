@@ -162,8 +162,6 @@ export default function Levels() {
     return null
   }
 
-  const levelClass = (type) => type === 'support' ? 'level-support' : type === 'resistance' ? 'level-resistance' : 'level-pivot'
-
   return (
     <>
       <Helmet><title>Support & Resistance - StockSignal</title></Helmet>
