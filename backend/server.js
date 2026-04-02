@@ -1455,6 +1455,83 @@ app.get("/api/market-mood", async (req, res) => {
   }
 });
 
+// Quarterly Results — scrape from Yahoo Finance page
+app.get("/api/results", async (req, res) => {
+  try {
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const stocks = [...getNifty50(), ...getStocks()];
+    const unique = [...new Map(stocks.map(s => [s.symbol, s])).values()];
+
+    const extractVal = (html, key) => {
+      const re = new RegExp(`\\\\"${key}\\\\":\\{\\\\"raw\\\\":([\\d.\\-eE+]+)`);
+      const m = html.match(re);
+      return m ? parseFloat(m[1]) : null;
+    };
+    const extractArr = (html, key) => {
+      const re = new RegExp(`\\\\"${key}\\\\":\\[\\{\\\\"raw\\\\":([\\d.\\-eE+]+)`);
+      const m = html.match(re);
+      return m ? parseFloat(m[1]) : null;
+    };
+
+    const results = [];
+    const batchSize = 5;
+    for (let i = 0; i < unique.length; i += batchSize) {
+      const batch = unique.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch.map(async ({ symbol }) => {
+        try {
+          const r = await axios.get(`https://finance.yahoo.com/quote/${symbol}.NS/`, {
+            timeout: 15000, httpsAgent: agent,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+          });
+          const html = r.data;
+
+          const revenue = extractVal(html, 'totalRevenue');
+          const netProfit = extractVal(html, 'netIncomeToCommon');
+          const opRaw = extractVal(html, 'operatingMargins');
+          const operatingMargin = opRaw != null ? parseFloat((opRaw * 100).toFixed(2)) : null;
+          const pmRaw = extractVal(html, 'profitMargins');
+          const profitMargin = pmRaw != null ? parseFloat((pmRaw * 100).toFixed(2)) : null;
+          const dyRaw = extractVal(html, 'dividendYield');
+          const dividendYield = dyRaw != null ? parseFloat((dyRaw * 100).toFixed(2)) : null;
+          const rgRaw = extractVal(html, 'revenueGrowth');
+          const revenueGrowth = rgRaw != null ? parseFloat((rgRaw * 100).toFixed(2)) : null;
+          const egRaw = extractVal(html, 'earningsGrowth');
+          const earningsGrowth = egRaw != null ? parseFloat((egRaw * 100).toFixed(2)) : null;
+          const earningsTs = extractArr(html, 'earningsDate');
+          const earningsDate = earningsTs ? new Date(earningsTs * 1000).toISOString().slice(0, 10) : null;
+          const forwardEps = extractVal(html, 'forwardEps');
+          const trailingEps = extractVal(html, 'trailingEps');
+
+          let overall = 'Neutral';
+          let score = 0;
+          if (operatingMargin != null && operatingMargin > 15) score++;
+          if (profitMargin != null && profitMargin > 10) score++;
+          if (revenueGrowth != null && revenueGrowth > 5) score++;
+          if (earningsGrowth != null && earningsGrowth > 5) score++;
+          if (dividendYield != null && dividendYield > 0.5) score++;
+          if (score >= 4) overall = 'Strong';
+          else if (score >= 3) overall = 'Decent';
+          else if (score >= 2) overall = 'Stable';
+          else if (score <= 1) overall = 'Weak';
+
+          return {
+            symbol, revenue, netProfit, operatingMargin, profitMargin,
+            dividendYield, earningsDate, revenueGrowth, earningsGrowth,
+            forwardEps, trailingEps, overall, score
+          };
+        } catch { return null; }
+      }));
+      results.push(...batchResults.filter(Boolean));
+    }
+    res.json(results);
+  } catch (error) {
+    console.error('Results error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch results' });
+  }
+});
+
 // Support & Resistance Levels
 const { getLevels } = require('./services/levelsService');
 
