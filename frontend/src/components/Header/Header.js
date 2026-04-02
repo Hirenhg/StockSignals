@@ -28,6 +28,7 @@ const Header = () => {
         // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
         { path: '/paper-trade', label: 'Paper Trade', icon: 'bi-wallet2' },
         { path: '/levels', label: 'Levels', icon: 'bi-arrows-expand' },
+        { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
       ]
     : [
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
