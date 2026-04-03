@@ -95,8 +95,16 @@ async function getStockFull(symbol, interval = '5m', range = '5d') {
     const meta = result.meta;
     const q = result.indicators.quote[0];
     const closes = q.close.filter(p => p !== null);
+    const len = q.close.length;
+    const ohlc = [];
+    for (let i = 0; i < len; i++) {
+      if (q.close[i] != null && q.open[i] != null && q.high[i] != null && q.low[i] != null) {
+        ohlc.push({ open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i] });
+      }
+    }
     return {
       closes,
+      ohlc,
       week52High: meta.fiftyTwoWeekHigh ? meta.fiftyTwoWeekHigh.toFixed(2) : null,
       week52Low: meta.fiftyTwoWeekLow ? meta.fiftyTwoWeekLow.toFixed(2) : null,
       prevClose: meta.chartPreviousClose ? meta.chartPreviousClose : null

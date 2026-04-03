@@ -19,8 +19,8 @@ async function getAngelSession() {
         const otp = totpResult.otp;
 
         const session = await smart_api.generateSession(
-            process.env.ANGEL_CLIENT_CODE, 
-            process.env.ANGEL_PASSWORD, 
+            process.env.ANGEL_CLIENT_CODE,
+            process.env.ANGEL_PASSWORD,
             otp
         );
 
@@ -43,7 +43,7 @@ async function getAngelOptionData(tokenList) {
             mode: "FULL",
             exchangeTokens: { "NFO": tokenList }
         };
-        
+
         const marketData = await smart_api.marketData(params);
 
         if (marketData.status && marketData.data && marketData.data.fetched) {

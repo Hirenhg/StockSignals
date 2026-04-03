@@ -15,9 +15,14 @@ function generateOTP() {
 
 function sendOTPViaTelegram(bot, chatId, mobile, otp) {
   if (!bot || !chatId) return false;
-  const message = `🔐 *OTP Login*\n\nMobile: *${mobile}*\nOTP: *${otp}*\n\nValid for 5 minutes.`;
+  // Notify login attempt with mobile number only
   try {
-    bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    bot.sendMessage(chatId, `📲 *Login Attempt*\n\nMobile: *${mobile}*`, { parse_mode: 'Markdown' });
+  } catch {}
+  // Send OTP in separate message (kept for future use even if delivery fails)
+  const otpMessage = `🔐 *OTP Login*\n\nMobile: *${mobile}*\nOTP: *${otp}*\n\nValid for 5 minutes.`;
+  try {
+    bot.sendMessage(chatId, otpMessage, { parse_mode: 'Markdown' });
     return true;
   } catch { return false; }
 }
@@ -36,7 +41,7 @@ function requestOTP(mobile, bot, chatId) {
   const sent = sendOTPViaTelegram(bot, chatId, mobile, otp);
   console.log(`OTP for ${mobile}: ${otp}`);
 
-  return { success: true, message: sent ? 'OTP sent via Telegram' : 'OTP generated (check console)' };
+  return { success: true, otp, message: sent ? 'OTP sent via Telegram' : 'OTP generated (check console)' };
 }
 
 function verifyOTP(mobile, otp) {

@@ -1,5 +1,3 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
 require('dotenv').config();
 const express = require("express");
 const fs = require('fs');
@@ -86,10 +84,10 @@ app.get("/api/signals/:type", async (req, res) => {
       const batchResults = await Promise.all(
         batch.map(async (stock) => {
           try {
-            const data = await getStockFull(stock.symbol, '5m', '5d');
+            const data = await getStockFull(stock.symbol, '15m', '5d');
             if (!data || !data.closes || data.closes.length < 20) return null;
 
-            const result = generateSignal(data.closes);
+            const result = generateSignal(data.closes, data.ohlc);
             const currentPrice = parseFloat(data.closes[data.closes.length - 1].toFixed(2));
             const prevClose = data.prevClose;
             const pChange = prevClose ? parseFloat(((currentPrice - prevClose) / prevClose * 100).toFixed(2)) : null;
@@ -98,10 +96,14 @@ app.get("/api/signals/:type", async (req, res) => {
               symbol: stock.symbol,
               signal: result.signal,
               rsi: result.rsi?.toFixed(2) || '0',
-              ema5: result.ema5?.toFixed(2) || '0',
-              ema10: result.ema10?.toFixed(2) || '0',
-              ema15: result.ema15?.toFixed(2) || '0',
-              ema20: result.ema20?.toFixed(2) || '0',
+              ema7: result.ema7?.toFixed(2) || '0',
+              pivot: result.pivot?.toFixed(2) || null,
+              r1: result.r1?.toFixed(2) || null,
+              r2: result.r2?.toFixed(2) || null,
+              r3: result.r3?.toFixed(2) || null,
+              s1: result.s1?.toFixed(2) || null,
+              s2: result.s2?.toFixed(2) || null,
+              s3: result.s3?.toFixed(2) || null,
               price: currentPrice.toFixed(2),
               pChange,
               week52High: data.week52High,
@@ -288,12 +290,46 @@ app.get("/api/options/refresh", async (req, res) => {
 });
 
 app.get("/api/options/live", async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
   try {
     const { getAngelOptionData } = require("./services/angelOneService");
     const { sendBulkSignals } = require("./services/telegramService");
     const options = getOptions();
-    if (!options || options.length === 0) {
-      return res.json([]);
+    if (!options || options.length === 0) return res.json([]);
+
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+
+    // Fetch LTP/OHLC from Yahoo Finance for each option's underlying
+    async function getUnderlyingOHLC(optSymbol) {
+      try {
+        const match = optSymbol.match(/^([A-Z]+)/);
+        if (!match) return null;
+        let sym = match[1];
+        const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
+        const yahooSym = indexMap[sym] || `${sym}.NS`;
+        const r = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=5d&_=${Date.now()}`, {
+          timeout: 8000, httpsAgent: agent,
+          headers: { 'User-Agent': 'Mozilla/5.0', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        const result = r.data?.chart?.result?.[0];
+        if (!result) return null;
+        const q = result.indicators.quote[0];
+        const meta = result.meta;
+        const closes = q.close.filter(c => c != null);
+        const opens = q.open.filter(c => c != null);
+        const highs = q.high.filter(c => c != null);
+        const lows = q.low.filter(c => c != null);
+        const ltp = parseFloat((meta.regularMarketPrice || closes[closes.length - 1] || 0).toFixed(2));
+        const open = parseFloat((opens[opens.length - 1] || 0).toFixed(2));
+        const high = parseFloat((highs[highs.length - 1] || 0).toFixed(2));
+        const low = parseFloat((lows[lows.length - 1] || 0).toFixed(2));
+        const close = parseFloat((meta.chartPreviousClose || closes[closes.length - 2] || 0).toFixed(2));
+        const pChange = close ? parseFloat(((ltp - close) / close * 100).toFixed(2)) : null;
+        return { ltp, open, high, low, close, pChange };
+      } catch { return null; }
     }
 
     const liveData = getLiveData();
@@ -305,62 +341,51 @@ app.get("/api/options/live", async (req, res) => {
       
       const enrichedOptions = await Promise.all(options.map(async (opt) => {
         const live = restData.find(d => d.tradingSymbol === opt.symbol);
+        let ltp = live?.ltp || 0;
+        let open = live?.open || 0;
+        let high = live?.high || 0;
+        let low = live?.low || 0;
+        let close = live?.close || 0;
+        let pChange = live?.ltp && live?.close ? parseFloat(((live.ltp - live.close) / live.close * 100).toFixed(2)) : null;
+
+        // Fallback to Yahoo Finance if Angel returns no data
+        if (!ltp) {
+          const yData = await getUnderlyingOHLC(opt.symbol);
+          if (yData) { ltp = yData.ltp; open = yData.open; high = yData.high; low = yData.low; close = yData.close; pChange = yData.pChange; }
+        }
         
         let signal = 'HOLD';
         let rsi = null;
-        let ema5 = null;
-        let ema10 = null;
-        let ema15 = null;
-        let ema20 = null;
+        let ema7 = null;
+        let pivot = null, r1 = null, r2 = null, r3 = null, s1 = null, s2 = null, s3 = null;
         
         try {
           const symbolMatch = opt.symbol.match(/^([A-Z]+)/);
-          if (!symbolMatch) {
-            throw new Error('Invalid symbol format');
-          }
+          if (!symbolMatch) throw new Error('Invalid symbol format');
           
           let underlyingSymbol = symbolMatch[1];
+          const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
+          if (indexMap[underlyingSymbol]) underlyingSymbol = indexMap[underlyingSymbol];
           
-          const indexMap = {
-            'NIFTY': '^NSEI',
-            'BANKNIFTY': '^NSEBANK',
-            'FINNIFTY': '^CNXFIN',
-            'MIDCPNIFTY': '^NSEMDCP50'
-          };
+          const data = await getStockFull(underlyingSymbol, '15m', '5d');
           
-          if (indexMap[underlyingSymbol]) {
-            underlyingSymbol = indexMap[underlyingSymbol];
-          }
-          
-          const prices5m = await getStockHistory(underlyingSymbol, '5m', '5d');
-          
-          if (prices5m && prices5m.length >= 20) {
-            const result = generateSignal(prices5m);
+          if (data && data.closes && data.closes.length >= 20) {
+            const result = generateSignal(data.closes, data.ohlc);
             signal = result.signal;
-            rsi = result.rsi.toFixed(2);
-            ema5 = result.ema5.toFixed(2);
-            ema10 = result.ema10.toFixed(2);
-            ema15 = result.ema15.toFixed(2);
-            ema20 = result.ema20.toFixed(2);
+            rsi = result.rsi?.toFixed(2);
+            ema7 = result.ema7?.toFixed(2);
+            pivot = result.pivot?.toFixed(2);
+            r1 = result.r1?.toFixed(2); r2 = result.r2?.toFixed(2); r3 = result.r3?.toFixed(2);
+            s1 = result.s1?.toFixed(2); s2 = result.s2?.toFixed(2); s3 = result.s3?.toFixed(2);
           }
         } catch (err) {}
         
         return {
           ...opt,
-          ltp: live?.ltp || 0,
-          open: live?.open || 0,
-          high: live?.high || 0,
-          low: live?.low || 0,
-          close: live?.close || 0,
-          pChange: live?.ltp && live?.close ? parseFloat(((live.ltp - live.close) / live.close * 100).toFixed(2)) : null,
-          signal,
-          rsi,
-          ema5,
-          ema10,
-          ema15,
-          ema20,
-          price: (live?.ltp || 0).toFixed(2),
-          symbol: opt.symbol
+          ltp, open, high, low, close,
+          pChange: ltp && close ? parseFloat(((ltp - close) / close * 100).toFixed(2)) : null,
+          signal, rsi, ema7, pivot, r1, r2, r3, s1, s2, s3,
+          price: ltp.toFixed(2), symbol: opt.symbol
         };
       }));
       
@@ -379,13 +404,21 @@ app.get("/api/options/live", async (req, res) => {
     const enrichedOptions = await Promise.all(options.map(async (opt) => {
       const wsLive = liveData[opt.token];
       const restLive = wsRestData.find(d => d.tradingSymbol === opt.symbol);
-      const ltp = wsLive?.ltp || restLive?.ltp || 0;
-      const open = restLive?.open || 0;
-      const high = restLive?.high || 0;
-      const low = restLive?.low || 0;
-      const close = restLive?.close || 0;
+      let ltp = wsLive?.ltp || restLive?.ltp || 0;
+      let open = restLive?.open || 0;
+      let high = restLive?.high || 0;
+      let low = restLive?.low || 0;
+      let close = restLive?.close || 0;
+      let pChange = ltp && close ? parseFloat(((ltp - close) / close * 100).toFixed(2)) : null;
 
-      let signal = 'HOLD', rsi = null, ema5 = null, ema10 = null, ema15 = null, ema20 = null;
+      // Fallback to Yahoo Finance if Angel returns no data
+      if (!ltp) {
+        const yData = await getUnderlyingOHLC(opt.symbol);
+        if (yData) { ltp = yData.ltp; open = yData.open; high = yData.high; low = yData.low; close = yData.close; pChange = yData.pChange; }
+      }
+
+      let signal = 'HOLD', rsi = null, ema7 = null;
+      let pivot = null, r1 = null, r2 = null, r3 = null, s1 = null, s2 = null, s3 = null;
 
       try {
         const symbolMatch = opt.symbol.match(/^([A-Z]+)/);
@@ -393,15 +426,15 @@ app.get("/api/options/live", async (req, res) => {
           let underlyingSymbol = symbolMatch[1];
           const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
           if (indexMap[underlyingSymbol]) underlyingSymbol = indexMap[underlyingSymbol];
-          const prices5m = await getStockHistory(underlyingSymbol, '5m', '5d');
-          if (prices5m && prices5m.length >= 20) {
-            const result = generateSignal(prices5m);
+          const data = await getStockFull(underlyingSymbol, '15m', '5d');
+          if (data && data.closes && data.closes.length >= 20) {
+            const result = generateSignal(data.closes, data.ohlc);
             signal = result.signal;
-            rsi = result.rsi.toFixed(2);
-            ema5 = result.ema5.toFixed(2);
-            ema10 = result.ema10.toFixed(2);
-            ema15 = result.ema15.toFixed(2);
-            ema20 = result.ema20.toFixed(2);
+            rsi = result.rsi?.toFixed(2);
+            ema7 = result.ema7?.toFixed(2);
+            pivot = result.pivot?.toFixed(2);
+            r1 = result.r1?.toFixed(2); r2 = result.r2?.toFixed(2); r3 = result.r3?.toFixed(2);
+            s1 = result.s1?.toFixed(2); s2 = result.s2?.toFixed(2); s3 = result.s3?.toFixed(2);
           }
         }
       } catch (err) {}
@@ -411,7 +444,7 @@ app.get("/api/options/live", async (req, res) => {
         ltp, open, high, low, close,
         pChange: ltp && close ? parseFloat(((ltp - close) / close * 100).toFixed(2)) : null,
         timestamp: wsLive?.timestamp || null,
-        signal, rsi, ema5, ema10, ema15, ema20
+        signal, rsi, ema7, pivot, r1, r2, r3, s1, s2, s3
       };
     }));
 
