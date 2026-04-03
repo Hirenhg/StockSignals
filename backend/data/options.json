@@ -1,37 +1,37 @@
 [
   {
-    "symbol": "NIFTY30MAR2623500PE",
-    "token": "54519",
+    "symbol": "LUPIN28APR262400CE",
+    "token": "138257",
+    "exchange": "NFO",
+    "lotSize": "425",
+    "tickSize": "5.000000"
+  },
+  {
+    "symbol": "NIFTY07APR2622700CE",
+    "token": "40742",
     "exchange": "NFO",
     "lotSize": "65",
     "tickSize": "5.000000"
   },
   {
-    "symbol": "FINNIFTY30MAR2623850PE",
-    "token": "40417",
+    "symbol": "NIFTY07APR2622500PE",
+    "token": "40735",
     "exchange": "NFO",
-    "lotSize": "60",
+    "lotSize": "65",
     "tickSize": "5.000000"
   },
   {
-    "symbol": "PGEL30MAR26480PE",
-    "token": "149900",
-    "exchange": "NFO",
-    "lotSize": "950",
-    "tickSize": "5.000000"
-  },
-  {
-    "symbol": "BANKNIFTY30MAR2654000CE",
-    "token": "58534",
+    "symbol": "BANKNIFTY26MAY2655500CE",
+    "token": "67280",
     "exchange": "NFO",
     "lotSize": "30",
     "tickSize": "5.000000"
   },
   {
-    "symbol": "NIFTY30MAR2622600CE",
-    "token": "54482",
+    "symbol": "AUROPHARMA28APR261350CE",
+    "token": "82753",
     "exchange": "NFO",
-    "lotSize": "65",
+    "lotSize": "550",
     "tickSize": "5.000000"
   }
 ]
