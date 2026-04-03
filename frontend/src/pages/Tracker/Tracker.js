@@ -5,6 +5,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { SkeletonTable, SkeletonCards } from "../../components/Skeleton/Skeleton"
 
 const CATEGORIES = ['stocks', 'nifty50', 'niftynext50']
+const OPTION_CATEGORY = 'options'
 
 const isMarketOpen = () => {
   const now = new Date()
@@ -19,10 +20,11 @@ function Tracker() {
   const [active, setActive] = useState([])
   const [hits, setHits] = useState([])
   const [viewTab, setViewTab] = useState('active')
+  const [sourceTab, setSourceTab] = useState('stocks') // stocks | options
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
-  const targetPct = 2.4
-  const slPct = 1
+  const targetPct = sourceTab === 'options' ? 30 : 2
+  const slPct = sourceTab === 'options' ? 10 : 1
   const [searchTerm, setSearchTerm] = useState('')
   const [lastRefresh, setLastRefresh] = useState(null)
   const audioRef = useRef(null)
@@ -56,29 +58,50 @@ function Tracker() {
 
   const fetchAllSignals = useCallback(async () => {
     setLoading(true)
-    const tp = parseFloat(targetPct) || 1.2
-    const sl = parseFloat(slPct) || 0.4
+    const tp = parseFloat(targetPct) || 2
+    const sl = parseFloat(slPct) || 1
     const allTrades = []
 
-    await Promise.all(CATEGORIES.map(async (cat) => {
+    if (sourceTab === 'options') {
       try {
-        const res = await API.get(`/api/signals/${cat}`)
+        const res = await API.get(`/api/options/live?_=${Date.now()}`)
         res.data.forEach(s => {
           if (s.signal !== 'BUY' && s.signal !== 'SELL') return
-          const price = parseFloat(s.price)
+          const price = parseFloat(s.ltp || s.price || 0)
+          if (!price) return
           const isBuy = s.signal === 'BUY'
           allTrades.push({
-            symbol: s.symbol, signal: s.signal, category: cat,
+            symbol: s.symbol, signal: s.signal, category: OPTION_CATEGORY,
             entry: price,
             target: parseFloat((isBuy ? price * (1 + tp / 100) : price * (1 - tp / 100)).toFixed(2)),
             sl: parseFloat((isBuy ? price * (1 - sl / 100) : price * (1 + sl / 100)).toFixed(2)),
             currentPrice: price, pChange: s.pChange, rsi: s.rsi,
             time: new Date().toISOString(),
-            id: `${s.symbol}-${s.signal}-${cat}`
+            id: `${s.symbol}-${s.signal}-options`
           })
         })
       } catch {}
-    }))
+    } else {
+      await Promise.all(CATEGORIES.map(async (cat) => {
+        try {
+          const res = await API.get(`/api/signals/${cat}`)
+          res.data.forEach(s => {
+            if (s.signal !== 'BUY' && s.signal !== 'SELL') return
+            const price = parseFloat(s.price)
+            const isBuy = s.signal === 'BUY'
+            allTrades.push({
+              symbol: s.symbol, signal: s.signal, category: cat,
+              entry: price,
+              target: parseFloat((isBuy ? price * (1 + tp / 100) : price * (1 - tp / 100)).toFixed(2)),
+              sl: parseFloat((isBuy ? price * (1 - sl / 100) : price * (1 + sl / 100)).toFixed(2)),
+              currentPrice: price, pChange: s.pChange, rsi: s.rsi,
+              time: new Date().toISOString(),
+              id: `${s.symbol}-${s.signal}-${cat}`
+            })
+          })
+        } catch {}
+      }))
+    }
 
     // Filter out trades that already hit target/SL in history
     const hitIds = new Set(hitsRef.current.map(h => h.id))
@@ -100,9 +123,9 @@ function Tracker() {
         }))
       } catch {}
     }
-  }, [targetPct, slPct])
+  }, [targetPct, slPct, sourceTab])
 
-  // Auto-fetch signals on mount only (not every 60s — price check handles live updates)
+  // Re-fetch when sourceTab changes
   useEffect(() => { fetchAllSignals() }, [fetchAllSignals])
 
   // Price check + hit detection every 15s
@@ -164,7 +187,7 @@ function Tracker() {
   const pnlColor = (val) => val > 0 ? '#198754' : val < 0 ? '#dc3545' : '#6c757d'
 
   const catLabel = (cat) => {
-    const map = { stocks: t('watchlist'), indices: t('indices'), nifty50: t('nifty50'), niftynext50: t('next50'), commodities: t('commodities'), crypto: t('crypto') }
+    const map = { stocks: t('watchlist'), indices: t('indices'), nifty50: t('nifty50'), niftynext50: t('next50'), commodities: t('commodities'), crypto: t('crypto'), options: 'Options' }
     return map[cat] || cat
   }
 
@@ -215,6 +238,16 @@ function Tracker() {
               <div className="fw-bold" style={{ fontSize: '20px' }}>{c.value}</div>
             </div>
           ))}
+        </div>
+
+        {/* Source Tabs */}
+        <div className="d-flex gap-2 mb-3">
+          <button className={`btn btn-sm ${sourceTab === 'stocks' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => { setSourceTab('stocks'); setActive([]); }}>
+            📈 Stocks
+          </button>
+          <button className={`btn btn-sm ${sourceTab === 'options' ? 'btn-warning' : 'btn-outline-warning'}`} onClick={() => { setSourceTab('options'); setActive([]); }}>
+            🎯 Options
+          </button>
         </div>
 
         {/* View Tabs + Search */}

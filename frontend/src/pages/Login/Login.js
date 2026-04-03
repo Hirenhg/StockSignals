@@ -6,42 +6,30 @@ import { useNavigate } from 'react-router-dom'
 const Login = () => {
   const { sendOTP, verifyOTP, updateProfile, isLoggedIn, loading: authLoading } = useAuth()
   const navigate = useNavigate()
-  const [step, setStep] = useState('mobile') // mobile -> otp -> name
+  const [step, setStep] = useState('mobile') // mobile -> name
   const [mobile, setMobile] = useState('')
-  const [otp, setOtp] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!authLoading && isLoggedIn) navigate('/', { replace: true })
-  }, [authLoading, isLoggedIn, navigate])
+    if (!authLoading && isLoggedIn && step !== 'name') navigate('/', { replace: true })
+  }, [authLoading, isLoggedIn, navigate, step])
 
   const handleSendOTP = async (e) => {
     e.preventDefault()
     if (mobile.length < 10) { setError('Enter valid 10-digit mobile number'); return }
     setLoading(true); setError('')
     try {
-      await sendOTP(mobile)
-      setStep('otp')
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to send OTP')
-    } finally { setLoading(false) }
-  }
-
-  const handleVerifyOTP = async (e) => {
-    e.preventDefault()
-    if (otp.length !== 6) { setError('Enter 6-digit OTP'); return }
-    setLoading(true); setError('')
-    try {
-      const result = await verifyOTP(mobile, otp)
+      const otpRes = await sendOTP(mobile)
+      const result = await verifyOTP(mobile, otpRes.otp)
       if (result.user?.name) {
         navigate('/')
       } else {
         setStep('name')
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid OTP')
+      setError(err.response?.data?.error || 'Failed to login')
     } finally { setLoading(false) }
   }
 
@@ -67,7 +55,6 @@ const Login = () => {
               <h4 className="fw-bold mt-2">StockSignal</h4>
               <p className="text-muted mb-0">
                 {step === 'mobile' && 'Login with your mobile number'}
-                {step === 'otp' && 'Enter OTP sent via Telegram'}
                 {step === 'name' && 'Set your display name'}
               </p>
             </div>
@@ -92,45 +79,11 @@ const Login = () => {
                   </div>
                 </div>
                 <button className="btn btn-primary w-100" disabled={loading || mobile.length < 10}>
-                  {loading ? 'Sending OTP...' : 'Send OTP via Telegram'}
+                  {loading ? 'Logging in...' : 'Login'}
                 </button>
                 <p className="text-muted text-center mt-3" style={{ fontSize: '12px' }}>
-                  OTP will be sent to the Telegram bot linked with this app
+                  Login with your registered mobile number
                 </p>
-              </form>
-            )}
-
-            {step === 'otp' && (
-              <form onSubmit={handleVerifyOTP}>
-                <div className="mb-2">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label fw-semibold mb-0">Enter OTP</label>
-                    <small className="text-muted">Sent to +91{mobile}</small>
-                  </div>
-                </div>
-                <div className="mb-3">
-                  <input
-                    type="text"
-                    className="form-control form-control-lg text-center fw-bold"
-                    placeholder="● ● ● ● ● ●"
-                    value={otp}
-                    onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    maxLength={6}
-                    autoFocus
-                    style={{ letterSpacing: '8px', fontSize: '24px' }}
-                  />
-                </div>
-                <button className="btn btn-primary w-100 mb-2" disabled={loading || otp.length !== 6}>
-                  {loading ? 'Verifying...' : 'Verify OTP'}
-                </button>
-                <div className="d-flex justify-content-between">
-                  <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={() => { setStep('mobile'); setOtp(''); setError('') }}>
-                    ← Change number
-                  </button>
-                  <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={handleSendOTP} disabled={loading}>
-                    Resend OTP
-                  </button>
-                </div>
               </form>
             )}
 

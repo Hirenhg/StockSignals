@@ -20,11 +20,11 @@ const Options = () => {
   const [suggestLoading, setSuggestLoading] = useState(false);
 
   const exportCSV = () => {
-    const headers = ['Symbol','LotSize','LTP','Target','SL','%Chg','Signal','RSI','EMA5','EMA10','EMA15','EMA20','Open','High','Low']
+    const headers = ['Symbol','LotSize','LTP','Target','SL','%Chg','Signal','RSI','EMA7','Pivot','R1','R2','R3','S1','S2','S3','Open','High','Low']
     const rows = filteredOptions.map(o => {
       const p = o.ltp || 0
       const isSell = o.signal === 'SELL'
-      return [o.symbol,o.lotSize,p.toFixed(2),isSell ? (p*0.7).toFixed(2) : (p*1.3).toFixed(2),isSell ? (p*1.1).toFixed(2) : (p*0.9).toFixed(2),o.pChange||'',o.signal||'HOLD',o.rsi||'',o.ema5||'',o.ema10||'',o.ema15||'',o.ema20||'',o.open?.toFixed(2)||0,o.high?.toFixed(2)||0,o.low?.toFixed(2)||0]
+      return [o.symbol,o.lotSize,p.toFixed(2),isSell?(p*0.7).toFixed(2):(p*1.3).toFixed(2),isSell?(p*1.1).toFixed(2):(p*0.9).toFixed(2),o.pChange||'',o.signal||'HOLD',o.rsi||'',o.ema7||'',o.pivot||'',o.r1||'',o.r2||'',o.r3||'',o.s1||'',o.s2||'',o.s3||'',o.open?.toFixed(2)||0,o.high?.toFixed(2)||0,o.low?.toFixed(2)||0]
     })
     const csv = [headers,...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -69,7 +69,7 @@ const Options = () => {
   const fetchOptionsData = useCallback(async (showRefreshToast = false) => {
     if (showRefreshToast) setRefreshing(true);
     try {
-      const response = await API.get('/api/options/live');
+      const response = await API.get(`/api/options/live?_=${Date.now()}`);
       setOptionsData(response.data);
       if (showRefreshToast) showToast('Data refreshed!', 'success');
     } catch (error) {
@@ -335,10 +335,14 @@ const Options = () => {
                     <div className="col-6"><small className="text-muted d-block">Low</small><strong>₹{option.low?.toFixed(2) || "0.00"}</strong></div>
                   </div>
                   <div className="row g-3 border-top mt-3">
-                    <div className="col-6"><small className="text-danger d-block">EMA5</small><strong className="text-danger">₹{option.ema5 || '-'}</strong></div>
-                    <div className="col-6"><small className="text-success d-block">EMA10</small><strong className="text-success">₹{option.ema10 || '-'}</strong></div>
-                    <div className="col-6"><small className="text-blue d-block">EMA15</small><strong className="text-primary">₹{option.ema15 || '-'}</strong></div>
-                    <div className="col-6"><small className="text-warning d-block">EMA20</small><strong className="text-warning">₹{option.ema20 || '-'}</strong></div>
+                    <div className="col-6"><small className="text-primary d-block">EMA7</small><strong className="text-primary">₹{option.ema7 || '-'}</strong></div>
+                    <div className="col-6"><small className="text-muted d-block">Pivot</small><strong>₹{option.pivot || '-'}</strong></div>
+                    <div className="col-4"><small style={{color:'#dc3545'}} className="d-block">R1</small><strong style={{color:'#dc3545'}}>₹{option.r1 || '-'}</strong></div>
+                    <div className="col-4"><small style={{color:'#dc3545'}} className="d-block">R2</small><strong style={{color:'#dc3545'}}>₹{option.r2 || '-'}</strong></div>
+                    <div className="col-4"><small style={{color:'#dc3545'}} className="d-block">R3</small><strong style={{color:'#dc3545'}}>₹{option.r3 || '-'}</strong></div>
+                    <div className="col-4"><small style={{color:'#198754'}} className="d-block">S1</small><strong style={{color:'#198754'}}>₹{option.s1 || '-'}</strong></div>
+                    <div className="col-4"><small style={{color:'#198754'}} className="d-block">S2</small><strong style={{color:'#198754'}}>₹{option.s2 || '-'}</strong></div>
+                    <div className="col-4"><small style={{color:'#198754'}} className="d-block">S3</small><strong style={{color:'#198754'}}>₹{option.s3 || '-'}</strong></div>
                     <div className="col-6">
                       <small style={{color: '#198754'}} className="d-block">Target {(option.signal || 'HOLD') === 'SELL' ? '-' : '+'}30%</small>
                       <strong style={{color: '#198754'}}>₹{(option.signal || 'HOLD') === 'SELL' ? ((option.ltp || 0) * 0.7).toFixed(2) : ((option.ltp || 0) * 1.3).toFixed(2)}</strong>
@@ -363,10 +367,14 @@ const Options = () => {
                 <th onClick={() => handleSort("ltp")} style={{ cursor: "pointer" }}>LTP {sortConfig.key === "ltp" && (sortConfig.direction === "asc" ? "↑" : "↓")}</th>
                 <th>Signal</th>
                 <th>RSI</th>
-                <th style={{color: 'red'}}>EMA5</th>
-                <th style={{color: 'green'}}>EMA10</th>
-                <th style={{color: 'blue'}}>EMA15</th>
-                <th style={{color: '#ffc107'}}>EMA20</th>
+                <th style={{color:'#2962FF'}}>EMA7</th>
+                <th>Pivot</th>
+                <th style={{color:'#dc3545'}}>R1</th>
+                <th style={{color:'#dc3545'}}>R2</th>
+                <th style={{color:'#dc3545'}}>R3</th>
+                <th style={{color:'#198754'}}>S1</th>
+                <th style={{color:'#198754'}}>S2</th>
+                <th style={{color:'#198754'}}>S3</th>
                 <th style={{color: '#198754'}}>Target</th>
                 <th style={{color: '#dc3545'}}>SL</th>
                 <th>Open</th>
@@ -387,10 +395,14 @@ const Options = () => {
                     <td className="fw-bold">₹{option.ltp?.toFixed(2) || "0.00"}</td>
                     <td><span className={`badge ${option.signal === "BUY" ? "bg-success" : option.signal === "SELL" ? "bg-danger" : "bg-secondary"}`}>{option.signal || 'HOLD'}</span></td>
                     <td>{option.rsi || '-'}</td>
-                    <td style={{color: 'red'}}>₹{option.ema5 || '-'}</td>
-                    <td style={{color: 'green'}}>₹{option.ema10 || '-'}</td>
-                    <td style={{color: 'blue'}}>₹{option.ema15 || '-'}</td>
-                    <td style={{color: '#ffc107'}}>₹{option.ema20 || '-'}</td>
+                    <td style={{color:'#2962FF'}}>₹{option.ema7 || '-'}</td>
+                    <td>₹{option.pivot || '-'}</td>
+                    <td style={{color:'#dc3545'}}>₹{option.r1 || '-'}</td>
+                    <td style={{color:'#dc3545'}}>₹{option.r2 || '-'}</td>
+                    <td style={{color:'#dc3545'}}>₹{option.r3 || '-'}</td>
+                    <td style={{color:'#198754'}}>₹{option.s1 || '-'}</td>
+                    <td style={{color:'#198754'}}>₹{option.s2 || '-'}</td>
+                    <td style={{color:'#198754'}}>₹{option.s3 || '-'}</td>
                     <td style={{color: '#198754', fontWeight: 'bold'}}>₹{(option.signal || 'HOLD') === 'SELL' ? ((option.ltp || 0) * 0.7).toFixed(2) : ((option.ltp || 0) * 1.3).toFixed(2)}</td>
                     <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{(option.signal || 'HOLD') === 'SELL' ? ((option.ltp || 0) * 1.1).toFixed(2) : ((option.ltp || 0) * 0.9).toFixed(2)}</td>
                     <td>₹{option.open?.toFixed(2) || "0.00"}</td>
