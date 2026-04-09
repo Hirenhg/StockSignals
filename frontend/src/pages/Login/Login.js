@@ -82,9 +82,6 @@ const Login = () => {
                 <button className="btn btn-primary w-100" disabled={loading || mobile.length < 10}>
                   {loading ? 'Connecting to server...' : 'Login'}
                 </button>
-                <p className="text-muted text-center mt-3" style={{ fontSize: '12px' }}>
-                  Login with your registered mobile number
-                </p>
               </form>
             )}
 
