@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 const Login = () => {
-  const { sendOTP, verifyOTP, updateProfile, isLoggedIn, loading: authLoading } = useAuth()
+  const { login, updateProfile, isLoggedIn, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState('mobile') // mobile -> name
   const [mobile, setMobile] = useState('')
@@ -16,20 +16,20 @@ const Login = () => {
     if (!authLoading && isLoggedIn && step !== 'name') navigate('/', { replace: true })
   }, [authLoading, isLoggedIn, navigate, step])
 
-  const handleSendOTP = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     if (mobile.length < 10) { setError('Enter valid 10-digit mobile number'); return }
     setLoading(true); setError('')
     try {
-      const otpRes = await sendOTP(mobile)
-      const result = await verifyOTP(mobile, otpRes.otp)
+      const result = await login(mobile)
       if (result.user?.name) {
         navigate('/')
       } else {
         setStep('name')
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to login')
+      const msg = err.response?.data?.error || (err.code === 'ECONNABORTED' ? 'Server is waking up, please try again' : 'Failed to login')
+      setError(msg)
     } finally { setLoading(false) }
   }
 
@@ -62,7 +62,7 @@ const Login = () => {
             {error && <div className="alert alert-danger py-2" style={{ fontSize: '13px' }}>{error}</div>}
 
             {step === 'mobile' && (
-              <form onSubmit={handleSendOTP}>
+              <form onSubmit={handleLogin}>
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Mobile Number</label>
                   <div className="input-group">
@@ -75,11 +75,12 @@ const Login = () => {
                       onChange={e => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       maxLength={10}
                       autoFocus
+                      disabled={loading}
                     />
                   </div>
                 </div>
                 <button className="btn btn-primary w-100" disabled={loading || mobile.length < 10}>
-                  {loading ? 'Logging in...' : 'Login'}
+                  {loading ? 'Connecting to server...' : 'Login'}
                 </button>
                 <p className="text-muted text-center mt-3" style={{ fontSize: '12px' }}>
                   Login with your registered mobile number
