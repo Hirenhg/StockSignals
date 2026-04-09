@@ -3,63 +3,14 @@ const fs = require('fs');
 const path = require('path');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stocksignal-secret-key-2024';
-const OTP_EXPIRY = 5 * 60 * 1000; // 5 minutes
-const otpStore = new Map(); // mobile -> { otp, expires, attempts }
 const usersPath = path.join(__dirname, '../data/users');
 
 if (!fs.existsSync(usersPath)) fs.mkdirSync(usersPath, { recursive: true });
 
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function sendOTPViaTelegram(bot, chatId, mobile, otp) {
-  if (!bot || !chatId) return false;
-  // Notify login attempt with mobile number only
-  try {
-    bot.sendMessage(chatId, `📲 *Login Attempt*\n\nMobile: *${mobile}*`, { parse_mode: 'Markdown' });
-  } catch {}
-  // Send OTP in separate message (kept for future use even if delivery fails)
-  const otpMessage = `🔐 *OTP Login*\n\nMobile: *${mobile}*\nOTP: *${otp}*\n\nValid for 5 minutes.`;
-  try {
-    bot.sendMessage(chatId, otpMessage, { parse_mode: 'Markdown' });
-    return true;
-  } catch { return false; }
-}
-
-function requestOTP(mobile, bot, chatId) {
+function loginWithMobile(mobile) {
   if (!mobile || mobile.length < 10) return { success: false, error: 'Valid mobile number required' };
-
-  const existing = otpStore.get(mobile);
-  if (existing && Date.now() - existing.created < 30000) {
-    return { success: false, error: 'Please wait 30 seconds before requesting again' };
-  }
-
-  const otp = generateOTP();
-  otpStore.set(mobile, { otp, expires: Date.now() + OTP_EXPIRY, attempts: 0, created: Date.now() });
-
-  const sent = sendOTPViaTelegram(bot, chatId, mobile, otp);
-  console.log(`OTP for ${mobile}: ${otp}`);
-
-  return { success: true, otp, message: sent ? 'OTP sent via Telegram' : 'OTP generated (check console)' };
-}
-
-function verifyOTP(mobile, otp) {
-  const stored = otpStore.get(mobile);
-  if (!stored) return { success: false, error: 'No OTP requested. Please request OTP first.' };
-  if (Date.now() > stored.expires) { otpStore.delete(mobile); return { success: false, error: 'OTP expired. Please request again.' }; }
-  if (stored.attempts >= 3) { otpStore.delete(mobile); return { success: false, error: 'Too many attempts. Please request new OTP.' }; }
-
-  stored.attempts++;
-
-  if (stored.otp !== otp) return { success: false, error: 'Invalid OTP' };
-
-  otpStore.delete(mobile);
-
-  // Create/get user
   const user = getOrCreateUser(mobile);
   const token = jwt.sign({ mobile, userId: user.id }, JWT_SECRET, { expiresIn: '365d' });
-
   return { success: true, token, user: { id: user.id, mobile: user.mobile, name: user.name } };
 }
 
@@ -118,4 +69,4 @@ function optionalAuth(req, res, next) {
   next();
 }
 
-module.exports = { requestOTP, verifyOTP, authMiddleware, optionalAuth, getUserByMobile, updateUser, getOrCreateUser };
+module.exports = { loginWithMobile, authMiddleware, optionalAuth, getUserByMobile, updateUser, getOrCreateUser };

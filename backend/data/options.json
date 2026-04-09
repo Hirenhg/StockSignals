@@ -7,20 +7,6 @@
     "tickSize": "5.000000"
   },
   {
-    "symbol": "NIFTY07APR2622700CE",
-    "token": "40742",
-    "exchange": "NFO",
-    "lotSize": "65",
-    "tickSize": "5.000000"
-  },
-  {
-    "symbol": "NIFTY07APR2622500PE",
-    "token": "40735",
-    "exchange": "NFO",
-    "lotSize": "65",
-    "tickSize": "5.000000"
-  },
-  {
     "symbol": "BANKNIFTY26MAY2655500CE",
     "token": "67280",
     "exchange": "NFO",
@@ -28,10 +14,17 @@
     "tickSize": "5.000000"
   },
   {
-    "symbol": "AUROPHARMA28APR261350CE",
-    "token": "82753",
+    "symbol": "BHARTIARTL28APR261920CE",
+    "token": "91236",
     "exchange": "NFO",
-    "lotSize": "550",
+    "lotSize": "475",
+    "tickSize": "5.000000"
+  },
+  {
+    "symbol": "NIFTY28APR2624100CE",
+    "token": "72267",
+    "exchange": "NFO",
+    "lotSize": "65",
     "tickSize": "5.000000"
   }
 ]
