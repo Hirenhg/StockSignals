@@ -1,4 +1,5 @@
 [
-  { "symbol": "AUROPHARMA" },
-  { "symbol": "LUPIN" }
+  {
+    "symbol": "LUPIN"
+  }
 ]

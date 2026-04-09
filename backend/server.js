@@ -7,16 +7,11 @@ const { getStockFull } = require("./services/stockService");
 const generateSignal = require("./services/signalService");
 const { generateEquitySignal } = require("./services/equitySignalService");
 const { initTelegram, sendBulkSignals, setTelegramEnabled, isTelegramEnabled } = require("./services/telegramService");
-const { requestOTP, verifyOTP, authMiddleware, optionalAuth, getUserByMobile, updateUser } = require("./services/authService");
-const TelegramBot = require('node-telegram-bot-api');
+const { loginWithMobile, authMiddleware, optionalAuth, getUserByMobile, updateUser } = require("./services/authService");
 
 const { initializeWebSocket, getLiveData, updateSubscription } = require("./services/angelWebSocket");
 
 initTelegram();
-
-// Telegram bot instance for OTP
-const otpBot = process.env.TELEGRAM_BOT_TOKEN ? new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false }) : null;
-const otpChatId = process.env.TELEGRAM_CHAT_ID;
 
 const app = express();
 const stocksPath = path.join(__dirname, './data/stocks.json');
@@ -34,6 +29,24 @@ const getCommodities = () => JSON.parse(fs.readFileSync(commoditiesPath, 'utf8')
 const getCrypto = () => JSON.parse(fs.readFileSync(cryptoPath, 'utf8'));
 const getNifty50 = () => JSON.parse(fs.readFileSync(nifty50Path, 'utf8'));
 const getNiftyNext50 = () => JSON.parse(fs.readFileSync(niftynext50Path, 'utf8'));
+
+// Cache OpenAPIScripMaster in memory (loaded once, avoids repeated disk reads)
+let symbolMasterCache = null;
+let symbolMasterLoadTime = 0;
+const SYMBOL_MASTER_TTL = 60 * 60 * 1000; // 1 hour
+function getSymbolMaster() {
+  if (!symbolMasterCache || Date.now() - symbolMasterLoadTime > SYMBOL_MASTER_TTL) {
+    symbolMasterCache = JSON.parse(fs.readFileSync(path.join(__dirname, './data/OpenAPIScripMaster.json'), 'utf8'));
+    symbolMasterLoadTime = Date.now();
+  }
+  return symbolMasterCache;
+}
+// Pre-load at startup
+try { getSymbolMaster(); } catch {}
+
+// Signal cache to avoid re-fetching from Yahoo on rapid requests
+const signalCache = new Map();
+const SIGNAL_CACHE_TTL = 45 * 1000; // 45 seconds
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -66,6 +79,13 @@ app.get("/api/health", (req, res) => {
 app.get("/api/signals/:type", async (req, res) => {
   try {
     const type = req.params.type || 'stocks';
+
+    // Return cached signals if fresh
+    const cached = signalCache.get(type);
+    if (cached && Date.now() - cached.time < SIGNAL_CACHE_TTL) {
+      return res.json(cached.data);
+    }
+
     let stocks = [];
     switch(type) {
       case 'indices': stocks = getIndices(); break;
@@ -116,6 +136,9 @@ app.get("/api/signals/:type", async (req, res) => {
       results.push(...batchResults.filter(r => r !== null));
     }
     res.json(results);
+
+    // Cache the results
+    signalCache.set(type, { data: results, time: Date.now() });
 
     if (type === 'stocks') {
       const buySignals = results.filter(r => r.signal === 'BUY');
@@ -239,7 +262,7 @@ app.get("/api/search", (req, res) => {
       ].filter(s => s.symbol.toUpperCase().includes(q) || s.name.toUpperCase().includes(q));
       return res.json(indexSuggestions.slice(0, 10));
     }
-    const symbolMaster = JSON.parse(fs.readFileSync(path.join(__dirname, './data/OpenAPIScripMaster.json'), 'utf8'));
+    const symbolMaster = getSymbolMaster();
     const results = symbolMaster
       .filter(s => s.exch_seg === 'NSE' && s.instrumenttype === '' && s.symbol.endsWith('-EQ') && s.name.includes(q))
       .slice(0, 20)
@@ -252,7 +275,7 @@ app.get("/api/options/search", (req, res) => {
   const q = (req.query.q || '').toUpperCase().trim();
   if (q.length < 2) return res.json([]);
   try {
-    const symbolMaster = JSON.parse(fs.readFileSync(path.join(__dirname, './data/OpenAPIScripMaster.json'), 'utf8'));
+    const symbolMaster = getSymbolMaster();
     const results = symbolMaster
       .filter(s => s.exch_seg === 'NFO' && (s.instrumenttype === 'OPTIDX' || s.instrumenttype === 'OPTSTK') && s.symbol.includes(q))
       .slice(0, 20)
@@ -558,8 +581,7 @@ app.get("/api/optionchain/:symbol", async (req, res) => {
     const symbol = req.params.symbol.toUpperCase();
     const expiry = req.query.expiry || '';
 
-    const symbolMasterPath = path.join(__dirname, './data/OpenAPIScripMaster.json');
-    const symbolMaster = JSON.parse(fs.readFileSync(symbolMasterPath, 'utf8'));
+    const symbolMaster = getSymbolMaster();
 
     // Find all NFO options for this underlying
     const regex = new RegExp(`^${symbol}\\d`);
@@ -701,8 +723,7 @@ app.post("/api/options", (req, res) => {
     return res.status(400).json({ error: "Symbol is required" });
   }
   
-  const symbolMasterPath = path.join(__dirname, './data/OpenAPIScripMaster.json');
-  const symbolMaster = JSON.parse(fs.readFileSync(symbolMasterPath, 'utf8'));
+  const symbolMaster = getSymbolMaster();
   const found = symbolMaster.find(s => s.symbol === symbol.toUpperCase() && s.exch_seg === 'NFO');
   
   if (!found) {
@@ -1004,10 +1025,7 @@ app.post("/api/telegram/toggle", (req, res) => {
 
 app.get("/api/symbol-master", async (req, res) => {
   try {
-    const fs = require('fs');
-    const path = require('path');
-    const filePath = path.join(__dirname, './data/OpenAPIScripMaster.json');
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const data = getSymbolMaster();
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: "Failed to load symbol master data" });
@@ -1230,15 +1248,9 @@ app.put("/api/sector-pe/:sector", (req, res) => {
 });
 
 // Auth routes
-app.post("/api/auth/send-otp", (req, res) => {
+app.post("/api/auth/login", (req, res) => {
   const { mobile } = req.body;
-  const result = requestOTP(mobile, otpBot, otpChatId);
-  res.status(result.success ? 200 : 400).json(result);
-});
-
-app.post("/api/auth/verify-otp", (req, res) => {
-  const { mobile, otp } = req.body;
-  const result = verifyOTP(mobile, otp);
+  const result = loginWithMobile(mobile);
   res.status(result.success ? 200 : 400).json(result);
 });
 
