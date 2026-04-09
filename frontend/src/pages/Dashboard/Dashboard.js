@@ -175,6 +175,13 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
     finally { setSuggestLoading(false) }
   }, [assetTab])
 
+  // Debounce search
+  const searchTimerRef = React.useRef(null)
+  const debouncedSearch = useCallback((val) => {
+    clearTimeout(searchTimerRef.current)
+    searchTimerRef.current = setTimeout(() => searchSuggestions(val), 300)
+  }, [searchSuggestions])
+
   const handleAddStock = () => {
     if (!newStock.trim()) {
       showToast('Symbol is required', 'error')
@@ -265,7 +272,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                       className="form-control"
                       placeholder={`Search ${assetTab === 'stocks' ? 'Stock' : assetTab === 'indices' ? 'Index' : assetTab} symbol`}
                       value={newStock}
-                      onChange={(e) => { setNewStock(e.target.value.toUpperCase()); searchSuggestions(e.target.value.toUpperCase()); }}
+                      onChange={(e) => { setNewStock(e.target.value.toUpperCase()); debouncedSearch(e.target.value.toUpperCase()); }}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddStock()}
                       autoComplete="off"
                     />

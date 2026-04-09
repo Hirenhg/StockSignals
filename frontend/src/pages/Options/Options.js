@@ -97,6 +97,13 @@ const Options = () => {
     finally { setSuggestLoading(false); }
   }, []);
 
+  // Debounce search
+  const searchTimerRef = React.useRef(null);
+  const debouncedSearch = useCallback((val) => {
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => searchSuggestions(val), 300);
+  }, [searchSuggestions]);
+
   const handleDeleteOption = () => {
     API.delete(`/api/options/${deleteSymbol}`)
       .then(() => { setOptionsData(optionsData.filter(o => o.symbol !== deleteSymbol)); setShowDeleteModal(false); setDeleteSymbol(''); showToast('Option deleted successfully!', 'success'); })
@@ -107,7 +114,7 @@ const Options = () => {
 
   useEffect(() => {
     fetchOptionsData();
-    const interval = setInterval(fetchOptionsData, 5000);
+    const interval = setInterval(fetchOptionsData, 30000);
     return () => clearInterval(interval);
   }, [fetchOptionsData]);
 
@@ -181,7 +188,7 @@ const Options = () => {
                       className="form-control"
                       placeholder="e.g., NIFTY or BANKNIFTY25500CE"
                       value={newOption}
-                      onChange={(e) => { const v = e.target.value.toUpperCase(); setNewOption(v); searchSuggestions(v); }}
+                      onChange={(e) => { const v = e.target.value.toUpperCase(); setNewOption(v); debouncedSearch(v); }}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddOption()}
                       autoComplete="off"
                     />
