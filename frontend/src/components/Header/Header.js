@@ -24,12 +24,12 @@ const Header = () => {
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
         { path: '/news', label: t('news'), icon: 'bi-newspaper' },
         { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
-        { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
+        // { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
         // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
         { path: '/paper-trade', label: 'Paper Trade', icon: 'bi-wallet2' },
         { path: '/levels', label: 'Levels', icon: 'bi-arrows-expand' },
         { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
-        { path: '/strategy', label: 'Strategy', icon: 'bi-lightning-charge' },
+        // { path: '/history-tracker', label: 'History', icon: 'bi-clock-history' },
       ]
     : [
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },

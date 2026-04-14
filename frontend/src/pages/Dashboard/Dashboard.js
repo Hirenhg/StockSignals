@@ -39,7 +39,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   }
 
   const exportCSV = () => {
-    const headers = ['Symbol','Price','Signal','RSI','EMA7','Pivot','R1','R2','R3','S1','S2','S3','Target','SL','%Chg','52W High','52W Low']
+    const headers = ['Symbol','Price','Signal','RSI','EMA Pro','Pivot Pro','R1','R2','R3','S1','S2','S3','Target','SL','%Chg','52W High','52W Low']
     const rows = filteredSignals.map(s => {
       const p = parseFloat(s.price)
       const isSell = s.signal === 'SELL'
@@ -243,7 +243,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   return (
     <>
       <Helmet>
-        <title>Stock Signals Dashboard</title>
+        <title>TradingSignals Dashboard</title>
       </Helmet>
       
       <div className="p-1">
@@ -480,11 +480,11 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
 
                 <div className="row g-3 border-top mt-3">
                   <div className="col-6">
-                    <small className="text-primary d-block">EMA7</small>
+                    <small className="text-primary d-block">EMA Pro</small>
                     <strong className="text-primary">₹{item.ema7}</strong>
                   </div>
                   <div className="col-6">
-                    <small className="text-muted d-block">Pivot</small>
+                    <small className="text-muted d-block">Pivot Pro</small>
                     <strong>₹{item.pivot || '-'}</strong>
                   </div>
                   <div className="col-4">
@@ -533,8 +533,8 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                 <th onClick={() => handleSort('rsi')} style={{cursor: 'pointer'}}>
                   RSI {sortConfig.key === 'rsi' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
-                <th style={{color:'#2962FF'}}>EMA7</th>
-                <th>Pivot</th>
+                <th style={{color:'#2962FF'}}>EMA Pro</th>
+                <th>Pivot Pro</th>
                 <th style={{color:'#dc3545'}}>R1</th>
                 <th style={{color:'#dc3545'}}>R2</th>
                 <th style={{color:'#dc3545'}}>R3</th>

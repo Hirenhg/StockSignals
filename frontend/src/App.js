@@ -21,7 +21,7 @@ const Tracker = lazy(() => import('./pages/Tracker/Tracker'));
 const PaperTrade = lazy(() => import('./pages/PaperTrade/PaperTrade'));
 const Levels = lazy(() => import('./pages/Levels/Levels'));
 const Results = lazy(() => import('./pages/Results/Results'));
-const Strategy = lazy(() => import('./pages/Strategy/Strategy'));
+const HistoryTracker = lazy(() => import('./pages/HistoryTracker/HistoryTracker'));
 const Login = lazy(() => import('./pages/Login/Login'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
@@ -63,7 +63,7 @@ function AppRoutes() {
           <Route path="/paper-trade" element={<Protected><S><PaperTrade /></S></Protected>} />
           <Route path="/levels" element={<Protected><S><Levels /></S></Protected>} />
           <Route path="/results" element={<Protected><S><Results /></S></Protected>} />
-          <Route path="/strategy" element={<Protected><S><Strategy /></S></Protected>} />
+          <Route path="/history-tracker" element={<Protected><S><HistoryTracker /></S></Protected>} />
           <Route path="*" element={<S><NotFound /></S>} />
         </Routes>
       )}
