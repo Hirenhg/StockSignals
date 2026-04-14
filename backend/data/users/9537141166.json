@@ -1,0 +1,30 @@
+{
+  "id": "user_9537141166",
+  "mobile": "9537141166",
+  "name": "Hiren Gabu",
+  "watchlist": [],
+  "wallet": {
+    "balance": 1002625,
+    "initialBalance": 1000000
+  },
+  "positions": [],
+  "trades": [
+    {
+      "symbol": "NFL",
+      "type": "BUY",
+      "price": 67.75,
+      "qty": 2100,
+      "total": 142275,
+      "date": "2026-03-24T05:52:20.344Z"
+    },
+    {
+      "symbol": "NFL",
+      "type": "SELL",
+      "price": 69,
+      "qty": 2100,
+      "total": 144900,
+      "date": "2026-03-24T06:46:01.368Z"
+    }
+  ],
+  "createdAt": "2026-03-24T05:26:19.304Z"
+}

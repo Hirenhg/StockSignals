@@ -1,0 +1,47 @@
+const { EMA, RSI, MACD } = require("technicalindicators");
+
+// Fibonacci Pivot Points from previous candle's H/L/C
+function calcFibPivot(high, low, close) {
+  const pivot = (high + low + close) / 3;
+  const range = high - low;
+  return {
+    pivot,
+    r1: pivot + 0.382 * range,
+    r2: pivot + 0.618 * range,
+    r3: pivot + 1.000 * range,
+    s1: pivot - 0.382 * range,
+    s2: pivot - 0.618 * range,
+    s3: pivot - 1.000 * range,
+  };
+}
+
+function calculateIndicators(prices, ohlc) {
+  const ema7 = EMA.calculate({ period: 7, values: prices });
+  const rsi = RSI.calculate({ period: 14, values: prices });
+
+  let macdLine = null, macdSignal = null, macdHist = null;
+  if (prices.length >= 26) {
+    const macdResult = MACD.calculate({ values: prices, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9, SimpleMAOscillator: false, SimpleMASignal: false });
+    if (macdResult.length) {
+      const last = macdResult[macdResult.length - 1];
+      macdLine = last.MACD;
+      macdSignal = last.signal;
+      macdHist = last.histogram;
+    }
+  }
+
+  let fibPivot = null;
+  if (ohlc && ohlc.length >= 2) {
+    const prev = ohlc[ohlc.length - 2];
+    fibPivot = calcFibPivot(prev.high, prev.low, prev.close);
+  }
+
+  return {
+    ema7: ema7[ema7.length - 1],
+    rsi: rsi[rsi.length - 1],
+    macdLine, macdSignal, macdHist,
+    ...fibPivot
+  };
+}
+
+module.exports = calculateIndicators;
