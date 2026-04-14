@@ -142,7 +142,7 @@
   {
     "name": "JINDALSAW",
     "category": "PEG",
-    "epsGrowth": 5
+    "epsGrowth": 6.96
   },
   {
     "name": "JKPAPER",
@@ -248,7 +248,7 @@
     "name": "STLNETWORK",
     "category": "PEG",
     "epsGrowth": 5,
-    "manualPE": -10,
+    "manualPE": 22,
     "manualDivYield": 0
   },
   {
@@ -257,14 +257,6 @@
     "category": "PEG",
     "epsGrowth": 5,
     "manualPE": -10,
-    "manualDivYield": 0
-  },
-  {
-    "name": "ARUNAYA",
-    "price": "13.90",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualPE": 6.28,
     "manualDivYield": 0
   },
   {
@@ -496,13 +488,6 @@
     "manualDivYield": 0,
     "epsGrowth": 22.6,
     "manualPE": 21.4
-  },
-  {
-    "name": "HCC",
-    "category": "PEG",
-    "manualDivYield": 0,
-    "manualPE": 22.6,
-    "epsGrowth": 5
   },
   {
     "name": "THOMASCOOK",
@@ -964,11 +949,6 @@
     "epsGrowth": 4.51
   },
   {
-    "name": "BESTAGRO",
-    "category": "PEG",
-    "epsGrowth": 5
-  },
-  {
     "name": "CLEAN",
     "category": "PEG",
     "epsGrowth": 5
@@ -1099,12 +1079,6 @@
     "manualDivYield": 0
   },
   {
-    "name": "COFFEEDAY",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualDivYield": 0
-  },
-  {
     "name": "LT",
     "category": "PEG",
     "epsGrowth": 5
@@ -1127,11 +1101,6 @@
   },
   {
     "name": "PNBHOUSING",
-    "category": "PEG",
-    "epsGrowth": 5
-  },
-  {
-    "name": "TFCILTD",
     "category": "PEG",
     "epsGrowth": 5
   },
@@ -1356,17 +1325,11 @@
     "epsGrowth": 5
   },
   {
-    "name": "BRNL",
+    "name": "STLTECH",
     "category": "PEG",
-    "epsGrowth": 5,
+    "epsGrowth": 381.48,
     "manualDivYield": 0,
-    "manualPE": 4.97
-  },
-  {
-    "name": "RELINFRA",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualDivYield": 0
+    "manualPE": 925
   },
   {
     "name": "CEWATER",
@@ -1378,20 +1341,6 @@
     "name": "WAAREEENER",
     "category": "PEG",
     "epsGrowth": 5
-  },
-  {
-    "name": "DIFFUSION",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualPE": 19.5,
-    "manualDivYield": 0
-  },
-  {
-    "name": "LTIM",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualPE": 23,
-    "manualDivYield": 0
   },
   {
     "name": "KRBL",
