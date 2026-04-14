@@ -17,6 +17,7 @@ const app = express();
 const stocksPath = path.join(__dirname, './data/stocks.json');
 const indicesPath = path.join(__dirname, './data/indices.json');
 const optionsPath = path.join(__dirname, './data/options.json');
+const optionHistoryPath = path.join(__dirname, './data/option-history.json');
 const commoditiesPath = path.join(__dirname, './data/commodities.json');
 const cryptoPath = path.join(__dirname, './data/crypto.json');
 const nifty50Path = path.join(__dirname, './data/nifty50.json');
@@ -587,7 +588,7 @@ app.get("/api/optionchain/:symbol", async (req, res) => {
     const symbolMaster = getSymbolMaster();
 
     // Find all NFO options for this underlying
-    const regex = new RegExp(`^${symbol}\\d`);
+    const regex = new RegExp(`^${symbol}\d`);
     let allOptions = symbolMaster.filter(s => 
       s.exch_seg === 'NFO' && 
       s.instrumenttype && 
@@ -1250,51 +1251,134 @@ app.put("/api/sector-pe/:sector", (req, res) => {
   res.json({ message: 'Updated successfully' });
 });
 
-// Strategy routes
-const DEFAULT_STRATEGIES = [
-  { id: 1, name: 'EMA7 & Pivot', signal: 'BUY', indicators: ['ema7', 'pivot'], condition: 'price > ema7 && price > pivot', active: true, createdAt: new Date().toISOString() }
-];
+// History Tracker - backtest CSV + live Yahoo 3mo data
+let historyTrackerCache = { data: null, date: null };
 
-app.get("/api/auth/strategies", authMiddleware, (req, res) => {
-  const user = getUserByMobile(req.user.mobile);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  if (!user.strategies || user.strategies.length === 0) {
-    const strategies = DEFAULT_STRATEGIES.map(s => ({ ...s, createdAt: new Date().toISOString() }));
-    updateUser(req.user.mobile, { strategies });
-    return res.json(strategies);
+function backtestRows(rows, symbol, targetPct, slPct) {
+  const closes = rows.map(r => r.close);
+  const hits = [];
+  for (let i = 20; i < rows.length; i++) {
+    const data = { closes: closes.slice(0, i + 1), ohlc: rows.slice(Math.max(0, i - 1), i + 1).map(r => ({ high: r.high, low: r.low, close: r.close })) };
+    const result = generateSignal(data.closes, data.ohlc);
+    if (result.signal !== 'BUY' && result.signal !== 'SELL') continue;
+    const entry = rows[i].close;
+    const isBuy = result.signal === 'BUY';
+    const target = parseFloat((isBuy ? entry * (1 + targetPct / 100) : entry * (1 - targetPct / 100)).toFixed(2));
+    const sl = parseFloat((isBuy ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100)).toFixed(2));
+    for (let j = i + 1; j < rows.length; j++) {
+      const h = rows[j].high, l = rows[j].low;
+      if (isBuy) {
+        if (h >= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); break; }
+        if (l <= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); break; }
+      } else {
+        if (l <= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); break; }
+        if (h >= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); break; }
+      }
+    }
   }
-  res.json(user.strategies);
-});
+  return hits;
+}
 
-app.post("/api/auth/strategies", authMiddleware, (req, res) => {
-  const { name, signal, condition } = req.body;
-  if (!name || !signal) return res.status(400).json({ error: 'Name and signal required' });
-  const user = getUserByMobile(req.user.mobile);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  const strategies = user.strategies || [];
-  const newStrategy = { id: Date.now(), name, signal: signal.toUpperCase(), condition: condition || '', active: false, createdAt: new Date().toISOString() };
-  strategies.push(newStrategy);
-  updateUser(req.user.mobile, { strategies });
-  res.json(newStrategy);
-});
+app.get("/api/history-tracker", async (req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    if (historyTrackerCache.data && historyTrackerCache.date === today) {
+      return res.json(historyTrackerCache.data);
+    }
 
-app.put("/api/auth/strategies/:id", authMiddleware, (req, res) => {
-  const user = getUserByMobile(req.user.mobile);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  const strategies = user.strategies || [];
-  const idx = strategies.findIndex(s => s.id == req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'Strategy not found' });
-  strategies[idx] = { ...strategies[idx], ...req.body, id: strategies[idx].id };
-  updateUser(req.user.mobile, { strategies });
-  res.json(strategies[idx]);
-});
+    const targetPct = 2, slPct = 1;
+    const allHits = [];
 
-app.delete("/api/auth/strategies/:id", authMiddleware, (req, res) => {
-  const user = getUserByMobile(req.user.mobile);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  const strategies = (user.strategies || []).filter(s => s.id != req.params.id);
-  updateUser(req.user.mobile, { strategies });
-  res.json({ message: 'Deleted' });
+    // 1. CSV files
+    const csvFiles = [
+      { file: 'ADANIPORTSNSE.csv', symbol: 'ADANIPORTS' },
+      { file: 'FIVESTARNSE.csv', symbol: 'FIVESTAR' },
+    ];
+    const mnths = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+    const parseNum = (s) => parseFloat((s || '').replace(/"/g, '').replace(/,/g, ''));
+    const parseDt = (s) => { const m = (s||'').trim().match(/^(\d{1,2})-(\w{3})-(\d{4})$/); return m ? m[3]+'-'+(mnths[m[2]]||'01')+'-'+m[1].padStart(2,'0') : null; };
+    for (const { file, symbol } of csvFiles) {
+      try {
+        const raw = fs.readFileSync(path.join(__dirname, './data/', file), 'utf8');
+        const lines = raw.split('\n').map(l => l.trim()).filter(l => l && /^\d{1,2}-/.test(l));
+        const rows = lines.map(l => {
+          const c = l.match(/(?:"[^"]*"|[^,])+/g) || [];
+          const date = parseDt(c[0]);
+          if (!date) return null;
+          return { date, open: parseNum(c[2]), high: parseNum(c[3]), low: parseNum(c[4]), close: parseNum(c[7]) };
+        }).filter(r => r && !isNaN(r.close)).reverse();
+        allHits.push(...backtestRows(rows, symbol, targetPct, slPct));
+      } catch {}
+    }
+
+    // 2. Live Yahoo - nifty50 + niftynext50 + watchlist (3mo daily)
+    const n50 = getNifty50().map(s => s.symbol);
+    const nn50 = getNiftyNext50().map(s => s.symbol);
+    const wl = getStocks().map(s => s.symbol);
+    const liveSymbols = [...new Set([...n50, ...nn50, ...wl])];
+    const batchSize = 5;
+    for (let i = 0; i < liveSymbols.length; i += batchSize) {
+      const batch = liveSymbols.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch.map(async (sym) => {
+        try {
+          const ohlc = await getStockHistory(sym, '1d', '3mo', false, false, false, true);
+          if (!ohlc || ohlc.length < 25) return [];
+          const now = new Date();
+          const rows = ohlc.map((bar, idx) => {
+            const d = new Date(now); d.setDate(d.getDate() - (ohlc.length - 1 - idx));
+            return { date: d.toISOString().slice(0, 10), open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+          });
+          return backtestRows(rows, sym, targetPct, slPct);
+        } catch { return []; }
+      }));
+      batchResults.forEach(h => allHits.push(...h));
+    }
+
+    // 3. Options - real option price history (30% target / 10% SL)
+    const optTargetPct = 30, optSlPct = 10;
+    try {
+      const optHistory = JSON.parse(fs.readFileSync(optionHistoryPath, 'utf8'));
+      const optBySymbol = {};
+      optHistory.forEach(e => { if (!optBySymbol[e.symbol]) optBySymbol[e.symbol] = []; optBySymbol[e.symbol].push(e); });
+      Object.entries(optBySymbol).forEach(([sym, entries]) => {
+        entries.sort((a, b) => a.date.localeCompare(b.date));
+        entries.forEach((entry, idx) => {
+          if (entry.signal !== 'BUY' && entry.signal !== 'SELL') return;
+          const price = entry.ltp;
+          if (!price) return;
+          const isBuy = entry.signal === 'BUY';
+          const target = parseFloat((isBuy ? price * (1 + optTargetPct / 100) : price * (1 - optTargetPct / 100)).toFixed(2));
+          const sl = parseFloat((isBuy ? price * (1 - optSlPct / 100) : price * (1 + optSlPct / 100)).toFixed(2));
+          for (let j = idx + 1; j < entries.length; j++) {
+            const ltp = entries[j].ltp;
+            const high = entries[j].high || ltp;
+            const low = entries[j].low || ltp;
+            if (isBuy) {
+              if (high >= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); return; }
+              if (low <= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); return; }
+            } else {
+              if (low <= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); return; }
+              if (high >= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); return; }
+            }
+          }
+        });
+      });
+    } catch {}
+
+    const stockHits = allHits.filter(h => !h.symbol.includes('(Opt)'));
+    const optionHits = allHits.filter(h => h.symbol.includes('(Opt)'));
+    stockHits.sort((a, b) => a.date.localeCompare(b.date));
+    optionHits.sort((a, b) => a.date.localeCompare(b.date));
+    const result = {
+      stocks: { hits: stockHits, targetCount: stockHits.filter(h => h.result === 'TARGET').length, slCount: stockHits.filter(h => h.result === 'SL').length, total: stockHits.length },
+      options: { hits: optionHits, targetCount: optionHits.filter(h => h.result === 'TARGET').length, slCount: optionHits.filter(h => h.result === 'SL').length, total: optionHits.length }
+    };
+    historyTrackerCache = { data: result, date: today };
+    res.json(result);
+  } catch (error) {
+    console.error('History tracker error:', error.message);
+    res.status(500).json({ error: 'Failed to run history tracker' });
+  }
 });
 
 // Auth routes
@@ -1560,12 +1644,12 @@ app.get("/api/results", async (req, res) => {
     const unique = [...new Map(stocks.map(s => [s.symbol, s])).values()];
 
     const extractVal = (html, key) => {
-      const re = new RegExp(`\\\\"${key}\\\\":\\{\\\\"raw\\\\":([\\d.\\-eE+]+)`);
+      const re = new RegExp(`\\\\"${key}\\\\":\\{\\\\"raw\\\\":([\d.\\-eE+]+)`);
       const m = html.match(re);
       return m ? parseFloat(m[1]) : null;
     };
     const extractArr = (html, key) => {
-      const re = new RegExp(`\\\\"${key}\\\\":\\[\\{\\\\"raw\\\\":([\\d.\\-eE+]+)`);
+      const re = new RegExp(`\\\\"${key}\\\\":\\[\\{\\\\"raw\\\\":([\d.\\-eE+]+)`);
       const m = html.match(re);
       return m ? parseFloat(m[1]) : null;
     };
