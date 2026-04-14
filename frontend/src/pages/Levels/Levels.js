@@ -5,11 +5,11 @@ import { SkeletonTable, SkeletonCards } from '../../components/Skeleton/Skeleton
 import { useTheme } from '../../context/ThemeContext'
 
 const MOOD_ZONES = [
-  { label: 'Extreme Fear', color: '#dc3545', range: [0, 20] },
-  { label: 'Fear', color: '#fd7e14', range: [20, 40] },
+  { label: 'Extreme Fear', color: '#198754', range: [0, 20] },
+  { label: 'Fear', color: '#20c997', range: [20, 40] },
   { label: 'Neutral', color: '#ffc107', range: [40, 60] },
-  { label: 'Greed', color: '#20c997', range: [60, 80] },
-  { label: 'Extreme Greed', color: '#198754', range: [80, 100] },
+  { label: 'Greed', color: '#fd7e14', range: [60, 80] },
+  { label: 'Extreme Greed', color: '#dc3545', range: [80, 100] },
 ]
 
 const getMoodColor = (score) => {
@@ -30,7 +30,7 @@ const MoodGauge = ({ score, mood, darkMode }) => {
 
   const arcSegments = useMemo(() => {
     const segments = []
-    const colors = ['#dc3545', '#fd7e14', '#ffc107', '#20c997', '#198754']
+    const colors = ['#198754', '#20c997', '#ffc107', '#fd7e14', '#dc3545']
     const total = 5
     for (let i = 0; i < total; i++) {
       const a1 = Math.PI - (i / total) * Math.PI

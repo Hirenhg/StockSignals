@@ -1,1 +1,1 @@
-# StockSignals
+# TradingSignals

@@ -20,7 +20,7 @@ const Options = () => {
   const [suggestLoading, setSuggestLoading] = useState(false);
 
   const exportCSV = () => {
-    const headers = ['Symbol','LotSize','LTP','Target','SL','%Chg','Signal','RSI','EMA7','Pivot','R1','R2','R3','S1','S2','S3','Open','High','Low']
+    const headers = ['Symbol','LotSize','LTP','Target','SL','%Chg','Signal','RSI','EMA Pro','Pivot Pro','R1','R2','R3','S1','S2','S3','Open','High','Low']
     const rows = filteredOptions.map(o => {
       const p = o.ltp || 0
       const isSell = o.signal === 'SELL'
@@ -342,8 +342,8 @@ const Options = () => {
                     <div className="col-6"><small className="text-muted d-block">Low</small><strong>₹{option.low?.toFixed(2) || "0.00"}</strong></div>
                   </div>
                   <div className="row g-3 border-top mt-3">
-                    <div className="col-6"><small className="text-primary d-block">EMA7</small><strong className="text-primary">₹{option.ema7 || '-'}</strong></div>
-                    <div className="col-6"><small className="text-muted d-block">Pivot</small><strong>₹{option.pivot || '-'}</strong></div>
+                    <div className="col-6"><small className="text-primary d-block">EMA Pro</small><strong className="text-primary">₹{option.ema7 || '-'}</strong></div>
+                    <div className="col-6"><small className="text-muted d-block">Pivot Pro</small><strong>₹{option.pivot || '-'}</strong></div>
                     <div className="col-4"><small style={{color:'#dc3545'}} className="d-block">R1</small><strong style={{color:'#dc3545'}}>₹{option.r1 || '-'}</strong></div>
                     <div className="col-4"><small style={{color:'#dc3545'}} className="d-block">R2</small><strong style={{color:'#dc3545'}}>₹{option.r2 || '-'}</strong></div>
                     <div className="col-4"><small style={{color:'#dc3545'}} className="d-block">R3</small><strong style={{color:'#dc3545'}}>₹{option.r3 || '-'}</strong></div>
@@ -374,8 +374,8 @@ const Options = () => {
                 <th onClick={() => handleSort("ltp")} style={{ cursor: "pointer" }}>LTP {sortConfig.key === "ltp" && (sortConfig.direction === "asc" ? "↑" : "↓")}</th>
                 <th>Signal</th>
                 <th>RSI</th>
-                <th style={{color:'#2962FF'}}>EMA7</th>
-                <th>Pivot</th>
+                <th style={{color:'#2962FF'}}>EMA Pro</th>
+                <th>Pivot Pro</th>
                 <th style={{color:'#dc3545'}}>R1</th>
                 <th style={{color:'#dc3545'}}>R2</th>
                 <th style={{color:'#dc3545'}}>R3</th>
