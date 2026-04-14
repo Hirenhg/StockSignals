@@ -117,6 +117,9 @@ app.get("/api/signals/:type", async (req, res) => {
               signal: result.signal,
               rsi: result.rsi?.toFixed(2) || '0',
               ema7: result.ema7?.toFixed(2) || '0',
+              macdLine: result.macdLine?.toFixed(2) || null,
+              macdSignal: result.macdSignal?.toFixed(2) || null,
+              macdHist: result.macdHist?.toFixed(2) || null,
               pivot: result.pivot?.toFixed(2) || null,
               r1: result.r1?.toFixed(2) || null,
               r2: result.r2?.toFixed(2) || null,
@@ -1062,9 +1065,9 @@ app.get("/api/peg/live", async (req, res) => {
           const epsGrowth = stock.epsGrowth || null;
           const dy = stock.manualDivYield != null ? stock.manualDivYield : (live.dividendYield ?? null);
           const pe = stock.manualPE != null ? stock.manualPE : live.pe;
-          const peg = pe && epsGrowth ? parseFloat((pe / (epsGrowth + (dy || 0))).toFixed(2)) : null;
+          const peg = pe && epsGrowth ? parseFloat(((epsGrowth + (dy || 0)) / pe).toFixed(2)) : null;
           let pegStatus = null;
-          if (peg !== null) pegStatus = peg < 1 ? 'Undervalued' : peg <= 2 ? 'Fairly Valued' : 'Overvalued';
+          if (peg !== null) pegStatus = peg >= 1 ? 'Undervalued' : peg >= 0.5 ? 'Fairly Valued' : 'Overvalued';
           return { ...stock, ...live, pe, dividendYield: dy, epsGrowth, peg, pegStatus };
         } catch { return { ...stock, price: 0, pe: null, epsGrowth: stock.epsGrowth || null, peg: null, pegStatus: null }; }
       })
@@ -1245,6 +1248,53 @@ app.put("/api/sector-pe/:sector", (req, res) => {
   }
   fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
   res.json({ message: 'Updated successfully' });
+});
+
+// Strategy routes
+const DEFAULT_STRATEGIES = [
+  { id: 1, name: 'EMA7 & Pivot', signal: 'BUY', indicators: ['ema7', 'pivot'], condition: 'price > ema7 && price > pivot', active: true, createdAt: new Date().toISOString() }
+];
+
+app.get("/api/auth/strategies", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user.strategies || user.strategies.length === 0) {
+    const strategies = DEFAULT_STRATEGIES.map(s => ({ ...s, createdAt: new Date().toISOString() }));
+    updateUser(req.user.mobile, { strategies });
+    return res.json(strategies);
+  }
+  res.json(user.strategies);
+});
+
+app.post("/api/auth/strategies", authMiddleware, (req, res) => {
+  const { name, signal, condition } = req.body;
+  if (!name || !signal) return res.status(400).json({ error: 'Name and signal required' });
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const strategies = user.strategies || [];
+  const newStrategy = { id: Date.now(), name, signal: signal.toUpperCase(), condition: condition || '', active: false, createdAt: new Date().toISOString() };
+  strategies.push(newStrategy);
+  updateUser(req.user.mobile, { strategies });
+  res.json(newStrategy);
+});
+
+app.put("/api/auth/strategies/:id", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const strategies = user.strategies || [];
+  const idx = strategies.findIndex(s => s.id == req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Strategy not found' });
+  strategies[idx] = { ...strategies[idx], ...req.body, id: strategies[idx].id };
+  updateUser(req.user.mobile, { strategies });
+  res.json(strategies[idx]);
+});
+
+app.delete("/api/auth/strategies/:id", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const strategies = (user.strategies || []).filter(s => s.id != req.params.id);
+  updateUser(req.user.mobile, { strategies });
+  res.json({ message: 'Deleted' });
 });
 
 // Auth routes
