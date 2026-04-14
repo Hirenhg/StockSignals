@@ -129,7 +129,7 @@ const ChartPage = () => {
 
   return (
     <>
-      <Helmet><title>{symbol} Chart - StockSignal</title></Helmet>
+      <Helmet><title>{symbol} Chart - TradingSignals</title></Helmet>
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* Top Bar */}

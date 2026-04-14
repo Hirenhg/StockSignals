@@ -46,13 +46,13 @@ const Login = () => {
 
   return (
     <>
-      <Helmet><title>Login - StockSignal</title></Helmet>
+      <Helmet><title>Login - TradingSignals</title></Helmet>
       <div className="d-flex align-items-center justify-content-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
         <div className="card shadow-sm" style={{ maxWidth: '400px', width: '100%' }}>
           <div className="card-body p-4">
             <div className="text-center mb-4">
               <span style={{ fontSize: '40px' }}>📈</span>
-              <h4 className="fw-bold mt-2">StockSignal</h4>
+              <h4 className="fw-bold mt-2">TradingSignals</h4>
               <p className="text-muted mb-0">
                 {step === 'mobile' && 'Login with your mobile number'}
                 {step === 'name' && 'Set your display name'}

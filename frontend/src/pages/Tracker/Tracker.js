@@ -203,7 +203,7 @@ function Tracker() {
 
   return (
     <>
-      <Helmet><title>{t('tracker')} - StockSignal</title></Helmet>
+      <Helmet><title>{t('tracker')} - TradingSignals</title></Helmet>
       <div className="p-1">
         {toast.show && (
           <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>

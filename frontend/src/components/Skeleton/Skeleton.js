@@ -2,6 +2,23 @@ const SkeletonBox = ({ width = '100%', height = '16px', style = {} }) => (
   <div className="skeleton-box" style={{ width, height, borderRadius: '4px', ...style }} />
 )
 
+export const SkeletonLoginBox = () => (
+  <div className="d-flex align-items-center justify-content-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
+    <div className="card shadow-sm" style={{ maxWidth: '400px', width: '100%' }}>
+      <div className="card-body p-4">
+        <div className="text-center mb-4">
+          <SkeletonBox width="48px" height="48px" style={{ borderRadius: '50%', margin: '0 auto 12px' }} />
+          <SkeletonBox width="160px" height="24px" style={{ margin: '0 auto 8px' }} />
+          <SkeletonBox width="200px" height="16px" style={{ margin: '0 auto' }} />
+        </div>
+        <SkeletonBox width="120px" height="14px" style={{ marginBottom: '8px' }} />
+        <SkeletonBox width="100%" height="38px" style={{ marginBottom: '16px', borderRadius: '6px' }} />
+        <SkeletonBox width="100%" height="38px" style={{ borderRadius: '6px' }} />
+      </div>
+    </div>
+  </div>
+)
+
 export const SkeletonTable = ({ rows = 8, cols = 10 }) => (
   <div className="d-none d-md-block table-responsive">
     <table className="table" style={{ fontSize: '14px' }}>

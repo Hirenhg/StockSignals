@@ -164,7 +164,7 @@ export default function Levels() {
 
   return (
     <>
-      <Helmet><title>Support & Resistance - StockSignal</title></Helmet>
+      <Helmet><title>Support & Resistance - TradingSignals</title></Helmet>
       <div className="p-1">
 
         {/* ===== MARKET MOOD INDEX ===== */}

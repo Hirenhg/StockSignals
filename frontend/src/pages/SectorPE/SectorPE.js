@@ -122,7 +122,7 @@ const SectorPE = () => {
 
   return (
     <>
-      <Helmet><title>Sector PE Ratio - StockSignal</title></Helmet>
+      <Helmet><title>Sector PE Ratio - TradingSignals</title></Helmet>
       <div className="p-1">
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
           <h5 className="fw-bold mb-0">Sector PE Ratio {sectorData.length > 0 && <span style={{ fontSize: '10px', color: '#4caf50', fontWeight: 600, verticalAlign: 'middle' }}>● LIVE</span>}</h5>

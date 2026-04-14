@@ -61,7 +61,7 @@ const News = () => {
   if (loading) {
     return (
       <>
-        <Helmet><title>{t('news')} - StockSignal</title></Helmet>
+        <Helmet><title>{t('news')} - TradingSignals</title></Helmet>
         <div>
          <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
           <h4 className="mb-0 fw-bold me-auto">{t('news')}</h4>
@@ -97,7 +97,7 @@ const News = () => {
 
   return (
     <>
-      <Helmet><title>{t('news')} - StockSignal</title></Helmet>
+      <Helmet><title>{t('news')} - TradingSignals</title></Helmet>
       <div>
         {toast.show && (
           <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>
