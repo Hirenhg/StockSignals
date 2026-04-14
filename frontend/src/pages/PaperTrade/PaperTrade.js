@@ -99,7 +99,7 @@ function PaperTrade() {
 
   return (
     <>
-      <Helmet><title>Paper Trading - StockSignal</title></Helmet>
+      <Helmet><title>Paper Trading - TradingSignals</title></Helmet>
       <div className="p-1">
         {toast.show && (
           <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>

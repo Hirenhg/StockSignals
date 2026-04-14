@@ -76,7 +76,7 @@ export default function Portfolio() {
 
   return (
     <>
-      <Helmet><title>COVID Portfolio - StockSignal</title></Helmet>
+      <Helmet><title>COVID Portfolio - TradingSignals</title></Helmet>
       <div className="p-1">
         <h5 className="fw-bold mb-0" style={{ color: text }}>COVID Portfolio {data.length > 0 && <span style={{ fontSize: '10px', color: '#4caf50', fontWeight: 600, verticalAlign: 'middle' }}>● LIVE</span>}</h5>
         <div className="mb-3" style={{ fontSize: '12px', color: textMuted }}>Stocks bought during COVID period · Live prices from Google Finance</div>

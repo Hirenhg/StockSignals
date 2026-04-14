@@ -165,7 +165,7 @@ function EquityTool() {
 
   return (
     <>
-      <Helmet><title>StockSignal Equity Tool</title></Helmet>
+      <Helmet><title>TradingSignals Equity Tool</title></Helmet>
       <div className="p-1">
         {toast.show && (
           <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>

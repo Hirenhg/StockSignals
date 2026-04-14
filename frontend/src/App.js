@@ -5,7 +5,7 @@ import Layout from './components/Layout/Layout';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { SkeletonCards, SkeletonTable } from './components/Skeleton/Skeleton';
+import { SkeletonCards, SkeletonTable, SkeletonLoginBox } from './components/Skeleton/Skeleton';
 
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const EquityTool = lazy(() => import('./pages/EquityTool/EquityTool'));
@@ -21,6 +21,7 @@ const Tracker = lazy(() => import('./pages/Tracker/Tracker'));
 const PaperTrade = lazy(() => import('./pages/PaperTrade/PaperTrade'));
 const Levels = lazy(() => import('./pages/Levels/Levels'));
 const Results = lazy(() => import('./pages/Results/Results'));
+const Strategy = lazy(() => import('./pages/Strategy/Strategy'));
 const Login = lazy(() => import('./pages/Login/Login'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
@@ -33,35 +34,38 @@ const LoadingSpinner = () => (
 
 const Protected = ({ children }) => {
   const { isLoggedIn, loading } = useAuth();
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <SkeletonLoginBox />;
   if (!isLoggedIn) return <Navigate to="/login" replace />;
   return children;
 };
+
+const S = ({ login, children }) => (
+  <Suspense fallback={login ? <SkeletonLoginBox /> : <LoadingSpinner />}>{children}</Suspense>
+)
 
 function AppRoutes() {
   return (
     <Layout>
       {({ assetTab, setAssetTab }) => (
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route index element={<Protected><Dashboard assetTab={assetTab} setAssetTab={setAssetTab} /></Protected>} />
-            <Route path="/equity" element={<Protected><EquityTool /></Protected>} />
-            <Route path="/options" element={<Protected><Options /></Protected>} />
-            <Route path="/optionchain" element={<Protected><OptionChain /></Protected>} />
-            <Route path="/sectors" element={<Sectors />} />
-            <Route path="/news" element={<News />} />
-            <Route path="/sector-pe" element={<SectorPE />} />
-            <Route path="/peg" element={<Protected><PEGRatio /></Protected>} />
-            <Route path="/portfolio" element={<Protected><Portfolio /></Protected>} />
-            <Route path="/chart/:symbol" element={<Protected><ChartPage /></Protected>} />
-            <Route path="/tracker" element={<Protected><Tracker /></Protected>} />
-            <Route path="/paper-trade" element={<Protected><PaperTrade /></Protected>} />
-            <Route path="/levels" element={<Protected><Levels /></Protected>} />
-            <Route path="/results" element={<Protected><Results /></Protected>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route path="/login" element={<S login><Login /></S>} />
+          <Route index element={<Protected><S><Dashboard assetTab={assetTab} setAssetTab={setAssetTab} /></S></Protected>} />
+          <Route path="/equity" element={<Protected><S><EquityTool /></S></Protected>} />
+          <Route path="/options" element={<Protected><S><Options /></S></Protected>} />
+          <Route path="/optionchain" element={<Protected><S><OptionChain /></S></Protected>} />
+          <Route path="/sectors" element={<S><Sectors /></S>} />
+          <Route path="/news" element={<S><News /></S>} />
+          <Route path="/sector-pe" element={<S><SectorPE /></S>} />
+          <Route path="/peg" element={<Protected><S><PEGRatio /></S></Protected>} />
+          <Route path="/portfolio" element={<Protected><S><Portfolio /></S></Protected>} />
+          <Route path="/chart/:symbol" element={<Protected><S><ChartPage /></S></Protected>} />
+          <Route path="/tracker" element={<Protected><S><Tracker /></S></Protected>} />
+          <Route path="/paper-trade" element={<Protected><S><PaperTrade /></S></Protected>} />
+          <Route path="/levels" element={<Protected><S><Levels /></S></Protected>} />
+          <Route path="/results" element={<Protected><S><Results /></S></Protected>} />
+          <Route path="/strategy" element={<Protected><S><Strategy /></S></Protected>} />
+          <Route path="*" element={<S><NotFound /></S>} />
+        </Routes>
       )}
     </Layout>
   );
@@ -71,7 +75,7 @@ function App() {
   return (
     <HelmetProvider>
       <Helmet>
-        <title>StockSignal - Trading Dashboard</title>
+        <title>TradingSignals - Trading Dashboard</title>
         <meta name="description" content="Real-time stock trading signals with RSI, EMA indicators, option chain, sector indices and market news" />
       </Helmet>
       <ThemeProvider>

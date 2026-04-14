@@ -18,6 +18,7 @@ export default function PEGRatio() {
   const [loading, setLoading] = useState(true)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [filter, setFilter] = useState('All')
+  const [search, setSearch] = useState('')
   const [editingEps, setEditingEps] = useState(null)
   const [epsInput, setEpsInput] = useState('')
   const [editingDiv, setEditingDiv] = useState(null)
@@ -76,8 +77,8 @@ export default function PEGRatio() {
 
   const recalcPEG = (d, epsG, dy, peOverride) => {
     const pe = peOverride ?? d.pe
-    const peg = pe && epsG ? parseFloat((pe / (epsG + (dy || 0))).toFixed(2)) : null
-    const pegStatus = peg !== null ? (peg < 1 ? 'Undervalued' : peg <= 2 ? 'Fairly Valued' : 'Overvalued') : null
+    const peg = pe && epsG ? parseFloat(((epsG + (dy || 0)) / pe).toFixed(2)) : null
+    const pegStatus = peg !== null ? (peg >= 1 ? 'Undervalued' : peg >= 0.5 ? 'Fairly Valued' : 'Overvalued') : null
     return { peg, pegStatus }
   }
 
@@ -139,8 +140,8 @@ export default function PEGRatio() {
       return sortConfig.direction === 'asc' ? av - bv : bv - av
     }
     if (sortConfig.key === 'fairPrice') {
-      const av = a.peg && a.peg > 0 ? a.price / a.peg : 999999
-      const bv = b.peg && b.peg > 0 ? b.price / b.peg : 999999
+      const av = a.pe && a.epsGrowth ? (a.price / a.pe) * (a.epsGrowth + (a.dividendYield || 0)) : 999999
+      const bv = b.pe && b.epsGrowth ? (b.price / b.pe) * (b.epsGrowth + (b.dividendYield || 0)) : 999999
       return sortConfig.direction === 'asc' ? av - bv : bv - av
     }
     const av = a[sortConfig.key] ?? 999, bv = b[sortConfig.key] ?? 999
@@ -149,7 +150,9 @@ export default function PEGRatio() {
 
   const arrow = (key) => sortConfig.key === key ? (sortConfig.direction === 'asc' ? ' ↑' : ' ↓') : ''
 
-  const filtered = filter === 'All' ? sorted : sorted.filter(r => r.pegStatus === filter)
+  const filtered = sorted
+    .filter(r => filter === 'All' || r.pegStatus === filter)
+    .filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()))
 
   const stats = data.reduce((acc, r) => {
     if (r.pegStatus === 'Undervalued') acc.under++
@@ -193,10 +196,10 @@ export default function PEGRatio() {
 
   return (
     <>
-      <Helmet><title>Peter Lynch PEG - StockSignal</title></Helmet>
+      <Helmet><title>Peter Lynch PEG - TradingSignals</title></Helmet>
       <div className="p-1">
         <h5 className="fw-bold mb-0" style={{ color: text }}>Peter Lynch PEG {data.length > 0 && <span style={{ fontSize: '10px', color: '#4caf50', fontWeight: 600, verticalAlign: 'middle' }}>● LIVE</span>}</h5>
-        <div className="mb-3" style={{ fontSize: '12px', color: textMuted }}>PEG = PE ÷ (EPS Growth + Div Yield) · Click EPS Growth / Div Yield to edit</div>
+        <div className="mb-3" style={{ fontSize: '12px', color: textMuted }}>Value = (EPS Growth + Div Yield) ÷ PE · Click EPS Growth / Div Yield to edit</div>
 
         <div className="d-flex gap-2 mb-3 overflow-auto" style={{ scrollbarWidth: 'none' }}>
           <div className="flex-shrink-0 text-center rounded px-3 py-1" style={{ background: bg2, border: `1px solid ${border}`, minWidth: '75px' }}>
@@ -217,15 +220,15 @@ export default function PEGRatio() {
           </div>
           <div style={{ borderLeft: `2px solid ${border}`, margin: '4px 0' }} />
           <div className="flex-shrink-0 text-center rounded px-3 py-1" style={{ background: bg2, border: `1px solid ${border}`, minWidth: '85px' }}>
-            <div style={{ fontSize: '12px', color: textMuted }}>PEG &lt; 1</div>
+            <div style={{ fontSize: '12px', color: textMuted }}>Value ≥ 1</div>
             <div className="fw-bold" style={{ fontSize: '14px', color: '#198754' }}>Buy Signal</div>
           </div>
           <div className="flex-shrink-0 text-center rounded px-3 py-1" style={{ background: bg2, border: `1px solid ${border}`, minWidth: '85px' }}>
-            <div style={{ fontSize: '12px', color: textMuted }}>PEG 1–2</div>
+            <div style={{ fontSize: '12px', color: textMuted }}>0.5 – 1</div>
             <div className="fw-bold" style={{ fontSize: '14px', color: '#f9a825' }}>Hold</div>
           </div>
           <div className="flex-shrink-0 text-center rounded px-3 py-1" style={{ background: bg2, border: `1px solid ${border}`, minWidth: '85px' }}>
-            <div style={{ fontSize: '12px', color: textMuted }}>PEG &gt; 2</div>
+            <div style={{ fontSize: '12px', color: textMuted }}>Value &lt; 0.5</div>
             <div className="fw-bold" style={{ fontSize: '14px', color: '#dc3545' }}>Avoid</div>
           </div>
         </div>
@@ -238,6 +241,7 @@ export default function PEGRatio() {
             </button>
           ))}
           <div style={{ borderLeft: `2px solid ${border}`, height: '32px', margin: '0 4px' }} />
+          <input className="form-control flex-shrink-0" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '150px', fontSize: '14px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a' } : {}) }} />
           <select className="form-select flex-shrink-0" value={filter} onChange={e => setFilter(e.target.value)} style={{ width: 'auto', fontSize: '14px', ...(darkMode ? { backgroundPosition: '90% center', backgroundImage: `url(${arrowDown})` } : {}) }}>
             <option value="All">All</option>
             <option value="Undervalued">Undervalued</option>
@@ -247,8 +251,9 @@ export default function PEGRatio() {
         </div>
 
         {/* Filter - Mobile */}
-        <div className="d-md-none mb-3">
-          <select className="form-select" value={filter} onChange={e => setFilter(e.target.value)} style={{ fontSize: '13px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a', backgroundImage: `url(${arrowDown})` } : {}) }}>
+        <div className="d-md-none mb-3 d-flex gap-2">
+          <input className="form-control" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} style={{ fontSize: '13px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a' } : {}) }} />
+          <select className="form-select flex-shrink-0" value={filter} onChange={e => setFilter(e.target.value)} style={{ width: 'auto', fontSize: '13px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a', backgroundImage: `url(${arrowDown})` } : {}) }}>
             <option value="All">All</option>
             <option value="Undervalued">Undervalued</option>
             <option value="Fairly Valued">Fairly Valued</option>
@@ -279,14 +284,14 @@ export default function PEGRatio() {
                     <th onClick={() => handleSort('epsGrowth')} style={{ cursor: 'pointer' }}>EPS Growth{arrow('epsGrowth')}</th>
                     <th onClick={() => handleSort('pe')} style={{ cursor: 'pointer' }}>PE{arrow('pe')}</th>
                     <th onClick={() => handleSort('dividendYield')} style={{ cursor: 'pointer' }}>Div Yield{arrow('dividendYield')}</th>
-                    <th onClick={() => handleSort('peg')} style={{ cursor: 'pointer' }}>Result{arrow('peg')}</th>
+                    <th onClick={() => handleSort('peg')} style={{ cursor: 'pointer' }}>Value{arrow('peg')}</th>
                     <th onClick={() => handleSort('fairPrice')} style={{ cursor: 'pointer' }}>Fair Price{arrow('fairPrice')}</th>
                     <th onClick={() => handleSort('pegStatus')} style={{ cursor: 'pointer' }}>Status{arrow('pegStatus')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((row, i) => {
-                    const fairPrice = row.peg && row.peg > 0 ? Math.round(row.price / row.peg) : null
+                    const fairPrice = row.pe && row.epsGrowth ? Math.round((row.price / row.pe) * (row.epsGrowth + (row.dividendYield || 0))) : null
                     return (
                     <tr key={i} style={{ verticalAlign: 'middle' }}>
                       <td className="fw-bold">{row.name}</td>
@@ -307,7 +312,7 @@ export default function PEGRatio() {
             {/* Mobile Cards */}
             <div className="d-md-none" style={{ paddingBottom: '80px' }}>
               {filtered.map((row, i) => {
-                const fairPrice = row.peg && row.peg > 0 ? Math.round(row.price / row.peg) : null
+                const fairPrice = row.pe && row.epsGrowth ? Math.round((row.price / row.pe) * (row.epsGrowth + (row.dividendYield || 0))) : null
                 const statusColor = row.pegStatus === 'Undervalued' ? '#198754' : row.pegStatus === 'Fairly Valued' ? '#ffc107' : row.pegStatus === 'Overvalued' ? '#dc3545' : textMuted
                 return (
                 <div key={i} className="card mb-2 shadow-sm" style={{ background: bg2, border: `1px solid ${border}` }}>
@@ -340,7 +345,7 @@ export default function PEGRatio() {
                         <div style={{ fontSize: '14px' }}>{renderDivCell(row)}</div>
                       </div>
                       <div className="col-3 text-center">
-                        <div style={{ fontSize: '11px', color: textMuted }}>PEG</div>
+                        <div style={{ fontSize: '11px', color: textMuted }}>Value</div>
                         <div className="fw-bold" style={{ fontSize: '15px', color: statusColor }}>{row.peg ?? '-'}</div>
                       </div>
                     </div>

@@ -1,6 +1,6 @@
 {
-  "short_name": "StockSignal",
-  "name": "StockSignal - Trading Signals",
+  "short_name": "TradingSignals",
+  "name": "TradingSignals - Trading Signals",
   "icons": [
     {
       "src": "favicon.svg",

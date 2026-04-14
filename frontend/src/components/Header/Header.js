@@ -29,6 +29,7 @@ const Header = () => {
         { path: '/paper-trade', label: 'Paper Trade', icon: 'bi-wallet2' },
         { path: '/levels', label: 'Levels', icon: 'bi-arrows-expand' },
         { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
+        { path: '/strategy', label: 'Strategy', icon: 'bi-lightning-charge' },
       ]
     : [
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
@@ -62,7 +63,7 @@ const Header = () => {
         <div className="d-flex align-items-center justify-content-between" style={{ height: '52px' }}>
           <Link to="/" className="d-flex align-items-center gap-2 text-decoration-none">
             <span style={{ fontSize: '22px' }}>📈</span>
-            <span className="fw-bold header-text" style={{ fontSize: '16px' }}>StockSignal</span>
+            <span className="fw-bold header-text" style={{ fontSize: '16px' }}>TradingSignals</span>
           </Link>
 
           {/* Mobile/Tablet controls */}

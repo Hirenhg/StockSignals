@@ -87,7 +87,7 @@ export default function Results() {
 
   return (
     <>
-      <Helmet><title>Quarterly Results - StockSignal</title></Helmet>
+      <Helmet><title>Quarterly Results - TradingSignals</title></Helmet>
       <div className="p-1">
         <h5 className="fw-bold mb-0" style={{ color: text }}>Quarterly Results {data.length > 0 && <span style={{ fontSize: '10px', color: '#4caf50', fontWeight: 600, verticalAlign: 'middle' }}>● LIVE</span>}</h5>
         <div className="mb-3" style={{ fontSize: '12px', color: textMuted }}>Revenue, Net Profit, Operating Margin, Dividend & Overall Assessment</div>
