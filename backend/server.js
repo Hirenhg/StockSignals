@@ -1436,75 +1436,79 @@ app.delete("/api/auth/watchlist/:symbol", authMiddleware, (req, res) => {
   res.json({ message: 'Removed from watchlist', watchlist: user.watchlist });
 });
 
-// Paper Trading routes
-app.get("/api/paper-trade/wallet", authMiddleware, (req, res) => {
-  const user = getUserByMobile(req.user.mobile);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  if (!user.wallet) {
-    user.wallet = { balance: 1000000, initialBalance: 1000000 };
-    user.positions = [];
-    user.trades = [];
-    updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
+// Buyers — stocks where buy quantity >= 60% (NSE India real data)
+const { getStockBuyerSeller, getIndexStocks } = require('./services/nseService');
+let buyersCache = { data: null, time: 0 };
+const BUYERS_CACHE_TTL = 5 * 60 * 1000; // 5 min
+
+app.get("/api/buyers", async (req, res) => {
+  try {
+    if (buyersCache.data && Date.now() - buyersCache.time < BUYERS_CACHE_TTL) {
+      return res.json(buyersCache.data);
+    }
+
+    // Get all unique symbols from nifty50 + niftynext50 + watchlist
+    const n50 = getNifty50();
+    const nn50 = getNiftyNext50();
+    const wl = getStocks();
+    const allSymbols = [...new Map([...n50, ...nn50, ...wl].map(s => [s.symbol, s])).values()]
+      .filter(s => !s.symbol.startsWith('^'));
+
+    // Also get bulk price data from index API for price/volume fallback
+    let indexPriceMap = {};
+    try {
+      const [n50Data, nn50Data] = await Promise.all([
+        getIndexStocks('NIFTY 50').catch(() => []),
+        getIndexStocks('NIFTY NEXT 50').catch(() => [])
+      ]);
+      [...n50Data, ...nn50Data].forEach(s => {
+        if (s.symbol) indexPriceMap[s.symbol] = s;
+      });
+    } catch {}
+
+    // Fetch per-stock buy/sell quantities from NSE (batched)
+    const results = [];
+    const batchSize = 3; // NSE rate limits, keep batches small
+    for (let i = 0; i < allSymbols.length; i += batchSize) {
+      const batch = allSymbols.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch.map(async ({ symbol }) => {
+        try {
+          const data = await getStockBuyerSeller(symbol);
+          const buyQty = data.totalBuyQuantity || 0;
+          const sellQty = data.totalSellQuantity || 0;
+          const totalQty = buyQty + sellQty;
+          if (totalQty === 0) return null;
+
+          const buyPct = parseFloat((buyQty / totalQty * 100).toFixed(2));
+          const sellPct = parseFloat((sellQty / totalQty * 100).toFixed(2));
+          const idx = indexPriceMap[symbol];
+          const price = data.lastPrice || idx?.lastPrice || 0;
+          const pChange = data.pChange != null ? parseFloat(parseFloat(data.pChange).toFixed(2)) : (idx?.pChange != null ? parseFloat(parseFloat(idx.pChange).toFixed(2)) : null);
+          const vol = data.totalTradedVolume || idx?.totalTradedVolume || 0;
+          const totalVolLakh = vol > 0 ? parseFloat((vol / 100000).toFixed(2)) : 0;
+
+          return {
+            symbol,
+            price: parseFloat(parseFloat(price).toFixed(2)),
+            pChange,
+            buyPct,
+            sellPct,
+            totalVolLakh,
+            week52High: data.yearHigh ? parseFloat(parseFloat(data.yearHigh).toFixed(2)) : (idx?.yearHigh ? parseFloat(parseFloat(idx.yearHigh).toFixed(2)) : null),
+            week52Low: data.yearLow ? parseFloat(parseFloat(data.yearLow).toFixed(2)) : (idx?.yearLow ? parseFloat(parseFloat(idx.yearLow).toFixed(2)) : null),
+            timestamp: new Date().toISOString()
+          };
+        } catch { return null; }
+      }));
+      results.push(...batchResults.filter(Boolean));
+      if (i + batchSize < allSymbols.length) await new Promise(r => setTimeout(r, 300));
+    }
+    buyersCache = { data: results, time: Date.now() };
+    res.json(results);
+  } catch (error) {
+    console.error('Buyers API error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch buyers data' });
   }
-  res.json({ wallet: user.wallet, positions: user.positions || [], trades: (user.trades || []).slice(-50).reverse() });
-});
-
-app.post("/api/paper-trade/buy", authMiddleware, (req, res) => {
-  const { symbol, price, qty } = req.body;
-  if (!symbol || !price || !qty) return res.status(400).json({ error: 'Symbol, price and qty required' });
-  const buyPrice = parseFloat(price);
-  const buyQty = parseInt(qty);
-  const cost = buyPrice * buyQty;
-  const user = getUserByMobile(req.user.mobile);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  if (!user.wallet) { user.wallet = { balance: 1000000, initialBalance: 1000000 }; user.positions = []; user.trades = []; }
-  if (user.wallet.balance < cost) return res.status(400).json({ error: 'Insufficient balance' });
-
-  user.wallet.balance = parseFloat((user.wallet.balance - cost).toFixed(2));
-  const existing = (user.positions || []).find(p => p.symbol === symbol.toUpperCase());
-  if (existing) {
-    const totalQty = existing.qty + buyQty;
-    existing.avgPrice = parseFloat(((existing.avgPrice * existing.qty + buyPrice * buyQty) / totalQty).toFixed(2));
-    existing.qty = totalQty;
-  } else {
-    if (!user.positions) user.positions = [];
-    user.positions.push({ symbol: symbol.toUpperCase(), avgPrice: buyPrice, qty: buyQty });
-  }
-  if (!user.trades) user.trades = [];
-  user.trades.push({ symbol: symbol.toUpperCase(), type: 'BUY', price: buyPrice, qty: buyQty, total: cost, date: new Date().toISOString() });
-  updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
-  res.json({ message: 'Buy order executed', wallet: user.wallet, positions: user.positions });
-});
-
-app.post("/api/paper-trade/sell", authMiddleware, (req, res) => {
-  const { symbol, price, qty } = req.body;
-  if (!symbol || !price || !qty) return res.status(400).json({ error: 'Symbol, price and qty required' });
-  const sellPrice = parseFloat(price);
-  const sellQty = parseInt(qty);
-  const user = getUserByMobile(req.user.mobile);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  if (!user.positions) return res.status(400).json({ error: 'No positions to sell' });
-  const pos = user.positions.find(p => p.symbol === symbol.toUpperCase());
-  if (!pos || pos.qty < sellQty) return res.status(400).json({ error: 'Insufficient quantity' });
-
-  const proceeds = sellPrice * sellQty;
-  user.wallet.balance = parseFloat((user.wallet.balance + proceeds).toFixed(2));
-  pos.qty -= sellQty;
-  if (pos.qty === 0) user.positions = user.positions.filter(p => p.symbol !== symbol.toUpperCase());
-  if (!user.trades) user.trades = [];
-  user.trades.push({ symbol: symbol.toUpperCase(), type: 'SELL', price: sellPrice, qty: sellQty, total: proceeds, date: new Date().toISOString() });
-  updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
-  res.json({ message: 'Sell order executed', wallet: user.wallet, positions: user.positions });
-});
-
-app.post("/api/paper-trade/reset", authMiddleware, (req, res) => {
-  const user = getUserByMobile(req.user.mobile);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  user.wallet = { balance: 1000000, initialBalance: 1000000 };
-  user.positions = [];
-  user.trades = [];
-  updateUser(req.user.mobile, { wallet: user.wallet, positions: user.positions, trades: user.trades });
-  res.json({ message: 'Paper trading account reset', wallet: user.wallet });
 });
 
 // Market Mood Index
