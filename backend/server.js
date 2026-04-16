@@ -118,10 +118,8 @@ app.get("/api/signals/:type", async (req, res) => {
               signal: result.signal,
               rsi: result.rsi?.toFixed(2) || '0',
               ema7: result.ema7?.toFixed(2) || '0',
-              macdLine: result.macdLine?.toFixed(2) || null,
-              macdSignal: result.macdSignal?.toFixed(2) || null,
-              macdHist: result.macdHist?.toFixed(2) || null,
-              pivot: result.pivot?.toFixed(2) || null,
+              slPrice: result.sl || null,
+              targetPrice: result.target || null,
               r1: result.r1?.toFixed(2) || null,
               r2: result.r2?.toFixed(2) || null,
               r3: result.r3?.toFixed(2) || null,
@@ -384,7 +382,8 @@ app.get("/api/options/live", async (req, res) => {
         let signal = 'HOLD';
         let rsi = null;
         let ema7 = null;
-        let pivot = null, r1 = null, r2 = null, r3 = null, s1 = null, s2 = null, s3 = null;
+        let slPrice = null, targetPrice = null;
+        let r1 = null, r2 = null, r3 = null, s1 = null, s2 = null, s3 = null;
         
         try {
           const symbolMatch = opt.symbol.match(/^([A-Z]+)/);
@@ -401,7 +400,7 @@ app.get("/api/options/live", async (req, res) => {
             signal = result.signal;
             rsi = result.rsi?.toFixed(2);
             ema7 = result.ema7?.toFixed(2);
-            pivot = result.pivot?.toFixed(2);
+            slPrice = result.sl; targetPrice = result.target;
             r1 = result.r1?.toFixed(2); r2 = result.r2?.toFixed(2); r3 = result.r3?.toFixed(2);
             s1 = result.s1?.toFixed(2); s2 = result.s2?.toFixed(2); s3 = result.s3?.toFixed(2);
           }
@@ -411,7 +410,7 @@ app.get("/api/options/live", async (req, res) => {
           ...opt,
           ltp, open, high, low, close,
           pChange: ltp && close ? parseFloat(((ltp - close) / close * 100).toFixed(2)) : null,
-          signal, rsi, ema7, pivot, r1, r2, r3, s1, s2, s3,
+          signal, rsi, ema7, slPrice, targetPrice, r1, r2, r3, s1, s2, s3,
           price: ltp.toFixed(2), symbol: opt.symbol
         };
       }));
@@ -445,7 +444,8 @@ app.get("/api/options/live", async (req, res) => {
       }
 
       let signal = 'HOLD', rsi = null, ema7 = null;
-      let pivot = null, r1 = null, r2 = null, r3 = null, s1 = null, s2 = null, s3 = null;
+      let slPrice = null, targetPrice = null;
+      let r1 = null, r2 = null, r3 = null, s1 = null, s2 = null, s3 = null;
 
       try {
         const symbolMatch = opt.symbol.match(/^([A-Z]+)/);
@@ -459,7 +459,7 @@ app.get("/api/options/live", async (req, res) => {
             signal = result.signal;
             rsi = result.rsi?.toFixed(2);
             ema7 = result.ema7?.toFixed(2);
-            pivot = result.pivot?.toFixed(2);
+            slPrice = result.sl; targetPrice = result.target;
             r1 = result.r1?.toFixed(2); r2 = result.r2?.toFixed(2); r3 = result.r3?.toFixed(2);
             s1 = result.s1?.toFixed(2); s2 = result.s2?.toFixed(2); s3 = result.s3?.toFixed(2);
           }
@@ -471,7 +471,7 @@ app.get("/api/options/live", async (req, res) => {
         ltp, open, high, low, close,
         pChange: ltp && close ? parseFloat(((ltp - close) / close * 100).toFixed(2)) : null,
         timestamp: wsLive?.timestamp || null,
-        signal, rsi, ema7, pivot, r1, r2, r3, s1, s2, s3
+        signal, rsi, ema7, slPrice, targetPrice, r1, r2, r3, s1, s2, s3
       };
     }));
 
@@ -1251,14 +1251,14 @@ app.put("/api/sector-pe/:sector", (req, res) => {
   res.json({ message: 'Updated successfully' });
 });
 
-// History Tracker - backtest CSV + live Yahoo 3mo data
+// History Tracker - CSV backtest
 let historyTrackerCache = { data: null, date: null };
 
 function backtestRows(rows, symbol, targetPct, slPct) {
   const closes = rows.map(r => r.close);
   const hits = [];
   for (let i = 20; i < rows.length; i++) {
-    const data = { closes: closes.slice(0, i + 1), ohlc: rows.slice(Math.max(0, i - 1), i + 1).map(r => ({ high: r.high, low: r.low, close: r.close })) };
+    const data = { closes: closes.slice(0, i + 1), ohlc: rows.slice(0, i + 1).map(r => ({ open: r.open || r.close, high: r.high, low: r.low, close: r.close, volume: r.volume || 0 })) };
     const result = generateSignal(data.closes, data.ohlc);
     if (result.signal !== 'BUY' && result.signal !== 'SELL') continue;
     const entry = rows[i].close;
@@ -1305,36 +1305,13 @@ app.get("/api/history-tracker", async (req, res) => {
           const c = l.match(/(?:"[^"]*"|[^,])+/g) || [];
           const date = parseDt(c[0]);
           if (!date) return null;
-          return { date, open: parseNum(c[2]), high: parseNum(c[3]), low: parseNum(c[4]), close: parseNum(c[7]) };
+          return { date, open: parseNum(c[2]), high: parseNum(c[3]), low: parseNum(c[4]), close: parseNum(c[7]), volume: parseNum(c[11]) || 0 };
         }).filter(r => r && !isNaN(r.close)).reverse();
         allHits.push(...backtestRows(rows, symbol, targetPct, slPct));
       } catch {}
     }
 
-    // 2. Live Yahoo - nifty50 + niftynext50 + watchlist (3mo daily)
-    const n50 = getNifty50().map(s => s.symbol);
-    const nn50 = getNiftyNext50().map(s => s.symbol);
-    const wl = getStocks().map(s => s.symbol);
-    const liveSymbols = [...new Set([...n50, ...nn50, ...wl])];
-    const batchSize = 5;
-    for (let i = 0; i < liveSymbols.length; i += batchSize) {
-      const batch = liveSymbols.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map(async (sym) => {
-        try {
-          const ohlc = await getStockHistory(sym, '1d', '3mo', false, false, false, true);
-          if (!ohlc || ohlc.length < 25) return [];
-          const now = new Date();
-          const rows = ohlc.map((bar, idx) => {
-            const d = new Date(now); d.setDate(d.getDate() - (ohlc.length - 1 - idx));
-            return { date: d.toISOString().slice(0, 10), open: bar.open, high: bar.high, low: bar.low, close: bar.close };
-          });
-          return backtestRows(rows, sym, targetPct, slPct);
-        } catch { return []; }
-      }));
-      batchResults.forEach(h => allHits.push(...h));
-    }
-
-    // 3. Options - real option price history (30% target / 10% SL)
+    // Options - real option price history (30% target / 10% SL)
     const optTargetPct = 30, optSlPct = 10;
     try {
       const optHistory = JSON.parse(fs.readFileSync(optionHistoryPath, 'utf8'));

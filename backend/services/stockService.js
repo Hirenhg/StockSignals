@@ -63,7 +63,7 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
         const ohlc = [];
         for (let i = 0; i < len; i++) {
           if (q.close[i] != null && q.open[i] != null && q.high[i] != null && q.low[i] != null) {
-            ohlc.push({ open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i] });
+            ohlc.push({ open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume?.[i] || 0 });
           }
         }
         return ohlc;
@@ -99,7 +99,7 @@ async function getStockFull(symbol, interval = '5m', range = '5d') {
     const ohlc = [];
     for (let i = 0; i < len; i++) {
       if (q.close[i] != null && q.open[i] != null && q.high[i] != null && q.low[i] != null) {
-        ohlc.push({ open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i] });
+        ohlc.push({ open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume?.[i] || 0 });
       }
     }
     return {

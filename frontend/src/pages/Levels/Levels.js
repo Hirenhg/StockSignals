@@ -244,7 +244,7 @@ export default function Levels() {
 
         {/* ===== SUPPORT & RESISTANCE ===== */}
         <h5 className="fw-bold mb-0" style={{ color: text }}>Support & Resistance</h5>
-        <div className="fw-bold mb-3" style={{ fontSize: '12px', color: textMuted }}>Fibonacci Pivot Points · 7 EMA Strategy · S3–R3 levels</div>
+        <div className="fw-bold mb-3" style={{ fontSize: '12px', color: textMuted }}>Fibonacci S&R · 7 EMA Strategy · S3–R3 levels</div>
 
         <div className="d-flex gap-2 mb-3 align-items-center">
           {['daily', 'weekly', 'monthly'].map(t => (
@@ -272,12 +272,10 @@ export default function Levels() {
                     <th>S3</th>
                     <th>S2</th>
                     <th>S1</th>
-                    <th>Pivot</th>
-                    <th>Pivot Point %</th>
+                    <th>7 EMA</th>
                     <th>R1</th>
                     <th>R2</th>
                     <th>R3</th>
-                    <th>7 EMA</th>
                     <th>Signal</th>
                     <th>Prev High</th>
                   </tr>
@@ -301,10 +299,7 @@ export default function Levels() {
                             </td>
                           )
                         })}
-                        <td className="fw-bold level-pivot">{levels.pp}</td>
-                        <td className="fw-bold" style={{ color: row.price >= levels.pp ? '#198754' : '#dc3545', fontSize: '12px' }}>
-                          {((row.price - levels.pp) / levels.pp * 100).toFixed(2)}%
-                        </td>
+                        <td className="fw-bold" style={{ color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>{levels.ema7 || '-'}</td>
                         {[levels.r1, levels.r2, levels.r3].map((v, j) => {
                           const prox = getProximity(row.price, v)
                           return (
@@ -329,8 +324,8 @@ export default function Levels() {
             <div className="d-md-none" style={{ paddingBottom: 80 }}>
               {data.map((row, i) => {
                 const levels = row[tf]
-                const ppPct = ((row.price - levels.pp) / levels.pp * 100).toFixed(2)
-                const isAbovePP = row.price >= levels.pp
+                const ppPct = levels.ema7 ? ((row.price - levels.ema7) / levels.ema7 * 100).toFixed(2) : 0
+                const isAbovePP = row.price >= (levels.ema7 || 0)
 
                 return (
                   <div key={i} className="card mb-3 shadow-sm" style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, overflow: 'hidden' }}>
@@ -358,22 +353,24 @@ export default function Levels() {
                       </div>
                     </div>
 
-                    {/* Pivot + EMA row */}
+                    {/* EMA row */}
                     <div className="d-flex justify-content-between align-items-center px-3 py-2" style={{ background: sectionBg, borderTop: `1px solid ${border}`, borderBottom: `1px solid ${border}` }}>
                       <div className="text-center">
-                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pivot</div>
-                        <div className="fw-bold" style={{ fontSize: '16px', color: '#6f42c1' }}>{levels.pp}</div>
+                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>7 EMA</div>
+                        <div className="fw-bold" style={{ fontSize: '16px', color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>
+                          {levels.ema7 || '-'}
+                        </div>
                       </div>
                       <div className="text-center">
-                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PP %</div>
+                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>EMA %</div>
                         <div className="fw-bold" style={{ fontSize: '16px', color: isAbovePP ? '#198754' : '#dc3545' }}>
                           {ppPct > 0 ? '+' : ''}{ppPct}%
                         </div>
                       </div>
                       <div className="text-center">
-                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>7 EMA</div>
-                        <div className="fw-bold" style={{ fontSize: '16px', color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>
-                          {levels.ema7 || '-'}
+                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Signal</div>
+                        <div className="fw-bold" style={{ fontSize: '16px', color: levels.signal === 'Bullish' || levels.signal === 'Above' ? '#198754' : '#dc3545' }}>
+                          {levels.signal || '-'}
                         </div>
                       </div>
                     </div>
@@ -385,7 +382,7 @@ export default function Levels() {
                         <span style={{ fontWeight: 600, color: text }}>Price Position</span>
                         <span>R3: {levels.r3}</span>
                       </div>
-                      <PricePositionBar price={row.price} s3={levels.s3} r3={levels.r3} pp={levels.pp} darkMode={darkMode} />
+                      <PricePositionBar price={row.price} s3={levels.s3} r3={levels.r3} pp={levels.ema7} darkMode={darkMode} />
                     </div>
 
                     {/* Support & Resistance Split */}

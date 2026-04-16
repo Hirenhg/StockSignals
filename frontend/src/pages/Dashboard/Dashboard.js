@@ -39,11 +39,11 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   }
 
   const exportCSV = () => {
-    const headers = ['Symbol','Price','Signal','RSI','EMA Pro','Pivot Pro','R1','R2','R3','S1','S2','S3','Target','SL','%Chg','52W High','52W Low']
+    const headers = ['Symbol','Price','Signal','RSI','7 EMA','R1','R2','R3','S1','S2','S3','Target','SL','%Chg','52W High','52W Low']
     const rows = filteredSignals.map(s => {
       const p = parseFloat(s.price)
       const isSell = s.signal === 'SELL'
-      return [s.symbol,s.price,s.signal,s.rsi,s.ema7,s.pivot,s.r1,s.r2,s.r3,s.s1,s.s2,s.s3,isSell?(p*0.988).toFixed(2):(p*1.012).toFixed(2),isSell?(p*1.004).toFixed(2):(p*0.996).toFixed(2),s.pChange||'',s.week52High||'',s.week52Low||'']
+      return [s.symbol,s.price,s.signal,s.rsi,s.ema7,s.r1,s.r2,s.r3,s.s1,s.s2,s.s3,s.targetPrice||'',s.slPrice||'',s.pChange||'',s.week52High||'',s.week52Low||'']
     })
     const csv = [headers,...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -470,22 +470,22 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                   </div>
                   <div className="col-6">
                     <small style={{color: '#198754'}} className="d-block">Target {item.signal === 'SELL' ? '-' : '+'}1.20%</small>
-                    <strong style={{color: '#198754'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2)}</strong>
+                    <strong style={{color: '#198754'}}>₹{item.targetPrice || (item.signal === 'SELL' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2))}</strong>
                   </div>
                   <div className="col-6">
-                    <small style={{color: '#dc3545'}} className="d-block">SL {item.signal === 'SELL' ? '+' : '-'}0.40%</small>
-                    <strong style={{color: '#dc3545'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2)}</strong>
+                    <small style={{color: '#dc3545'}} className="d-block">SL</small>
+                    <strong style={{color: '#dc3545'}}>₹{item.slPrice || (item.signal === 'SELL' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2))}</strong>
                   </div>
                 </div>
 
                 <div className="row g-3 border-top mt-3">
                   <div className="col-6">
-                    <small className="text-primary d-block">EMA Pro</small>
+                    <small className="text-primary d-block">7 EMA</small>
                     <strong className="text-primary">₹{item.ema7}</strong>
                   </div>
                   <div className="col-6">
-                    <small className="text-muted d-block">Pivot Pro</small>
-                    <strong>₹{item.pivot || '-'}</strong>
+                    <small className="text-muted d-block">R1</small>
+                    <strong>₹{item.r1 || '-'}</strong>
                   </div>
                   <div className="col-4">
                     <small style={{color:'#dc3545'}} className="d-block">R1</small>
@@ -533,8 +533,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                 <th onClick={() => handleSort('rsi')} style={{cursor: 'pointer'}}>
                   RSI {sortConfig.key === 'rsi' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
-                <th style={{color:'#2962FF'}}>EMA Pro</th>
-                <th>Pivot Pro</th>
+                <th style={{color:'#2962FF'}}>7 EMA</th>
                 <th style={{color:'#dc3545'}}>R1</th>
                 <th style={{color:'#dc3545'}}>R2</th>
                 <th style={{color:'#dc3545'}}>R3</th>
@@ -567,15 +566,14 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
                   </td>
                   <td>{item.rsi}</td>
                   <td style={{color:'#2962FF'}}>₹{item.ema7}</td>
-                  <td>₹{item.pivot || '-'}</td>
                   <td style={{color:'#dc3545'}}>₹{item.r1 || '-'}</td>
                   <td style={{color:'#dc3545'}}>₹{item.r2 || '-'}</td>
                   <td style={{color:'#dc3545'}}>₹{item.r3 || '-'}</td>
                   <td style={{color:'#198754'}}>₹{item.s1 || '-'}</td>
                   <td style={{color:'#198754'}}>₹{item.s2 || '-'}</td>
                   <td style={{color:'#198754'}}>₹{item.s3 || '-'}</td>
-                  <td style={{color: '#198754', fontWeight: 'bold'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2)}</td>
-                  <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.signal === 'SELL' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2)}</td>
+                  <td style={{color: '#198754', fontWeight: 'bold'}}>₹{item.targetPrice || (item.signal === 'SELL' ? (parseFloat(item.price) * 0.988).toFixed(2) : (parseFloat(item.price) * 1.012).toFixed(2))}</td>
+                  <td style={{color: '#dc3545', fontWeight: 'bold'}}>₹{item.slPrice || (item.signal === 'SELL' ? (parseFloat(item.price) * 1.004).toFixed(2) : (parseFloat(item.price) * 0.996).toFixed(2))}</td>
                   <td>₹{item.week52High || '-'}</td>
                   <td>₹{item.week52Low || '-'}</td>
                   <td style={{color: item.pChange >= 0 ? '#198754' : '#dc3545', fontWeight: 'bold'}}>
