@@ -295,3 +295,62 @@ html, body {
 
 .level-bullish { color: #198754 !important; }
 .level-bearish { color: #dc3545 !important; }
+
+// Buyers page — bottom nav & tabs
+.buyers-bottom-nav {
+  background: #fff;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+}
+
+.buyers-bottom-btn {
+  background: transparent;
+  color: $gray300;
+}
+
+.buyers-bottom-btn.active-success { color: #198754; }
+.buyers-bottom-btn.active-danger { color: #dc3545; }
+
+[data-theme="dark"] .buyers-bottom-nav {
+  background: #1e1e1e;
+  border-color: $gray600 !important;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.4);
+}
+
+[data-theme="dark"] .buyers-bottom-btn {
+  color: $gray400;
+}
+
+[data-theme="dark"] .buyers-bottom-btn.active-success { color: #4ade80; }
+[data-theme="dark"] .buyers-bottom-btn.active-danger { color: #f87171; }
+
+[data-theme="dark"] .buyers-tab.btn-outline-success {
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+[data-theme="dark"] .buyers-tab.btn-outline-success:hover {
+  background: #4ade80;
+  color: #111;
+}
+
+[data-theme="dark"] .buyers-tab.btn-outline-danger {
+  color: #f87171;
+  border-color: #f87171;
+}
+
+[data-theme="dark"] .buyers-tab.btn-outline-danger:hover {
+  background: #f87171;
+  color: #111;
+}
+
+[data-theme="dark"] .buyers-tab.btn-success {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+[data-theme="dark"] .buyers-tab.btn-danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}

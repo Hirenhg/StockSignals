@@ -18,7 +18,7 @@ const PEGRatio = lazy(() => import('./pages/PEGRatio/PEGRatio'));
 const Portfolio = lazy(() => import('./pages/Portfolio/Portfolio'));
 const ChartPage = lazy(() => import('./pages/Chart/ChartPage'));
 const Tracker = lazy(() => import('./pages/Tracker/Tracker'));
-const PaperTrade = lazy(() => import('./pages/PaperTrade/PaperTrade'));
+const MarketDepth = lazy(() => import('./pages/MarketDepth/MarketDepth'));
 const Levels = lazy(() => import('./pages/Levels/Levels'));
 const Results = lazy(() => import('./pages/Results/Results'));
 const HistoryTracker = lazy(() => import('./pages/HistoryTracker/HistoryTracker'));
@@ -51,6 +51,7 @@ function AppRoutes() {
           <Route path="/login" element={<S login><Login /></S>} />
           <Route index element={<Protected><S><Dashboard assetTab={assetTab} setAssetTab={setAssetTab} /></S></Protected>} />
           <Route path="/equity" element={<Protected><S><EquityTool /></S></Protected>} />
+          <Route path="/market-depth" element={<Protected><S><MarketDepth /></S></Protected>} />
           <Route path="/options" element={<Protected><S><Options /></S></Protected>} />
           <Route path="/optionchain" element={<Protected><S><OptionChain /></S></Protected>} />
           <Route path="/sectors" element={<S><Sectors /></S>} />
@@ -60,7 +61,6 @@ function AppRoutes() {
           <Route path="/portfolio" element={<Protected><S><Portfolio /></S></Protected>} />
           <Route path="/chart/:symbol" element={<Protected><S><ChartPage /></S></Protected>} />
           <Route path="/tracker" element={<Protected><S><Tracker /></S></Protected>} />
-          <Route path="/paper-trade" element={<Protected><S><PaperTrade /></S></Protected>} />
           <Route path="/levels" element={<Protected><S><Levels /></S></Protected>} />
           <Route path="/results" element={<Protected><S><Results /></S></Protected>} />
           <Route path="/history-tracker" element={<Protected><S><HistoryTracker /></S></Protected>} />
