@@ -12,7 +12,7 @@ function MarketDepth() {
   const [tab, setTab] = useState('buyers')
   const [sortConfig, setSortConfig] = useState({ key: 'buyPct', direction: 'desc' })
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
-  const [fetchTime, setFetchTime] = useState(null)
+  const [, setFetchTime] = useState(null)
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type })
