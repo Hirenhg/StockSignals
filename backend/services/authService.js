@@ -24,6 +24,7 @@ function getOrCreateUser(mobile) {
     mobile,
     name: '',
     watchlist: [],
+    strategies: [],
     wallet: { balance: 1000000, initialBalance: 1000000 },
     positions: [],
     trades: [],

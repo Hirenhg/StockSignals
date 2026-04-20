@@ -105,12 +105,16 @@ app.get("/api/signals/:type", async (req, res) => {
       const batchResults = await Promise.all(
         batch.map(async (stock) => {
           try {
-            const data = await getStockFull(stock.symbol, '15m', '5d');
-            if (!data || !data.closes || data.closes.length < 20) return null;
+            const [tf1h, tf30m, tf15m] = await Promise.all([
+              getStockFull(stock.symbol, '60m', '1mo'),
+              getStockFull(stock.symbol, '30m', '5d'),
+              getStockFull(stock.symbol, '15m', '5d'),
+            ]);
+            if (!tf15m || !tf15m.closes || tf15m.closes.length < 20) return null;
 
-            const result = generateSignal(data.closes, data.ohlc);
-            const currentPrice = parseFloat(data.closes[data.closes.length - 1].toFixed(2));
-            const prevClose = data.prevClose;
+            const result = generateSignal(tf1h, tf30m, tf15m);
+            const currentPrice = parseFloat(tf15m.closes[tf15m.closes.length - 1].toFixed(2));
+            const prevClose = tf15m.prevClose;
             const pChange = prevClose ? parseFloat(((currentPrice - prevClose) / prevClose * 100).toFixed(2)) : null;
 
             return {
@@ -128,8 +132,9 @@ app.get("/api/signals/:type", async (req, res) => {
               s3: result.s3?.toFixed(2) || null,
               price: currentPrice.toFixed(2),
               pChange,
-              week52High: data.week52High,
-              week52Low: data.week52Low,
+              week52High: tf15m.week52High,
+              week52Low: tf15m.week52Low,
+              tfBias: result.tfBias || null,
               timestamp: new Date().toISOString()
             };
           } catch { return null; }
@@ -173,11 +178,15 @@ app.get("/api/equity-signals/:type", async (req, res) => {
       const batchResults = await Promise.all(
         batch.map(async (stock) => {
           try {
-            const ohlc5m = await getStockHistory(stock.symbol, '5m', '5d', false, false, false, true);
-            if (!ohlc5m || ohlc5m.length < 40) return null;
+            const [ohlc1h, ohlc30m, ohlc15m] = await Promise.all([
+              getStockHistory(stock.symbol, '60m', '1mo', false, false, false, true),
+              getStockHistory(stock.symbol, '30m', '5d', false, false, false, true),
+              getStockHistory(stock.symbol, '15m', '5d', false, false, false, true),
+            ]);
+            if (!ohlc15m || ohlc15m.length < 40) return null;
 
-            const result = generateEquitySignal(ohlc5m);
-            const currentPrice = parseFloat(ohlc5m[ohlc5m.length - 1].close.toFixed(2));
+            const result = generateEquitySignal(ohlc1h, ohlc30m, ohlc15m);
+            const currentPrice = parseFloat(ohlc15m[ohlc15m.length - 1].close.toFixed(2));
 
             const data = await getStockFull(stock.symbol, '1d', '5d');
             const prevClose = data?.prevClose || null;
@@ -199,6 +208,7 @@ app.get("/api/equity-signals/:type", async (req, res) => {
               pChange,
               week52High: data?.week52High || null,
               week52Low: data?.week52Low || null,
+              tfBias: result.tfBias || null,
               timestamp: new Date().toISOString()
             };
           } catch { return null; }
@@ -393,10 +403,14 @@ app.get("/api/options/live", async (req, res) => {
           const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
           if (indexMap[underlyingSymbol]) underlyingSymbol = indexMap[underlyingSymbol];
           
-          const data = await getStockFull(underlyingSymbol, '15m', '5d');
+          const [tf1h, tf30m, tf15m] = await Promise.all([
+            getStockFull(underlyingSymbol, '60m', '1mo'),
+            getStockFull(underlyingSymbol, '30m', '5d'),
+            getStockFull(underlyingSymbol, '15m', '5d'),
+          ]);
           
-          if (data && data.closes && data.closes.length >= 20) {
-            const result = generateSignal(data.closes, data.ohlc);
+          if (tf15m && tf15m.closes && tf15m.closes.length >= 20) {
+            const result = generateSignal(tf1h, tf30m, tf15m);
             signal = result.signal;
             rsi = result.rsi?.toFixed(2);
             ema7 = result.ema7?.toFixed(2);
@@ -453,9 +467,13 @@ app.get("/api/options/live", async (req, res) => {
           let underlyingSymbol = symbolMatch[1];
           const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
           if (indexMap[underlyingSymbol]) underlyingSymbol = indexMap[underlyingSymbol];
-          const data = await getStockFull(underlyingSymbol, '15m', '5d');
-          if (data && data.closes && data.closes.length >= 20) {
-            const result = generateSignal(data.closes, data.ohlc);
+          const [tf1h, tf30m, tf15m] = await Promise.all([
+            getStockFull(underlyingSymbol, '60m', '1mo'),
+            getStockFull(underlyingSymbol, '30m', '5d'),
+            getStockFull(underlyingSymbol, '15m', '5d'),
+          ]);
+          if (tf15m && tf15m.closes && tf15m.closes.length >= 20) {
+            const result = generateSignal(tf1h, tf30m, tf15m);
             signal = result.signal;
             rsi = result.rsi?.toFixed(2);
             ema7 = result.ema7?.toFixed(2);
@@ -921,22 +939,23 @@ app.get("/api/telegram/test", async (req, res) => {
     // Find first BUY signal from live data
     for (const stock of stocks) {
       try {
-        const prices5m = await getStockHistory(stock.symbol, '1d', '3mo');
-        if (!prices5m || prices5m.length < 20) continue;
+        const [tf1h, tf30m, tf15m] = await Promise.all([
+          getStockFull(stock.symbol, '60m', '1mo'),
+          getStockFull(stock.symbol, '30m', '5d'),
+          getStockFull(stock.symbol, '15m', '5d'),
+        ]);
+        if (!tf15m || !tf15m.closes || tf15m.closes.length < 20) continue;
         
-        const result = generateSignal(prices5m);
+        const result = generateSignal(tf1h, tf30m, tf15m);
         
         if (result.signal === 'BUY') {
-          const price = prices5m[prices5m.length - 1].toFixed(2);
+          const price = tf15m.closes[tf15m.closes.length - 1].toFixed(2);
           await sendSignal(
             stock.symbol,
             result.signal,
             price,
-            result.rsi.toFixed(2),
-            result.ema5.toFixed(2),
-            result.ema10.toFixed(2),
-            result.ema15.toFixed(2),
-            result.ema20.toFixed(2)
+            result.rsi?.toFixed(2) || '0',
+            result.ema7?.toFixed(2) || '0'
           );
           return res.json({ message: "Live BUY signal sent", symbol: stock.symbol });
         }
@@ -1255,11 +1274,14 @@ app.put("/api/sector-pe/:sector", (req, res) => {
 let historyTrackerCache = { data: null, date: null };
 
 function backtestRows(rows, symbol, targetPct, slPct) {
+  // Backtest uses daily data as single timeframe (historical, no multi-TF available)
   const closes = rows.map(r => r.close);
+  const ohlc = rows.map(r => ({ open: r.open || r.close, high: r.high, low: r.low, close: r.close, volume: r.volume || 0 }));
   const hits = [];
   for (let i = 20; i < rows.length; i++) {
-    const data = { closes: closes.slice(0, i + 1), ohlc: rows.slice(0, i + 1).map(r => ({ open: r.open || r.close, high: r.high, low: r.low, close: r.close, volume: r.volume || 0 })) };
-    const result = generateSignal(data.closes, data.ohlc);
+    const sliceData = { closes: closes.slice(0, i + 1), ohlc: ohlc.slice(0, i + 1) };
+    // Pass same data as all 3 timeframes for backtest compatibility
+    const result = generateSignal(sliceData, sliceData, sliceData);
     if (result.signal !== 'BUY' && result.signal !== 'SELL') continue;
     const entry = rows[i].close;
     const isBuy = result.signal === 'BUY';
@@ -1289,30 +1311,107 @@ app.get("/api/history-tracker", async (req, res) => {
     const targetPct = 2, slPct = 1;
     const allHits = [];
 
-    // 1. CSV files
-    const csvFiles = [
-      { file: 'ADANIPORTSNSE.csv', symbol: 'ADANIPORTS' },
-      { file: 'FIVESTARNSE.csv', symbol: 'FIVESTAR' },
+    // Fetch live 1-year daily OHLC from Yahoo Finance for Nifty50 + Watchlist stocks
+    const axios = require('axios');
+    const https = require('https');
+    const yahooAgent = new https.Agent({ rejectUnauthorized: false });
+    const allSymbols = [...getNifty50(), ...getStocks()];
+    const uniqueSymbols = [...new Map(allSymbols.map(s => [s.symbol, s])).values()];
+
+    async function fetchYahooOHLC(symbol) {
+      try {
+        const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
+        const ySym = skipNS ? symbol : `${symbol}.NS`;
+        const r = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${ySym}?interval=1d&range=1y`, {
+          timeout: 10000, httpsAgent: yahooAgent, headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const result = r.data?.chart?.result?.[0];
+        if (!result) return null;
+        const ts = result.timestamp || [];
+        const q = result.indicators.quote[0];
+        const rows = [];
+        for (let i = 0; i < ts.length; i++) {
+          if (q.open[i] != null && q.high[i] != null && q.low[i] != null && q.close[i] != null) {
+            const d = new Date(ts[i] * 1000);
+            rows.push({ date: d.toISOString().slice(0, 10), open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume?.[i] || 0 });
+          }
+        }
+        return rows;
+      } catch { return null; }
+    }
+
+    const batchSize = 10;
+    for (let b = 0; b < uniqueSymbols.length; b += batchSize) {
+      const batch = uniqueSymbols.slice(b, b + batchSize);
+      const results = await Promise.all(batch.map(s => fetchYahooOHLC(s.symbol)));
+      results.forEach((rows, idx) => {
+        if (!rows || rows.length < 2) return;
+        const sym = batch[idx].symbol;
+        for (let i = 1; i < rows.length; i++) {
+          const isBuy = rows[i].close > rows[i - 1].close;
+          const entry = rows[i].close;
+          const target = parseFloat((isBuy ? entry * (1 + targetPct / 100) : entry * (1 - targetPct / 100)).toFixed(2));
+          const sl = parseFloat((isBuy ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100)).toFixed(2));
+          for (let j = i + 1; j < rows.length; j++) {
+            const h = rows[j].high, l = rows[j].low;
+            if (isBuy) {
+              if (h >= target) { allHits.push({ date: rows[i].date, exitDate: rows[j].date, symbol: sym, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); break; }
+              if (l <= sl) { allHits.push({ date: rows[i].date, exitDate: rows[j].date, symbol: sym, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); break; }
+            } else {
+              if (l <= target) { allHits.push({ date: rows[i].date, exitDate: rows[j].date, symbol: sym, signal: 'SELL', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); break; }
+              if (h >= sl) { allHits.push({ date: rows[i].date, exitDate: rows[j].date, symbol: sym, signal: 'SELL', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); break; }
+            }
+          }
+        }
+      });
+    }
+
+    // 3. Option CSV files (NIFTY23800CE13Apr26.csv, NIFTY23800PE13Apr26.csv)
+    const optTargetPct = 30, optSlPct = 10;
+    const optionCsvFiles = [
+      { file: 'NIFTY23800CE13Apr26.csv', symbol: 'NIFTY 23800 CE', type: 'CE' },
+      { file: 'NIFTY23800PE13Apr26.csv', symbol: 'NIFTY 23800 PE', type: 'PE' },
     ];
-    const mnths = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
-    const parseNum = (s) => parseFloat((s || '').replace(/"/g, '').replace(/,/g, ''));
-    const parseDt = (s) => { const m = (s||'').trim().match(/^(\d{1,2})-(\w{3})-(\d{4})$/); return m ? m[3]+'-'+(mnths[m[2]]||'01')+'-'+m[1].padStart(2,'0') : null; };
-    for (const { file, symbol } of csvFiles) {
+    const optMnths = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+    const parseOptDt = (s) => { const m = (s||'').trim().match(/^(\d{1,2})-(\w{3})-(\d{4})$/); return m ? m[3]+'-'+(optMnths[m[2]]||'01')+'-'+m[1].padStart(2,'0') : null; };
+    const allOptHits = [];
+    for (const { file, symbol, type } of optionCsvFiles) {
       try {
         const raw = fs.readFileSync(path.join(__dirname, './data/', file), 'utf8');
-        const lines = raw.split('\n').map(l => l.trim()).filter(l => l && /^\d{1,2}-/.test(l));
+        const lines = raw.split('\n').map(l => l.trim()).filter(l => l && /^NIFTY/.test(l));
         const rows = lines.map(l => {
-          const c = l.match(/(?:"[^"]*"|[^,])+/g) || [];
-          const date = parseDt(c[0]);
+          const c = l.split(',').map(s => s.trim());
+          const date = parseOptDt(c[1]);
           if (!date) return null;
-          return { date, open: parseNum(c[2]), high: parseNum(c[3]), low: parseNum(c[4]), close: parseNum(c[7]), volume: parseNum(c[11]) || 0 };
-        }).filter(r => r && !isNaN(r.close)).reverse();
-        allHits.push(...backtestRows(rows, symbol, targetPct, slPct));
+          const open = parseFloat(c[5]) || 0; const high = parseFloat(c[6]) || 0;
+          const low = parseFloat(c[7]) || 0; const close = parseFloat(c[8]) || 0;
+          if (!close) return null;
+          return { date, open: open || close, high: high || close, low: low || close, close };
+        }).filter(r => r && r.close > 0).sort((a, b) => a.date.localeCompare(b.date));
+        // Direct price-action backtest for options (no signal engine needed)
+        for (let i = 1; i < rows.length; i++) {
+          const prev = rows[i - 1], curr = rows[i];
+          // CE: buy when price drops (pullback), PE: buy when price rises (pullback)
+          const isBuy = type === 'CE' ? curr.close > prev.close : curr.close < prev.close;
+          const signal = isBuy ? 'BUY' : 'SELL';
+          const entry = curr.close;
+          const target = parseFloat((isBuy ? entry * (1 + optTargetPct / 100) : entry * (1 - optTargetPct / 100)).toFixed(2));
+          const sl = parseFloat((isBuy ? entry * (1 - optSlPct / 100) : entry * (1 + optSlPct / 100)).toFixed(2));
+          for (let j = i + 1; j < rows.length; j++) {
+            const h = rows[j].high, l = rows[j].low;
+            if (isBuy) {
+              if (h >= target) { allOptHits.push({ date: curr.date, exitDate: rows[j].date, symbol, signal, entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); break; }
+              if (l <= sl) { allOptHits.push({ date: curr.date, exitDate: rows[j].date, symbol, signal, entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); break; }
+            } else {
+              if (l <= target) { allOptHits.push({ date: curr.date, exitDate: rows[j].date, symbol, signal, entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); break; }
+              if (h >= sl) { allOptHits.push({ date: curr.date, exitDate: rows[j].date, symbol, signal, entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); break; }
+            }
+          }
+        }
       } catch {}
     }
 
-    // Options - real option price history (30% target / 10% SL)
-    const optTargetPct = 30, optSlPct = 10;
+    // 4. Option history JSON (existing)
     try {
       const optHistory = JSON.parse(fs.readFileSync(optionHistoryPath, 'utf8'));
       const optBySymbol = {};
@@ -1331,19 +1430,19 @@ app.get("/api/history-tracker", async (req, res) => {
             const high = entries[j].high || ltp;
             const low = entries[j].low || ltp;
             if (isBuy) {
-              if (high >= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); return; }
-              if (low <= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); return; }
+              if (high >= target) { allOptHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); return; }
+              if (low <= sl) { allOptHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); return; }
             } else {
-              if (low <= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); return; }
-              if (high >= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); return; }
+              if (low <= target) { allOptHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); return; }
+              if (high >= sl) { allOptHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); return; }
             }
           }
         });
       });
     } catch {}
 
-    const stockHits = allHits.filter(h => !h.symbol.includes('(Opt)'));
-    const optionHits = allHits.filter(h => h.symbol.includes('(Opt)'));
+    const stockHits = allHits;
+    const optionHits = allOptHits;
     stockHits.sort((a, b) => a.date.localeCompare(b.date));
     optionHits.sort((a, b) => a.date.localeCompare(b.date));
     const result = {
@@ -1411,6 +1510,42 @@ app.delete("/api/auth/watchlist/:symbol", authMiddleware, (req, res) => {
   user.watchlist = user.watchlist.filter(s => s.symbol !== symbol.toUpperCase());
   updateUser(req.user.mobile, { watchlist: user.watchlist });
   res.json({ message: 'Removed from watchlist', watchlist: user.watchlist });
+});
+
+// User strategies CRUD
+app.get("/api/auth/strategies", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  res.json(user?.strategies || []);
+});
+
+app.post("/api/auth/strategies", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user.strategies) user.strategies = [];
+  const strategy = { id: 'strat_' + Date.now(), name: req.body.name, condition: req.body.condition || '', active: false };
+  user.strategies.push(strategy);
+  updateUser(req.user.mobile, { strategies: user.strategies });
+  res.json(strategy);
+});
+
+app.put("/api/auth/strategies/:id", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user.strategies) user.strategies = [];
+  const idx = user.strategies.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Strategy not found' });
+  user.strategies[idx] = { ...user.strategies[idx], ...req.body };
+  updateUser(req.user.mobile, { strategies: user.strategies });
+  res.json(user.strategies[idx]);
+});
+
+app.delete("/api/auth/strategies/:id", authMiddleware, (req, res) => {
+  const user = getUserByMobile(req.user.mobile);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user.strategies) user.strategies = [];
+  user.strategies = user.strategies.filter(s => s.id !== req.params.id);
+  updateUser(req.user.mobile, { strategies: user.strategies });
+  res.json({ message: 'Deleted' });
 });
 
 // Paper Trading routes
