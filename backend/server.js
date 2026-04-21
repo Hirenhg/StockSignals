@@ -22,6 +22,8 @@ const commoditiesPath = path.join(__dirname, './data/commodities.json');
 const cryptoPath = path.join(__dirname, './data/crypto.json');
 const nifty50Path = path.join(__dirname, './data/nifty50.json');
 const niftynext50Path = path.join(__dirname, './data/niftynext50.json');
+const pegPath = path.join(__dirname, './data/peg.json');
+const portfolioPath = path.join(__dirname, './data/portfolio.json');
 
 const getStocks = () => JSON.parse(fs.readFileSync(stocksPath, 'utf8'));
 const getIndices = () => JSON.parse(fs.readFileSync(indicesPath, 'utf8'));
@@ -853,6 +855,26 @@ app.post("/api/prices", async (req, res) => {
   }
 });
 
+app.post("/api/peg", (req, res) => {
+  const data = getPEG();
+  const entry = req.body;
+  if (!entry.name) return res.status(400).json({ error: 'Name is required' });
+  if (data.find(d => d.name.toUpperCase() === entry.name.toUpperCase()))
+    return res.status(400).json({ error: 'Entry already exists' });
+  data.push({ ...entry, name: entry.name.toUpperCase(), category: entry.category || 'PEG' });
+  fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Added successfully' });
+});
+
+app.post("/api/portfolio", (req, res) => {
+  const data = getPortfolio();
+  const { name, buy, qty } = req.body;
+  if (!name || !buy || !qty) return res.status(400).json({ error: 'Name, buy price and quantity required' });
+  data.push({ name: name.toUpperCase(), buy: parseFloat(buy), qty: parseInt(qty) });
+  fs.writeFileSync(portfolioPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Added successfully' });
+});
+
 app.post("/api/:type", (req, res) => {
   const { type } = req.params;
   const { symbol } = req.body;
@@ -898,6 +920,24 @@ app.post("/api/:type", (req, res) => {
   data.push({ symbol: symbol.toUpperCase() });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
   res.json({ message: `${type.slice(0, -1)} added successfully`, symbol: symbol.toUpperCase() });
+});
+
+app.delete("/api/peg/:name", (req, res) => {
+  const data = getPEG();
+  const idx = data.findIndex(d => d.name.toUpperCase() === req.params.name.toUpperCase());
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  data.splice(idx, 1);
+  fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Deleted successfully' });
+});
+
+app.delete("/api/portfolio/:index", (req, res) => {
+  const data = getPortfolio();
+  const idx = parseInt(req.params.index);
+  if (idx < 0 || idx >= data.length) return res.status(404).json({ error: 'Not found' });
+  data.splice(idx, 1);
+  fs.writeFileSync(portfolioPath, JSON.stringify(data, null, 2));
+  res.json({ message: 'Deleted successfully' });
 });
 
 app.delete("/api/:type/:symbol", (req, res) => {
@@ -1067,9 +1107,9 @@ app.get("/api/symbol-master", async (req, res) => {
   }
 });
 
-// PEG Ratio (Peter Lynch) routes
-const pegPath = path.join(__dirname, './data/peg.json');
 const getPEG = () => JSON.parse(fs.readFileSync(pegPath, 'utf8'));
+
+// PEG Ratio (Peter Lynch) routes
 
 app.get("/api/peg", (req, res) => {
   const data = getPEG();
@@ -1130,17 +1170,6 @@ app.get("/api/peg/prices", async (req, res) => {
   }
 });
 
-app.post("/api/peg", (req, res) => {
-  const data = getPEG();
-  const entry = req.body;
-  if (!entry.name) return res.status(400).json({ error: 'Name is required' });
-  if (data.find(d => d.name.toUpperCase() === entry.name.toUpperCase()))
-    return res.status(400).json({ error: 'Entry already exists' });
-  data.push({ ...entry, name: entry.name.toUpperCase(), category: entry.category || 'PEG' });
-  fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
-  res.json({ message: 'Added successfully' });
-});
-
 app.put("/api/peg/:name", (req, res) => {
   const data = getPEG();
   const idx = data.findIndex(d => d.name.toUpperCase() === req.params.name.toUpperCase());
@@ -1150,18 +1179,9 @@ app.put("/api/peg/:name", (req, res) => {
   res.json({ message: 'Updated successfully' });
 });
 
-app.delete("/api/peg/:name", (req, res) => {
-  const data = getPEG();
-  const idx = data.findIndex(d => d.name.toUpperCase() === req.params.name.toUpperCase());
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  data.splice(idx, 1);
-  fs.writeFileSync(pegPath, JSON.stringify(data, null, 2));
-  res.json({ message: 'Deleted successfully' });
-});
+const getPortfolio = () => JSON.parse(fs.readFileSync(portfolioPath, 'utf8'));
 
 // Portfolio (COVID) routes
-const portfolioPath = path.join(__dirname, './data/portfolio.json');
-const getPortfolio = () => JSON.parse(fs.readFileSync(portfolioPath, 'utf8'));
 
 app.get("/api/portfolio", (req, res) => {
   res.json(getPortfolio());
@@ -1216,15 +1236,6 @@ app.get("/api/portfolio/prices", async (req, res) => {
   }
 });
 
-app.post("/api/portfolio", (req, res) => {
-  const data = getPortfolio();
-  const { name, buy, qty } = req.body;
-  if (!name || !buy || !qty) return res.status(400).json({ error: 'Name, buy price and quantity required' });
-  data.push({ name: name.toUpperCase(), buy: parseFloat(buy), qty: parseInt(qty) });
-  fs.writeFileSync(portfolioPath, JSON.stringify(data, null, 2));
-  res.json({ message: 'Added successfully' });
-});
-
 app.put("/api/portfolio/:index", (req, res) => {
   const data = getPortfolio();
   const idx = parseInt(req.params.index);
@@ -1232,15 +1243,6 @@ app.put("/api/portfolio/:index", (req, res) => {
   data[idx] = { ...data[idx], ...req.body };
   fs.writeFileSync(portfolioPath, JSON.stringify(data, null, 2));
   res.json({ message: 'Updated successfully' });
-});
-
-app.delete("/api/portfolio/:index", (req, res) => {
-  const data = getPortfolio();
-  const idx = parseInt(req.params.index);
-  if (idx < 0 || idx >= data.length) return res.status(404).json({ error: 'Not found' });
-  data.splice(idx, 1);
-  fs.writeFileSync(portfolioPath, JSON.stringify(data, null, 2));
-  res.json({ message: 'Deleted successfully' });
 });
 
 // Nifty PE data

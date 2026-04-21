@@ -282,17 +282,11 @@
     "epsGrowth": 5.66
   },
   {
-    "name": "TVTODAY",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualPE": 25.3,
-    "manualDivYield": 3.01
-  },
-  {
     "name": "ADANIPOWER",
     "category": "Adani",
     "manualDivYield": 0,
-    "epsGrowth": 17.13
+    "epsGrowth": 17.13,
+    "manualPE": 34.25
   },
   {
     "name": "ADANIGREEN",
@@ -506,13 +500,6 @@
     "category": "PEG",
     "manualPE": 24.5,
     "manualDivYield": 0.47,
-    "epsGrowth": 5
-  },
-  {
-    "name": "RPOWER",
-    "category": "PEG",
-    "manualDivYield": 0,
-    "manualPE": 33.2,
     "epsGrowth": 5
   },
   {
@@ -916,13 +903,6 @@
     "epsGrowth": -61.84
   },
   {
-    "name": "GENSOL",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualPE": 0.73,
-    "manualDivYield": 0
-  },
-  {
     "name": "APEX",
     "category": "PEG",
     "epsGrowth": 5
@@ -1000,12 +980,6 @@
     "epsGrowth": 5
   },
   {
-    "name": "MUKKA",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualDivYield": 0
-  },
-  {
     "name": "AARTIDRUGS",
     "category": "PEG",
     "epsGrowth": 5
@@ -1032,22 +1006,12 @@
     "epsGrowth": 5
   },
   {
-    "name": "DONEAR",
-    "category": "PEG",
-    "epsGrowth": 5
-  },
-  {
     "name": "IRCTC",
     "category": "PEG",
     "epsGrowth": 5
   },
   {
     "name": "HEG",
-    "category": "PEG",
-    "epsGrowth": 5
-  },
-  {
-    "name": "MAWANASUG",
     "category": "PEG",
     "epsGrowth": 5
   },
@@ -1130,22 +1094,7 @@
     "epsGrowth": 5
   },
   {
-    "name": "SRHHYPOLTD",
-    "category": "PEG",
-    "epsGrowth": 5
-  },
-  {
     "name": "KEC",
-    "category": "PEG",
-    "epsGrowth": 5
-  },
-  {
-    "name": "ONWARDTEC",
-    "category": "PEG",
-    "epsGrowth": 5
-  },
-  {
-    "name": "ARIES",
     "category": "PEG",
     "epsGrowth": 5
   },
@@ -1176,11 +1125,6 @@
     "epsGrowth": 5
   },
   {
-    "name": "ROHLTD",
-    "category": "PEG",
-    "epsGrowth": 5
-  },
-  {
     "name": "SPAL",
     "category": "PEG",
     "epsGrowth": 5
@@ -1189,12 +1133,6 @@
     "name": "FSL",
     "category": "PEG",
     "epsGrowth": 5
-  },
-  {
-    "name": "KAMATHOTEL",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualDivYield": 0
   },
   {
     "name": "IIFLCAPS",
@@ -1220,7 +1158,8 @@
   {
     "name": "WABAG",
     "category": "PEG",
-    "epsGrowth": 5
+    "epsGrowth": 5,
+    "manualPE": 24.15
   },
   {
     "name": "GRSE",
@@ -1332,12 +1271,6 @@
     "manualPE": 925
   },
   {
-    "name": "CEWATER",
-    "category": "PEG",
-    "epsGrowth": 5,
-    "manualDivYield": 0
-  },
-  {
     "name": "WAAREEENER",
     "category": "PEG",
     "epsGrowth": 5
@@ -1346,5 +1279,11 @@
     "name": "KRBL",
     "category": "PEG",
     "epsGrowth": 5
+  },
+  {
+    "name": "SATIN",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "epsGrowth": 50
   }
 ]
