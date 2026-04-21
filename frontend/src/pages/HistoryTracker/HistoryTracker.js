@@ -9,16 +9,16 @@ let clientCache = { data: null, date: null }
 
 function HistoryTracker() {
   const today = new Date().toISOString().slice(0, 10)
-  const [data, setData] = useState(clientCache.date === today ? clientCache.data : null)
-  const [loading, setLoading] = useState(clientCache.date !== today)
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [symbolFilter, setSymbolFilter] = useState('all')
   const [tab, setTab] = useState('stocks')
 
   useEffect(() => {
-    if (clientCache.data && clientCache.date === today) return
-    API.get('/api/history-tracker')
+    if (clientCache.data && clientCache.date === today) { setData(clientCache.data); setLoading(false); return }
+    API.get('/api/history-tracker?refresh=1')
       .then(res => { clientCache = { data: res.data, date: today }; setData(res.data) })
       .catch(() => {})
       .finally(() => setLoading(false))

@@ -25,6 +25,8 @@ export default function PEGRatio() {
   const [divInput, setDivInput] = useState('')
   const [editingPe, setEditingPe] = useState(null)
   const [peInput, setPeInput] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [newName, setNewName] = useState('')
   const { darkMode } = useTheme()
 
   const bg2 = darkMode ? '#262626' : '#f8f9fa'
@@ -124,6 +126,20 @@ export default function PEGRatio() {
         }))
         setEditingPe(null)
       })
+      .catch(() => {})
+  }
+
+  const addStock = () => {
+    if (!newName.trim()) return
+    API.post('/api/peg', { name: newName.trim().toUpperCase(), category })
+      .then(() => { setShowAdd(false); setNewName(''); load() })
+      .catch(() => {})
+  }
+
+  const deleteStock = (name) => {
+    if (!window.confirm(`Delete ${name}?`)) return
+    API.delete(`/api/peg/${encodeURIComponent(name)}`)
+      .then(() => setData(prev => prev.filter(d => d.name !== name)))
       .catch(() => {})
   }
 
@@ -248,10 +264,12 @@ export default function PEGRatio() {
             <option value="Fairly Valued">Fairly Valued</option>
             <option value="Overvalued">Overvalued</option>
           </select>
+           <button className="btn btn-sm btn-success flex-shrink-0" onClick={() => setShowAdd(true)} style={{ fontSize: '13px', padding: '8px 16px' }}>Add</button>
         </div>
 
         {/* Filter - Mobile */}
         <div className="d-md-none mb-3 d-flex gap-2">
+          <button className="btn btn-sm btn-success flex-shrink-0" onClick={() => setShowAdd(true)} style={{ fontSize: '13px' }}>+ Add</button>
           <input className="form-control" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} style={{ fontSize: '13px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a' } : {}) }} />
           <select className="form-select flex-shrink-0" value={filter} onChange={e => setFilter(e.target.value)} style={{ width: 'auto', fontSize: '13px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a', backgroundImage: `url(${arrowDown})` } : {}) }}>
             <option value="All">All</option>
@@ -287,6 +305,7 @@ export default function PEGRatio() {
                     <th onClick={() => handleSort('peg')} style={{ cursor: 'pointer' }}>Value{arrow('peg')}</th>
                     <th onClick={() => handleSort('fairPrice')} style={{ cursor: 'pointer' }}>Fair Price{arrow('fairPrice')}</th>
                     <th onClick={() => handleSort('pegStatus')} style={{ cursor: 'pointer' }}>Status{arrow('pegStatus')}</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -302,6 +321,7 @@ export default function PEGRatio() {
                       <td className="fw-bold">{row.peg ?? '-'}</td>
                       <td className="fw-bold" style={{ color: row.pegStatus === 'Undervalued' ? '#198754' : row.pegStatus === 'Fairly Valued' ? '#ffc107' : row.pegStatus === 'Overvalued' ? '#dc3545' : undefined }}>{fairPrice ? `₹${fairPrice}` : '-'}</td>
                       <td><StatusBadge status={row.pegStatus} /></td>
+                      <td><button className="btn btn-sm btn-outline-danger" style={{ fontSize: '11px', padding: '2px 8px' }} onClick={() => deleteStock(row.name)}>✕</button></td>
                     </tr>
                     )
                   })}
@@ -319,7 +339,10 @@ export default function PEGRatio() {
                   <div className="card-body py-2 px-3">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <div className="fw-bold" style={{ fontSize: '15px', color: text }}>{row.name}</div>
-                      <span className="fw-bold" style={{ fontSize: '14px', color: statusColor }}>{row.pegStatus || '-'}</span>
+                      <div className="d-flex align-items-center gap-2">
+                        <span className="fw-bold" style={{ fontSize: '14px', color: statusColor }}>{row.pegStatus || '-'}</span>
+                        <button className="btn btn-sm btn-outline-danger" style={{ fontSize: '10px', padding: '1px 6px' }} onClick={() => deleteStock(row.name)}>✕</button>
+                      </div>
                     </div>
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <div>
@@ -357,6 +380,20 @@ export default function PEGRatio() {
           </>
         )}
       </div>
+      {showAdd && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 2000, background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowAdd(false)}>
+          <div className="card p-3" style={{ width: '320px', background: darkMode ? '#1e1e2f' : '#fff' }} onClick={e => e.stopPropagation()}>
+            <h6 className="fw-bold mb-3" style={{ color: text }}>Add Stock to {category}</h6>
+            <input className="form-control mb-3" placeholder="Symbol (e.g. RELIANCE)" value={newName} onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') addStock() }}
+              style={{ fontSize: '14px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a' } : {}) }} autoFocus />
+            <div className="d-flex gap-2 justify-content-end">
+              <button className="btn btn-sm btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
+              <button className="btn btn-sm btn-success" onClick={addStock}>Add</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
