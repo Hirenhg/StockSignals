@@ -29,9 +29,19 @@ async function fetchStockFundamentals(symbol) {
   const divRaw = g('Dividend yield');
   const dividendYield = divRaw ? parseFloat(divRaw) : null;
 
+  const mktCapRaw = g('Market cap');
+  let marketCap = null;
+  if (mktCapRaw) {
+    const v = parseFloat(mktCapRaw);
+    if (mktCapRaw.includes('T')) marketCap = parseFloat((v * 1e12 / 1e7).toFixed(0));      // T → Cr
+    else if (mktCapRaw.includes('B')) marketCap = parseFloat((v * 1e9 / 1e7).toFixed(0));  // B → Cr
+    else if (mktCapRaw.includes('M')) marketCap = parseFloat((v * 1e6 / 1e7).toFixed(0));  // M → Cr
+    else marketCap = parseFloat((v / 1e7).toFixed(0));
+  }
+
   const pChange = prevClose ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : null;
 
-  const data = { price, prevClose, pChange, pe, dividendYield };
+  const data = { price, prevClose, pChange, pe, dividendYield, marketCap };
   cache[symbol] = { data, time: Date.now() };
   return data;
 }
