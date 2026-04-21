@@ -27,6 +27,8 @@ export default function PEGRatio() {
   const [peInput, setPeInput] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState('')
+  const [suggestions, setSuggestions] = useState([])
+  const searchTimer = React.useRef(null)
   const { darkMode } = useTheme()
 
   const bg2 = darkMode ? '#262626' : '#f8f9fa'
@@ -129,11 +131,25 @@ export default function PEGRatio() {
       .catch(() => {})
   }
 
-  const addStock = () => {
-    if (!newName.trim()) return
-    API.post('/api/peg', { name: newName.trim().toUpperCase(), category })
+  const addStock = (name) => {
+    const n = (name || newName).trim().toUpperCase()
+    if (!n) return
+    setSuggestions([])
+    API.post('/api/peg', { name: n, category })
       .then(() => { setShowAdd(false); setNewName(''); load() })
       .catch(() => {})
+  }
+
+  const handleSearchInput = (val) => {
+    setNewName(val)
+    setSuggestions([])
+    clearTimeout(searchTimer.current)
+    if (val.trim().length < 2) return
+    searchTimer.current = setTimeout(() => {
+      API.get(`/api/search?q=${encodeURIComponent(val.trim().toUpperCase())}`)
+        .then(r => setSuggestions(r.data.slice(0, 8)))
+        .catch(() => {})
+    }, 300)
   }
 
   const deleteStock = (name) => {
@@ -298,6 +314,7 @@ export default function PEGRatio() {
                 <thead className="table-dark">
                   <tr style={{ verticalAlign: 'middle' }}>
                     <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>Name{arrow('name')}</th>
+                    <th onClick={() => handleSort('marketCap')} style={{ cursor: 'pointer' }}>Mkt Cap (Cr){arrow('marketCap')}</th>
                     <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>Price{arrow('price')}</th>
                     <th onClick={() => handleSort('epsGrowth')} style={{ cursor: 'pointer' }}>EPS Growth{arrow('epsGrowth')}</th>
                     <th onClick={() => handleSort('pe')} style={{ cursor: 'pointer' }}>PE{arrow('pe')}</th>
@@ -314,6 +331,7 @@ export default function PEGRatio() {
                     return (
                     <tr key={i} style={{ verticalAlign: 'middle' }}>
                       <td className="fw-bold">{row.name}</td>
+                      <td>{row.marketCap ? (row.marketCap >= 100000 ? `${(row.marketCap / 100000).toFixed(1)}L Cr` : row.marketCap >= 1000 ? `${(row.marketCap / 1000).toFixed(1)}K Cr` : `${row.marketCap} Cr`) : '-'}</td>
                       <td>₹{row.price || '-'}</td>
                       <td>{renderEpsCell(row)}</td>
                       <td>{renderPeCell(row)}</td>
@@ -340,6 +358,7 @@ export default function PEGRatio() {
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <div className="fw-bold" style={{ fontSize: '15px', color: text }}>{row.name}</div>
                       <div className="d-flex align-items-center gap-2">
+                        {row.marketCap && <span style={{ fontSize: '11px' }}>{row.marketCap >= 100000 ? `${(row.marketCap/100000).toFixed(1)}L Cr` : row.marketCap >= 1000 ? `${(row.marketCap/1000).toFixed(1)}K Cr` : `${row.marketCap} Cr`}</span>}
                         <span className="fw-bold" style={{ fontSize: '14px', color: statusColor }}>{row.pegStatus || '-'}</span>
                         <button className="btn btn-sm btn-outline-danger" style={{ fontSize: '10px', padding: '1px 6px' }} onClick={() => deleteStock(row.name)}>✕</button>
                       </div>
@@ -381,15 +400,29 @@ export default function PEGRatio() {
         )}
       </div>
       {showAdd && (
-        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 2000, background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowAdd(false)}>
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 2000, background: 'rgba(0,0,0,0.5)' }} onClick={() => { setShowAdd(false); setSuggestions([]) }}>
           <div className="card p-3" style={{ width: '320px', background: darkMode ? '#1e1e2f' : '#fff' }} onClick={e => e.stopPropagation()}>
             <h6 className="fw-bold mb-3" style={{ color: text }}>Add Stock to {category}</h6>
-            <input className="form-control mb-3" placeholder="Symbol (e.g. RELIANCE)" value={newName} onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addStock() }}
-              style={{ fontSize: '14px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a' } : {}) }} autoFocus />
+            <div className="position-relative mb-3">
+              <input className="form-control" placeholder="Search symbol (e.g. RELIANCE)" value={newName}
+                onChange={e => handleSearchInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addStock() }}
+                style={{ fontSize: '14px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a' } : {}) }} autoFocus />
+              {suggestions.length > 0 && (
+                <div className="position-absolute w-100 border rounded shadow" style={{ top: '100%', zIndex: 3000, background: darkMode ? '#1e1e2f' : '#fff', maxHeight: '200px', overflowY: 'auto' }}>
+                  {suggestions.map((s, i) => (
+                    <div key={i} className="px-3 py-2" style={{ cursor: 'pointer', fontSize: '13px', color: text, borderBottom: `1px solid ${border}` }}
+                      onMouseDown={() => addStock(s.symbol)}>
+                      <span className="fw-bold">{s.symbol}</span>
+                      {s.name && <span className="text-muted ms-2" style={{ fontSize: '11px' }}>{s.name}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="d-flex gap-2 justify-content-end">
-              <button className="btn btn-sm btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
-              <button className="btn btn-sm btn-success" onClick={addStock}>Add</button>
+              <button className="btn btn-sm btn-secondary" onClick={() => { setShowAdd(false); setSuggestions([]) }}>Cancel</button>
+              <button className="btn btn-sm btn-success" onClick={() => addStock()}>Add</button>
             </div>
           </div>
         </div>
