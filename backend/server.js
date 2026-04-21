@@ -105,33 +105,48 @@ app.get("/api/signals/:type", async (req, res) => {
       const batchResults = await Promise.all(
         batch.map(async (stock) => {
           try {
-            const data = await getStockFull(stock.symbol, '15m', '5d');
-            if (!data || !data.closes || data.closes.length < 20) return null;
+            // Fetch both 15m and 1h data for dual-timeframe confirmation
+            const [data15m, data1h] = await Promise.all([
+              getStockFull(stock.symbol, '15m', '5d'),
+              getStockFull(stock.symbol, '60m', '1mo')
+            ]);
+            if (!data15m || !data15m.closes || data15m.closes.length < 20) return null;
 
-            const result = generateSignal(data.closes, data.ohlc);
-            const currentPrice = parseFloat(data.closes[data.closes.length - 1].toFixed(2));
-            const prevClose = data.prevClose;
+            const result15m = generateSignal(data15m.closes, data15m.ohlc);
+            const result1h = (data1h && data1h.closes && data1h.closes.length >= 20)
+              ? generateSignal(data1h.closes, data1h.ohlc)
+              : { signal: "HOLD" };
+
+            // Dual-timeframe confirmation: both must agree
+            let confirmedSignal = "HOLD";
+            if (result15m.signal === "BUY" && result1h.signal === "BUY") confirmedSignal = "BUY";
+            else if (result15m.signal === "SELL" && result1h.signal === "SELL") confirmedSignal = "SELL";
+
+            const currentPrice = parseFloat(data15m.closes[data15m.closes.length - 1].toFixed(2));
+            const prevClose = data15m.prevClose;
             const pChange = prevClose ? parseFloat(((currentPrice - prevClose) / prevClose * 100).toFixed(2)) : null;
 
             return {
               symbol: stock.symbol,
-              signal: result.signal,
-              rsi: result.rsi?.toFixed(2) || '0',
-              ema7: result.ema7?.toFixed(2) || '0',
-              macdLine: result.macdLine?.toFixed(2) || null,
-              macdSignal: result.macdSignal?.toFixed(2) || null,
-              macdHist: result.macdHist?.toFixed(2) || null,
-              pivot: result.pivot?.toFixed(2) || null,
-              r1: result.r1?.toFixed(2) || null,
-              r2: result.r2?.toFixed(2) || null,
-              r3: result.r3?.toFixed(2) || null,
-              s1: result.s1?.toFixed(2) || null,
-              s2: result.s2?.toFixed(2) || null,
-              s3: result.s3?.toFixed(2) || null,
+              signal: confirmedSignal,
+              signal15m: result15m.signal,
+              signal1h: result1h.signal,
+              rsi: result15m.rsi?.toFixed(2) || '0',
+              ema7: result15m.ema7?.toFixed(2) || '0',
+              macdLine: result15m.macdLine?.toFixed(2) || null,
+              macdSignal: result15m.macdSignal?.toFixed(2) || null,
+              macdHist: result15m.macdHist?.toFixed(2) || null,
+              pivot: result15m.pivot?.toFixed(2) || null,
+              r1: result15m.r1?.toFixed(2) || null,
+              r2: result15m.r2?.toFixed(2) || null,
+              r3: result15m.r3?.toFixed(2) || null,
+              s1: result15m.s1?.toFixed(2) || null,
+              s2: result15m.s2?.toFixed(2) || null,
+              s3: result15m.s3?.toFixed(2) || null,
               price: currentPrice.toFixed(2),
               pChange,
-              week52High: data.week52High,
-              week52Low: data.week52Low,
+              week52High: data15m.week52High,
+              week52Low: data15m.week52Low,
               timestamp: new Date().toISOString()
             };
           } catch { return null; }
@@ -394,16 +409,24 @@ app.get("/api/options/live", async (req, res) => {
           const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
           if (indexMap[underlyingSymbol]) underlyingSymbol = indexMap[underlyingSymbol];
           
-          const data = await getStockFull(underlyingSymbol, '15m', '5d');
+          // Dual-timeframe: 15m + 1h confirmation (same as stocks)
+          const [data15m, data1h] = await Promise.all([
+            getStockFull(underlyingSymbol, '15m', '5d'),
+            getStockFull(underlyingSymbol, '60m', '1mo')
+          ]);
           
-          if (data && data.closes && data.closes.length >= 20) {
-            const result = generateSignal(data.closes, data.ohlc);
-            signal = result.signal;
-            rsi = result.rsi?.toFixed(2);
-            ema7 = result.ema7?.toFixed(2);
-            pivot = result.pivot?.toFixed(2);
-            r1 = result.r1?.toFixed(2); r2 = result.r2?.toFixed(2); r3 = result.r3?.toFixed(2);
-            s1 = result.s1?.toFixed(2); s2 = result.s2?.toFixed(2); s3 = result.s3?.toFixed(2);
+          if (data15m && data15m.closes && data15m.closes.length >= 20) {
+            const result15m = generateSignal(data15m.closes, data15m.ohlc);
+            const result1h = (data1h && data1h.closes && data1h.closes.length >= 20)
+              ? generateSignal(data1h.closes, data1h.ohlc)
+              : { signal: 'HOLD' };
+            if (result15m.signal === 'BUY' && result1h.signal === 'BUY') signal = 'BUY';
+            else if (result15m.signal === 'SELL' && result1h.signal === 'SELL') signal = 'SELL';
+            rsi = result15m.rsi?.toFixed(2);
+            ema7 = result15m.ema7?.toFixed(2);
+            pivot = result15m.pivot?.toFixed(2);
+            r1 = result15m.r1?.toFixed(2); r2 = result15m.r2?.toFixed(2); r3 = result15m.r3?.toFixed(2);
+            s1 = result15m.s1?.toFixed(2); s2 = result15m.s2?.toFixed(2); s3 = result15m.s3?.toFixed(2);
           }
         } catch (err) {}
         
@@ -453,15 +476,23 @@ app.get("/api/options/live", async (req, res) => {
           let underlyingSymbol = symbolMatch[1];
           const indexMap = { 'NIFTY': '^NSEI', 'BANKNIFTY': '^NSEBANK', 'FINNIFTY': '^CNXFIN', 'MIDCPNIFTY': '^NSEMDCP50' };
           if (indexMap[underlyingSymbol]) underlyingSymbol = indexMap[underlyingSymbol];
-          const data = await getStockFull(underlyingSymbol, '15m', '5d');
-          if (data && data.closes && data.closes.length >= 20) {
-            const result = generateSignal(data.closes, data.ohlc);
-            signal = result.signal;
-            rsi = result.rsi?.toFixed(2);
-            ema7 = result.ema7?.toFixed(2);
-            pivot = result.pivot?.toFixed(2);
-            r1 = result.r1?.toFixed(2); r2 = result.r2?.toFixed(2); r3 = result.r3?.toFixed(2);
-            s1 = result.s1?.toFixed(2); s2 = result.s2?.toFixed(2); s3 = result.s3?.toFixed(2);
+          // Dual-timeframe: 15m + 1h confirmation (same as stocks)
+          const [data15m, data1h] = await Promise.all([
+            getStockFull(underlyingSymbol, '15m', '5d'),
+            getStockFull(underlyingSymbol, '60m', '1mo')
+          ]);
+          if (data15m && data15m.closes && data15m.closes.length >= 20) {
+            const result15m = generateSignal(data15m.closes, data15m.ohlc);
+            const result1h = (data1h && data1h.closes && data1h.closes.length >= 20)
+              ? generateSignal(data1h.closes, data1h.ohlc)
+              : { signal: 'HOLD' };
+            if (result15m.signal === 'BUY' && result1h.signal === 'BUY') signal = 'BUY';
+            else if (result15m.signal === 'SELL' && result1h.signal === 'SELL') signal = 'SELL';
+            rsi = result15m.rsi?.toFixed(2);
+            ema7 = result15m.ema7?.toFixed(2);
+            pivot = result15m.pivot?.toFixed(2);
+            r1 = result15m.r1?.toFixed(2); r2 = result15m.r2?.toFixed(2); r3 = result15m.r3?.toFixed(2);
+            s1 = result15m.s1?.toFixed(2); s2 = result15m.s2?.toFixed(2); s3 = result15m.s3?.toFixed(2);
           }
         }
       } catch (err) {}
@@ -1253,28 +1284,61 @@ app.put("/api/sector-pe/:sector", (req, res) => {
 
 // History Tracker - backtest CSV + live Yahoo 3mo data
 let historyTrackerCache = { data: null, date: null };
+// Reset cache on server restart to pick up new CSV files
+historyTrackerCache = { data: null, date: null };
 
 function backtestRows(rows, symbol, targetPct, slPct) {
   const closes = rows.map(r => r.close);
   const hits = [];
+  const usedDates = new Set();
+  // Simulate 1h (4-bar aggregated) for dual-timeframe confirmation
+  const get1hSignal = (idx) => {
+    if (idx < 20) return { signal: 'HOLD' };
+    const step = 4;
+    const htfRows = [];
+    for (let k = 0; k <= idx; k += step) {
+      const end = Math.min(k + step, idx + 1);
+      const slice = rows.slice(k, end);
+      if (!slice.length) continue;
+      htfRows.push({
+        open: slice[0].open,
+        high: Math.max(...slice.map(r => r.high)),
+        low: Math.min(...slice.map(r => r.low)),
+        close: slice[slice.length - 1].close
+      });
+    }
+    if (htfRows.length < 20) return { signal: 'HOLD' };
+    const htfCloses = htfRows.map(r => r.close);
+    const htfOhlc = htfRows.slice(-2).map(r => ({ high: r.high, low: r.low, close: r.close }));
+    return generateSignal(htfCloses, htfOhlc);
+  };
+
   for (let i = 20; i < rows.length; i++) {
+    const entryDate = rows[i].date.slice(0, 10);
+    if (usedDates.has(entryDate)) continue; // 1 trade per day
+
     const data = { closes: closes.slice(0, i + 1), ohlc: rows.slice(Math.max(0, i - 1), i + 1).map(r => ({ high: r.high, low: r.low, close: r.close })) };
-    const result = generateSignal(data.closes, data.ohlc);
-    if (result.signal !== 'BUY' && result.signal !== 'SELL') continue;
+    const result15m = generateSignal(data.closes, data.ohlc);
+    if (result15m.signal !== 'BUY' && result15m.signal !== 'SELL') continue;
+
+    const result1h = get1hSignal(i);
+    if (result15m.signal !== result1h.signal) continue;
+
     const entry = rows[i].close;
-    const isBuy = result.signal === 'BUY';
+    const isBuy = result15m.signal === 'BUY';
     const target = parseFloat((isBuy ? entry * (1 + targetPct / 100) : entry * (1 - targetPct / 100)).toFixed(2));
     const sl = parseFloat((isBuy ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100)).toFixed(2));
     for (let j = i + 1; j < rows.length; j++) {
       const h = rows[j].high, l = rows[j].low;
       if (isBuy) {
-        if (h >= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); break; }
-        if (l <= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); break; }
+        if (h >= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); usedDates.add(entryDate); break; }
+        if (l <= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); usedDates.add(entryDate); break; }
       } else {
-        if (l <= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); break; }
-        if (h >= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); break; }
+        if (l <= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); usedDates.add(entryDate); break; }
+        if (h >= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); usedDates.add(entryDate); break; }
       }
     }
+    usedDates.add(entryDate);
   }
   return hits;
 }
@@ -1282,7 +1346,8 @@ function backtestRows(rows, symbol, targetPct, slPct) {
 app.get("/api/history-tracker", async (req, res) => {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    if (historyTrackerCache.data && historyTrackerCache.date === today) {
+    const forceRefresh = req.query.refresh === '1';
+    if (!forceRefresh && historyTrackerCache.data && historyTrackerCache.date === today) {
       return res.json(historyTrackerCache.data);
     }
 
@@ -1311,7 +1376,7 @@ app.get("/api/history-tracker", async (req, res) => {
       } catch {}
     }
 
-    // 2. Live Yahoo - nifty50 + niftynext50 + watchlist (3mo daily)
+    // 2. Live Yahoo - dual timeframe: 15m (5d) + 60m (1mo) for real intraday backtest
     const n50 = getNifty50().map(s => s.symbol);
     const nn50 = getNiftyNext50().map(s => s.symbol);
     const wl = getStocks().map(s => s.symbol);
@@ -1321,29 +1386,141 @@ app.get("/api/history-tracker", async (req, res) => {
       const batch = liveSymbols.slice(i, i + batchSize);
       const batchResults = await Promise.all(batch.map(async (sym) => {
         try {
-          const ohlc = await getStockHistory(sym, '1d', '3mo', false, false, false, true);
-          if (!ohlc || ohlc.length < 25) return [];
+          // Fetch both 15m and 60m OHLC data
+          const [ohlc15m, ohlc1h] = await Promise.all([
+            getStockHistory(sym, '15m', '5d', false, false, false, true),
+            getStockHistory(sym, '60m', '1mo', false, false, false, true)
+          ]);
+          if (!ohlc15m || ohlc15m.length < 25) return [];
+
           const now = new Date();
-          const rows = ohlc.map((bar, idx) => {
-            const d = new Date(now); d.setDate(d.getDate() - (ohlc.length - 1 - idx));
-            return { date: d.toISOString().slice(0, 10), open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+          const rows15m = ohlc15m.map((bar, idx) => {
+            const d = new Date(now.getTime() - (ohlc15m.length - 1 - idx) * 15 * 60 * 1000);
+            return { date: d.toISOString().slice(0, 16), open: bar.open, high: bar.high, low: bar.low, close: bar.close };
           });
-          return backtestRows(rows, sym, targetPct, slPct);
+
+          // Generate 1h signal lookup from 60m data
+          const closes1h = ohlc1h ? ohlc1h.map(b => b.close) : [];
+          const ohlcLast1h = ohlc1h && ohlc1h.length >= 2 ? ohlc1h.slice(-2).map(b => ({ high: b.high, low: b.low, close: b.close })) : [];
+          const signal1h = (closes1h.length >= 20 && ohlcLast1h.length >= 2)
+            ? generateSignal(closes1h, ohlcLast1h)
+            : { signal: 'HOLD' };
+
+          // Backtest 15m bars but only take signals confirmed by 1h
+          const hits = [];
+          const usedDates = new Set();
+          const closes15m = rows15m.map(r => r.close);
+          for (let j = 20; j < rows15m.length; j++) {
+            const entryDate = rows15m[j].date.slice(0, 10);
+            if (usedDates.has(entryDate)) continue; // 1 trade per day
+
+            const data15m = { closes: closes15m.slice(0, j + 1), ohlc: rows15m.slice(Math.max(0, j - 1), j + 1).map(r => ({ high: r.high, low: r.low, close: r.close })) };
+            const result15m = generateSignal(data15m.closes, data15m.ohlc);
+            if (result15m.signal !== 'BUY' && result15m.signal !== 'SELL') continue;
+            // Dual-timeframe: 1h must agree
+            if (result15m.signal !== signal1h.signal) continue;
+
+            const entry = rows15m[j].close;
+            const isBuy = result15m.signal === 'BUY';
+            const target = parseFloat((isBuy ? entry * (1 + targetPct / 100) : entry * (1 - targetPct / 100)).toFixed(2));
+            const sl = parseFloat((isBuy ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100)).toFixed(2));
+            for (let k = j + 1; k < rows15m.length; k++) {
+              const h = rows15m[k].high, l = rows15m[k].low;
+              if (isBuy) {
+                if (h >= target) { hits.push({ date: rows15m[j].date, exitDate: rows15m[k].date, symbol: sym, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); usedDates.add(entryDate); break; }
+                if (l <= sl) { hits.push({ date: rows15m[j].date, exitDate: rows15m[k].date, symbol: sym, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); usedDates.add(entryDate); break; }
+              } else {
+                if (l <= target) { hits.push({ date: rows15m[j].date, exitDate: rows15m[k].date, symbol: sym, signal: 'SELL', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); usedDates.add(entryDate); break; }
+                if (h >= sl) { hits.push({ date: rows15m[j].date, exitDate: rows15m[k].date, symbol: sym, signal: 'SELL', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); usedDates.add(entryDate); break; }
+              }
+            }
+            usedDates.add(entryDate);
+          }
+          return hits;
         } catch { return []; }
       }));
       batchResults.forEach(h => allHits.push(...h));
     }
 
-    // 3. Options - real option price history (30% target / 10% SL)
+    // 3. Options - CSV files with real OHLC data (30% target / 10% SL)
     const optTargetPct = 30, optSlPct = 10;
+    const optionCsvFiles = [
+      { file: 'NIFTY23800PE13Apr26.csv', symbol: 'NIFTY 23800 PE (13Apr26)', type: 'PE' },
+      { file: 'NIFTY23800CE13Apr26.csv', symbol: 'NIFTY 23800 CE (13Apr26)', type: 'CE' },
+    ];
+    for (const { file, symbol, type: optType } of optionCsvFiles) {
+      try {
+        const raw = fs.readFileSync(path.join(__dirname, './data/', file), 'utf8');
+        const lines = raw.split('\n').map(l => l.trim()).filter(l => l && /^NIFTY/.test(l));
+        const optMnths = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+        const parseOptDate = (s) => {
+          const m = (s||'').trim().match(/^(\d{1,2})-(\w{3})-(\d{4})$/);
+          return m ? m[3]+'-'+(optMnths[m[2]]||'01')+'-'+m[1].padStart(2,'0') : null;
+        };
+        const parseOptNum = (s) => { const v = (s||'').trim(); if (v === '-' || v === '') return null; const n = parseFloat(v.replace(/,/g,'')); return isNaN(n) ? null : n; };
+
+        const rows = lines.map(l => {
+          const cols = l.split(',').map(c => c.trim());
+          const date = parseOptDate(cols[1]);
+          if (!date) return null;
+          const open = parseOptNum(cols[5]);
+          const high = parseOptNum(cols[6]);
+          const low = parseOptNum(cols[7]);
+          const close = parseOptNum(cols[8]);
+          const underlying = parseOptNum(cols[16]);
+          if (!close || !underlying) return null;
+          return { date, open: open || close, high: high || close, low: low || close, close, underlying };
+        }).filter(Boolean).reverse(); // oldest first
+
+        if (rows.length < 3) continue;
+
+        // Backtest: for each day, check if option price hits target or SL in subsequent days
+        // CE entry when underlying rising (close > prev close), PE entry when underlying falling
+        const usedOptDates = new Set();
+        for (let j = 1; j < rows.length - 1; j++) {
+          const entryDate = rows[j].date;
+          if (usedOptDates.has(entryDate)) continue; // 1 trade per day
+
+          const prevUnderlying = rows[j-1].underlying;
+          const currUnderlying = rows[j].underlying;
+          const shouldBuy = optType === 'CE'
+            ? (currUnderlying > prevUnderlying)
+            : (currUnderlying < prevUnderlying);
+          if (!shouldBuy) continue;
+
+          const entry = rows[j].close;
+          const target = parseFloat((entry * (1 + optTargetPct / 100)).toFixed(2));
+          const sl = parseFloat((entry * (1 - optSlPct / 100)).toFixed(2));
+
+          for (let k = j + 1; k < rows.length; k++) {
+            if (rows[k].high >= target) {
+              allHits.push({ date: rows[j].date, exitDate: rows[k].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct });
+              usedOptDates.add(entryDate);
+              break;
+            }
+            if (rows[k].low <= sl) {
+              allHits.push({ date: rows[j].date, exitDate: rows[k].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct });
+              usedOptDates.add(entryDate);
+              break;
+            }
+          }
+          usedOptDates.add(entryDate);
+        }
+      } catch (err) { console.error('Option CSV error:', file, err.message); }
+    }
+
+    // 4. Options - option-history.json (existing logic)
     try {
       const optHistory = JSON.parse(fs.readFileSync(optionHistoryPath, 'utf8'));
       const optBySymbol = {};
       optHistory.forEach(e => { if (!optBySymbol[e.symbol]) optBySymbol[e.symbol] = []; optBySymbol[e.symbol].push(e); });
       Object.entries(optBySymbol).forEach(([sym, entries]) => {
         entries.sort((a, b) => a.date.localeCompare(b.date));
+        const usedDates = new Set();
         entries.forEach((entry, idx) => {
           if (entry.signal !== 'BUY' && entry.signal !== 'SELL') return;
+          const entryDate = entry.date.slice(0, 10);
+          if (usedDates.has(entryDate)) return; // 1 trade per day
           const price = entry.ltp;
           if (!price) return;
           const isBuy = entry.signal === 'BUY';
@@ -1354,19 +1531,22 @@ app.get("/api/history-tracker", async (req, res) => {
             const high = entries[j].high || ltp;
             const low = entries[j].low || ltp;
             if (isBuy) {
-              if (high >= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); return; }
-              if (low <= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); return; }
+              if (high >= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); usedDates.add(entryDate); return; }
+              if (low <= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); usedDates.add(entryDate); return; }
             } else {
-              if (low <= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); return; }
-              if (high >= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); return; }
+              if (low <= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); usedDates.add(entryDate); return; }
+              if (high >= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); usedDates.add(entryDate); return; }
             }
           }
+          usedDates.add(entryDate);
         });
       });
     } catch {}
 
-    const stockHits = allHits.filter(h => !h.symbol.includes('(Opt)'));
-    const optionHits = allHits.filter(h => h.symbol.includes('(Opt)'));
+    // Use regex to match option symbols: must have CE/PE preceded by space or digit (not part of stock name)
+    const isOptionSymbol = (s) => /\d\s*(CE|PE)/.test(s) || / (CE|PE)[ (]/.test(s) || s.includes('(Opt)');
+    const optionHits = allHits.filter(h => isOptionSymbol(h.symbol));
+    const stockHits = allHits.filter(h => !isOptionSymbol(h.symbol));
     stockHits.sort((a, b) => a.date.localeCompare(b.date));
     optionHits.sort((a, b) => a.date.localeCompare(b.date));
     const result = {
