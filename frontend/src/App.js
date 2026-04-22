@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SkeletonCards, SkeletonTable, SkeletonLoginBox } from './components/Skeleton/Skeleton';
 
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
-const EquityTool = lazy(() => import('./pages/EquityTool/EquityTool'));
 const Options = lazy(() => import('./pages/Options/Options'));
 const OptionChain = lazy(() => import('./pages/OptionChain/OptionChain'));
 const Sectors = lazy(() => import('./pages/Sectors/Sectors'));
@@ -22,6 +21,7 @@ const MarketDepth = lazy(() => import('./pages/MarketDepth/MarketDepth'));
 const Levels = lazy(() => import('./pages/Levels/Levels'));
 const Results = lazy(() => import('./pages/Results/Results'));
 const HistoryTracker = lazy(() => import('./pages/HistoryTracker/HistoryTracker'));
+const IndexLevels = lazy(() => import('./pages/IndexLevels/IndexLevels'));
 const Login = lazy(() => import('./pages/Login/Login'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
@@ -50,7 +50,6 @@ function AppRoutes() {
         <Routes>
           <Route path="/login" element={<S login><Login /></S>} />
           <Route index element={<Protected><S><Dashboard assetTab={assetTab} setAssetTab={setAssetTab} /></S></Protected>} />
-          <Route path="/equity" element={<Protected><S><EquityTool /></S></Protected>} />
           <Route path="/market-depth" element={<Protected><S><MarketDepth /></S></Protected>} />
           <Route path="/options" element={<Protected><S><Options /></S></Protected>} />
           <Route path="/optionchain" element={<Protected><S><OptionChain /></S></Protected>} />
@@ -64,6 +63,7 @@ function AppRoutes() {
           <Route path="/levels" element={<Protected><S><Levels /></S></Protected>} />
           <Route path="/results" element={<Protected><S><Results /></S></Protected>} />
           <Route path="/history-tracker" element={<Protected><S><HistoryTracker /></S></Protected>} />
+          <Route path="/index-levels" element={<Protected><S><IndexLevels /></S></Protected>} />
           <Route path="*" element={<S><NotFound /></S>} />
         </Routes>
       )}
