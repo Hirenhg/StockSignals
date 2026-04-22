@@ -285,7 +285,7 @@ export default function PEGRatio() {
 
         {/* Filter - Mobile */}
         <div className="d-md-none mb-3 d-flex gap-2">
-          <button className="btn btn-sm btn-success flex-shrink-0" onClick={() => setShowAdd(true)} style={{ fontSize: '13px' }}>+ Add</button>
+          <button className="btn btn-sm btn-success flex-shrink-0" onClick={() => setShowAdd(true)} style={{ fontSize: '13px' }}>Add</button>
           <input className="form-control" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} style={{ fontSize: '13px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a' } : {}) }} />
           <select className="form-select flex-shrink-0" value={filter} onChange={e => setFilter(e.target.value)} style={{ width: 'auto', fontSize: '13px', ...(darkMode ? { backgroundColor: '#262626', color: '#e0e0e0', borderColor: '#3a3a3a', backgroundImage: `url(${arrowDown})` } : {}) }}>
             <option value="All">All</option>

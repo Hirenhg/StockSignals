@@ -17,7 +17,7 @@ const Header = () => {
   const navItems = isLoggedIn
     ? [
         { path: '/', label: t('dashboard'), icon: 'bi-speedometer2' },
-        { path: '/equity', label: t('equityTool'), icon: 'bi-graph-up-arrow' },
+        { path: '/index-levels', label: 'Index Levels', icon: 'bi-bar-chart-steps' },
         { path: '/market-depth', label: 'Market Depth', icon: 'bi-people-fill' },
         { path: '/options', label: t('options'), icon: 'bi-gear' },
         // { path: '/optionchain', label: t('optionChain'), icon: 'bi-link-45deg' },
@@ -25,7 +25,7 @@ const Header = () => {
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
         { path: '/news', label: t('news'), icon: 'bi-newspaper' },
         { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
-        // { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
+        { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
         // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
         { path: '/levels', label: 'Levels', icon: 'bi-arrows-expand' },
         { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
