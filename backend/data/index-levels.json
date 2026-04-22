@@ -1,0 +1,24 @@
+[
+  {
+    "symbol": "NIFTY",
+    "label": "NIFTY SPOT",
+    "cmp": 24581,
+    "bullishAbove": 24600,
+    "bullishTargets": [24645, 24710],
+    "bearishBelow": 24500,
+    "bearishTargets": [24440, 24395],
+    "date": "2026-04-22",
+    "note": "Buy above 24600 with SL 24500. Sustaining above 24600 can push towards 24645 & 24710. Break below 24500 may drag to 24440 & 24395. Trade with strict SL."
+  },
+  {
+    "symbol": "SENSEX",
+    "label": "SENSEX SPOT",
+    "cmp": 79278,
+    "bullishAbove": 79360,
+    "bullishTargets": [79500, 79700],
+    "bearishBelow": 79040,
+    "bearishTargets": [78810, 78600],
+    "date": "2026-04-22",
+    "note": "Buy above 79360 with SL 79040. Momentum above 79360 targets 79500 & 79700. Breakdown below 79040 opens 78810 & 78600. Avoid overtrading near key levels."
+  }
+]
