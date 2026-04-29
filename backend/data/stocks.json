@@ -1,5 +1,71 @@
 [
   {
-    "symbol": "LUPIN"
+    "symbol": "ASHOKA"
+  },
+  {
+    "symbol": "SATIN"
+  },
+  {
+    "symbol": "FIVESTAR"
+  },
+  {
+    "symbol": "JKPAPER"
+  },
+  {
+    "symbol": "PNCINFRA"
+  },
+  {
+    "symbol": "SURYODAY"
+  },
+  {
+    "symbol": "VIKRAMSOLR"
+  },
+  {
+    "symbol": "UDS"
+  },
+  {
+    "symbol": "MUTHOOTMF"
+  },
+  {
+    "symbol": "PRICOLLTD"
+  },
+  {
+    "symbol": "SUPRIYA"
+  },
+  {
+    "symbol": "ADVAIT"
+  },
+  {
+    "symbol": "TRANSRAILL"
+  },
+  {
+    "symbol": "GANESHCP"
+  },
+  {
+    "symbol": "PRICOLLTD"
+  },
+  {
+    "symbol": "CHENNPETRO"
+  },
+  {
+    "symbol": "MBAPL"
+  },
+  {
+    "symbol": "SBICARD"
+  },
+  {
+    "symbol": "^NSEI"
+  },
+  {
+    "symbol": "^BSESN"
+  },
+  {
+    "symbol": "^NSEBANK"
+  },
+  {
+    "symbol": "GULPOLY"
+  },
+  {
+    "symbol": "SOLEX"
   }
 ]
