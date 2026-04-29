@@ -1854,23 +1854,32 @@ app.put('/api/index-levels/:symbol', (req, res) => {
 });
 
 // Support & Resistance Levels
-const { getLevels } = require('./services/levelsService');
+const { getLevels, getWatchlistAnalysis } = require('./services/levelsService');
 
 app.get("/api/levels", optionalAuth, async (req, res) => {
   try {
     const indices = getIndices();
+    const symbols = indices.map(i => i.symbol);
+    const results = (await Promise.all(symbols.map(s => getLevels(s)))).filter(Boolean);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch levels' });
+  }
+});
+
+app.get("/api/watchlist-analysis", optionalAuth, async (req, res) => {
+  try {
     const stocks = getStocks();
     let watchlist = [];
     if (req.user) {
       const user = getUserByMobile(req.user.mobile);
       watchlist = (user?.watchlist || []).map(w => w.symbol);
     }
-    const symbols = [...indices.map(i => i.symbol), ...stocks.map(s => s.symbol), ...watchlist];
-    const unique = [...new Set(symbols)];
-    const results = (await Promise.all(unique.map(s => getLevels(s)))).filter(Boolean);
+    const symbols = [...new Set([...stocks.map(s => s.symbol), ...watchlist])];
+    const results = (await Promise.all(symbols.map(s => getWatchlistAnalysis(s)))).filter(Boolean);
     res.json(results);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch levels' });
+    res.status(500).json({ error: 'Failed to fetch watchlist analysis' });
   }
 });
 
