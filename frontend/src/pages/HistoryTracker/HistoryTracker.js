@@ -14,10 +14,11 @@ function HistoryTracker() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [symbolFilter, setSymbolFilter] = useState('all')
-  const [tab, setTab] = useState('stocks')
 
   useEffect(() => {
-    if (clientCache.data && clientCache.date === today) { setData(clientCache.data); setLoading(false); return }
+    if (clientCache.data && clientCache.date === today) {
+      setData(clientCache.data); setLoading(false); return
+    }
     API.get('/api/history-tracker?refresh=1')
       .then(res => { clientCache = { data: res.data, date: today }; setData(res.data) })
       .catch(() => {})
@@ -27,24 +28,22 @@ function HistoryTracker() {
   if (loading) return <div className="p-1"><SkeletonCards count={4} /><SkeletonTable rows={8} cols={10} /></div>
   if (!data) return <div className="text-center text-muted py-5">Failed to load data</div>
 
-  const section = data[tab] || { hits: [], targetCount: 0, slCount: 0, total: 0 }
-  const symbols = [...new Set(section.hits.map(h => h.symbol))]
+  const baseHits = data.stocks?.hits || []
+  const symbols = [...new Set(baseHits.map(h => h.symbol))]
 
-  const filtered = section.hits.filter(h => {
+  const filtered = baseHits.filter(h => {
     const matchSearch = h.symbol.toLowerCase().includes(search.toLowerCase()) || h.date.includes(search)
     const matchFilter = filter === 'all' || h.result === filter
     const matchSymbol = symbolFilter === 'all' || h.symbol === symbolFilter
     return matchSearch && matchFilter && matchSymbol
   })
 
-  const activeHits = symbolFilter === 'all' ? section.hits : section.hits.filter(h => h.symbol === symbolFilter)
+  const activeHits = symbolFilter === 'all' ? baseHits : baseHits.filter(h => h.symbol === symbolFilter)
   const targetCount = activeHits.filter(h => h.result === 'TARGET').length
   const slCount = activeHits.filter(h => h.result === 'SL').length
   const total = activeHits.length
   const totalPnl = activeHits.reduce((s, h) => s + h.pnlPct, 0)
   const winRate = total ? ((targetCount / total) * 100).toFixed(1) : 0
-
-  const switchTab = (t) => { setTab(t); setSymbolFilter('all'); setFilter('all'); setSearch('') }
 
   return (
     <>
@@ -53,7 +52,7 @@ function HistoryTracker() {
         <h4 className="fw-bold mb-2">📊 History Tracker</h4>
 
         <p className="text-muted mb-3" style={{ fontSize: 13 }}>
-          {tab === 'stocks' ? 'Target 2% / SL 1% — CSV + Nifty 50, Next 50 & Watchlist (3mo)' : 'Target 30% / SL 10% — Real option prices (auto-recorded daily)'}
+          Watchlist stocks — ATR-based Target / SL per stock
         </p>
 
         <div className="d-flex gap-2 mb-3 overflow-auto" style={{ scrollbarWidth: 'none' }}>
@@ -70,16 +69,7 @@ function HistoryTracker() {
             </div>
           ))}
         </div>
-        {/* Stocks / Options Tabs */}
-        <div className="d-flex gap-2 mb-3">
-          <button className={`btn ${tab === 'stocks' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('stocks')}>
-             Stocks 
-          </button>
-          <button className={`btn ${tab === 'options' ? 'btn-warning' : 'btn-outline-warning'}`} onClick={() => switchTab('options')}>
-             Options
-          </button>
-        </div>
-        {/* Filters Row */}
+
         <div className="d-flex gap-2 mb-3 align-items-center flex-wrap">
           <select className="form-select" style={{ width: 'auto', minWidth: 150, paddingRight: 32 }} value={symbolFilter} onChange={e => setSymbolFilter(e.target.value)}>
             <option value="all">All ({symbols.length})</option>
@@ -96,9 +86,14 @@ function HistoryTracker() {
           ))}
         </div>
 
-        {filtered.length === 0 && <div className="text-center text-muted py-5"><div style={{ fontSize: 48 }}>📋</div><h5 className="mt-2">No {tab} history found</h5></div>}
+        {filtered.length === 0 && (
+          <div className="text-center text-muted py-5">
+            <div style={{ fontSize: 48 }}>📋</div>
+            <h5 className="mt-2">No history found</h5>
 
-        {/* Desktop Table */}
+          </div>
+        )}
+
         {filtered.length > 0 && (
           <div className="d-none d-md-block table-responsive">
             <table className="table table-hover" style={{ fontSize: 13 }}>
@@ -129,7 +124,6 @@ function HistoryTracker() {
           </div>
         )}
 
-        {/* Mobile Cards */}
         {filtered.length > 0 && (
           <div className="d-md-none" style={{ paddingBottom: 80 }}>
             {filtered.map((h, i) => (
