@@ -18,6 +18,7 @@ const Header = () => {
     ? [
         { path: '/', label: t('dashboard'), icon: 'bi-speedometer2' },
         { path: '/index-levels', label: 'Index Levels', icon: 'bi-bar-chart-steps' },
+        { path: '/levels', label: 'Levels', icon: 'bi-arrows-expand' },
         { path: '/market-depth', label: 'Market Depth', icon: 'bi-people-fill' },
         { path: '/options', label: t('options'), icon: 'bi-gear' },
         // { path: '/optionchain', label: t('optionChain'), icon: 'bi-link-45deg' },
@@ -27,7 +28,6 @@ const Header = () => {
         { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
         { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
         // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
-        { path: '/levels', label: 'Levels', icon: 'bi-arrows-expand' },
         { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
         // { path: '/history-tracker', label: 'History', icon: 'bi-clock-history' },
       ]
