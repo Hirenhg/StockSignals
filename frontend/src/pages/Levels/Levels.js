@@ -135,6 +135,9 @@ export default function Levels() {
   const [tf, setTf] = useState('daily')
   const [mood, setMood] = useState(null)
   const [moodLoading, setMoodLoading] = useState(true)
+  const [watchlist, setWatchlist] = useState([])
+  const [wlLoading, setWlLoading] = useState(true)
+  const [wlSort, setWlSort] = useState('desc')
   const { darkMode } = useTheme()
 
   const cardBg = darkMode ? '#1e1e1e' : '#fff'
@@ -153,6 +156,11 @@ export default function Levels() {
       .then(r => setMood(r.data))
       .catch(e => console.error('Mood fetch error:', e))
       .finally(() => setMoodLoading(false))
+
+    API.get('/api/watchlist-analysis')
+      .then(r => setWatchlist(r.data))
+      .catch(e => console.error('Watchlist analysis fetch error:', e))
+      .finally(() => setWlLoading(false))
   }, [])
 
   const getProximity = (price, level) => {
@@ -244,7 +252,7 @@ export default function Levels() {
 
         {/* ===== SUPPORT & RESISTANCE ===== */}
         <h5 className="fw-bold mb-0" style={{ color: text }}>Support & Resistance</h5>
-        <div className="fw-bold mb-3" style={{ fontSize: '12px', color: textMuted }}>Fibonacci Pivot Points · 7 EMA Strategy · S3–R3 levels</div>
+        <div className="fw-bold mb-3" style={{ fontSize: '12px', color: textMuted }}>Fibonacci Pivot Points · EMA Pro Strategy · S3–R3 levels</div>
 
         <div className="d-flex gap-2 mb-3 align-items-center">
           {['daily', 'weekly', 'monthly'].map(t => (
@@ -277,7 +285,7 @@ export default function Levels() {
                     <th>R1</th>
                     <th>R2</th>
                     <th>R3</th>
-                    <th>7 EMA</th>
+                    <th>EMA Pro</th>
                     <th>Signal</th>
                     <th>Prev High</th>
                   </tr>
@@ -326,76 +334,71 @@ export default function Levels() {
             </div>
 
             {/* ===== MOBILE CARDS ===== */}
-            <div className="d-md-none" style={{ paddingBottom: 80 }}>
+            <div className="d-md-none" style={{ paddingBottom: 10 }}>
               {data.map((row, i) => {
                 const levels = row[tf]
                 const ppPct = ((row.price - levels.pp) / levels.pp * 100).toFixed(2)
                 const isAbovePP = row.price >= levels.pp
+                const signalBg = levels.signal === 'Bullish' ? '#198754' : levels.signal === 'Bearish' ? '#dc3545' : levels.signal === 'Above' ? '#20c997' : '#fd7e14'
 
                 return (
-                  <div key={i} className="card mb-3 shadow-sm" style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, overflow: 'hidden' }}>
+                  <div key={i} className="card mb-3 shadow" style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
 
-                    {/* Card Header — Symbol + Price */}
-                    <div className="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+                    {/* Header */}
+                    <div className="d-flex justify-content-between align-items-center px-3 pt-3 pb-2" style={{ borderBottom: `1px solid ${border}` }}>
                       <div>
-                        <div className="fw-bold" style={{ fontSize: '18px', color: text, letterSpacing: '0.3px' }}>{row.symbol}</div>
-                        <div className="d-flex align-items-center gap-2 mt-1">
-                          {levels.signal && (
-                            <span className={`badge ${levels.signal === 'Bullish' ? 'bg-success' : levels.signal === 'Bearish' ? 'bg-danger' : levels.signal === 'Above' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'}`}
-                              style={{ fontSize: '12px', padding: '4px 10px', borderRadius: 20 }}>
-                              {levels.signal}
-                            </span>
-                          )}
-                        </div>
+                        <div className="fw-bold" style={{ fontSize: '22px', color: text, letterSpacing: '0.3px' }}>{row.symbol}</div>
+                        {levels.signal && (
+                          <span className="badge mt-1" style={{ background: signalBg, fontSize: '13px', padding: '4px 12px', borderRadius: 20 }}>
+                            {levels.signal}
+                          </span>
+                        )}
                       </div>
                       <div className="text-end">
-                        <div className="fw-bold" style={{ fontSize: '20px', color: text }}>₹{row.price}</div>
+                        <div className="fw-bold" style={{ fontSize: '24px', color: text }}>₹{row.price}</div>
                         {row.pChange != null && (
-                          <div style={{ fontSize: '14px', color: row.pChange >= 0 ? '#198754' : '#dc3545', fontWeight: 700 }}>
+                          <div style={{ fontSize: '16px', color: row.pChange >= 0 ? '#198754' : '#dc3545', fontWeight: 700 }}>
                             {row.pChange >= 0 ? '▲' : '▼'} {Math.abs(row.pChange)}%
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Pivot + EMA row */}
-                    <div className="d-flex justify-content-between align-items-center px-3 py-2" style={{ background: sectionBg, borderTop: `1px solid ${border}`, borderBottom: `1px solid ${border}` }}>
+                    {/* Pivot + PP% + EMA */}
+                    <div className="d-flex justify-content-between align-items-center px-3 py-3" style={{ background: sectionBg, borderBottom: `1px solid ${border}` }}>
                       <div className="text-center">
-                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pivot</div>
-                        <div className="fw-bold" style={{ fontSize: '16px', color: '#6f42c1' }}>{levels.pp}</div>
+                        <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pivot</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: '#6f42c1' }}>{levels.pp}</div>
                       </div>
                       <div className="text-center">
-                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PP %</div>
-                        <div className="fw-bold" style={{ fontSize: '16px', color: isAbovePP ? '#198754' : '#dc3545' }}>
+                        <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PP %</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: isAbovePP ? '#198754' : '#dc3545' }}>
                           {ppPct > 0 ? '+' : ''}{ppPct}%
                         </div>
                       </div>
                       <div className="text-center">
-                        <div style={{ fontSize: '11px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>7 EMA</div>
-                        <div className="fw-bold" style={{ fontSize: '16px', color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>
+                        <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>EMA Pro</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: row.price >= levels.ema7 ? '#198754' : '#dc3545' }}>
                           {levels.ema7 || '-'}
                         </div>
                       </div>
                     </div>
 
                     {/* Price Position Bar */}
-                    <div className="px-3 pt-3 pb-1">
-                      <div className="d-flex justify-content-between mb-1" style={{ fontSize: '11px', color: textMuted }}>
+                    <div className="px-3 pt-3 pb-2">
+                      <div className="d-flex justify-content-between mb-1" style={{ fontSize: '12px', color: textMuted }}>
                         <span>S3: {levels.s3}</span>
-                        <span style={{ fontWeight: 600, color: text }}>Price Position</span>
+                        <span style={{ fontWeight: 700, color: text }}>Price Position</span>
                         <span>R3: {levels.r3}</span>
                       </div>
                       <PricePositionBar price={row.price} s3={levels.s3} r3={levels.r3} pp={levels.pp} darkMode={darkMode} />
                     </div>
 
-                    {/* Support & Resistance Split */}
-                    <div className="px-3 pt-3 pb-3">
+                    {/* Support & Resistance */}
+                    <div className="px-3 pt-2 pb-3">
                       <div className="row g-0">
-                        {/* Support Side */}
                         <div className="col-6 pe-2">
-                          <div className="mb-2" style={{ fontSize: '12px', fontWeight: 700, color: '#dc3545', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            ▼ Support
-                          </div>
+                          <div className="mb-2" style={{ fontSize: '13px', fontWeight: 700, color: '#dc3545', textTransform: 'uppercase' }}>▼ Support</div>
                           {[
                             { label: 'S1', val: levels.s1 },
                             { label: 'S2', val: levels.s2 },
@@ -405,21 +408,17 @@ export default function Levels() {
                             const prox = getProximity(row.price, item.val)
                             return (
                               <div key={j} className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: j < 3 ? `1px solid ${darkMode ? '#2a2a2a' : '#f0f0f0'}` : 'none' }}>
-                                <span style={{ fontSize: '13px', color: textMuted }}>{item.label}</span>
+                                <span style={{ fontSize: '14px', color: textMuted }}>{item.label}</span>
                                 <div className="d-flex align-items-center gap-1">
-                                  {prox && <span style={{ width: 6, height: 6, borderRadius: '50%', background: prox.color, flexShrink: 0 }} />}
-                                  <span className="fw-bold" style={{ fontSize: '15px', color: '#dc3545' }}>{item.val}</span>
+                                  {prox && <span style={{ width: 7, height: 7, borderRadius: '50%', background: prox.color, flexShrink: 0 }} />}
+                                  <span className="fw-bold" style={{ fontSize: '16px', color: '#dc3545' }}>{item.val}</span>
                                 </div>
                               </div>
                             )
                           })}
                         </div>
-
-                        {/* Resistance Side */}
                         <div className="col-6 ps-2" style={{ borderLeft: `1px solid ${border}` }}>
-                          <div className="mb-2" style={{ fontSize: '12px', fontWeight: 700, color: '#198754', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            ▲ Resistance
-                          </div>
+                          <div className="mb-2" style={{ fontSize: '13px', fontWeight: 700, color: '#198754', textTransform: 'uppercase' }}>▲ Resistance</div>
                           {[
                             { label: 'R1', val: levels.r1 },
                             { label: 'R2', val: levels.r2 },
@@ -429,15 +428,204 @@ export default function Levels() {
                             const prox = getProximity(row.price, item.val)
                             return (
                               <div key={j} className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: j < 3 ? `1px solid ${darkMode ? '#2a2a2a' : '#f0f0f0'}` : 'none' }}>
-                                <span style={{ fontSize: '13px', color: textMuted }}>{item.label}</span>
+                                <span style={{ fontSize: '14px', color: textMuted }}>{item.label}</span>
                                 <div className="d-flex align-items-center gap-1">
-                                  {prox && <span style={{ width: 6, height: 6, borderRadius: '50%', background: prox.color, flexShrink: 0 }} />}
-                                  <span className="fw-bold" style={{ fontSize: '15px', color: '#198754' }}>{item.val}</span>
+                                  {prox && <span style={{ width: 7, height: 7, borderRadius: '50%', background: prox.color, flexShrink: 0 }} />}
+                                  <span className="fw-bold" style={{ fontSize: '16px', color: '#198754' }}>{item.val}</span>
                                 </div>
                               </div>
                             )
                           })}
                         </div>
+                      </div>
+                    </div>
+
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ===== WATCHLIST ANALYSIS ===== */}
+        <h5 className="fw-bold mb-3 mt-4" style={{ color: text }}>Watchlist Stock Analysis</h5>
+        <div className="mb-3" style={{ fontSize: '12px', color: textMuted }}>EMA Pro Daily/Weekly/Monthly · 50 & 200 EMA Cross · RSI · Volume · Status · Upside % · Target & Stop Loss</div>
+
+        {wlLoading ? (
+          <div className="d-none d-md-block"><SkeletonTable rows={5} cols={12} /></div>
+        ) : watchlist.length === 0 ? (
+          <div className="text-center text-muted p-4">No watchlist stocks found</div>
+        ) : (
+          <>
+            {/* Desktop */}
+            <div className="d-none d-md-block table-responsive mb-4">
+              <table className="table table-hover" style={{ fontSize: '14px' }}>
+                <thead className="table-dark">
+                  <tr style={{ verticalAlign: 'middle' }}>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>EMA Pro Daily</th>
+                    <th>EMA Pro Weekly</th>
+                    <th>EMA Pro Monthly</th>
+                    <th>50 EMA</th>
+                    <th>200 EMA</th>
+                    <th>RSI</th>
+                    <th>Volume</th>
+                    <th>Status</th>
+                    <th>Up Chance <button onClick={() => setWlSort(s => s === 'desc' ? 'asc' : 'desc')} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '13px', padding: '0 4px' }}>{wlSort === 'desc' ? '▼' : '▲'}</button></th>
+                    <th>Target</th>
+                    <th>Stop Loss</th>
+                    <th>Valuation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...watchlist].sort((a, b) => wlSort === 'desc' ? b.upChancePct - a.upChancePct : a.upChancePct - b.upChancePct).map((row, i) => {
+                    const statusColor = {
+                      'Strong Buy': '#198754', 'Momentum Buy': '#20c997',
+                      'Buy on Dip': '#0d6efd', 'Strong Support': '#6f42c1',
+                      'Hold': '#ffc107', 'Weak': '#dc3545'
+                    }[row.status] || textMuted
+                    const volColor = row.volume === 'Good' ? '#198754' : row.volume === 'Bad' ? '#dc3545' : '#ffc107'
+                    const rsiColor = row.rsi > 70 ? '#dc3545' : row.rsi < 30 ? '#198754' : row.rsi > 55 ? '#20c997' : textMuted
+                    return (
+                      <tr key={i} style={{ verticalAlign: 'middle' }}>
+                        <td className="fw-bold">{row.symbol}</td>
+                        <td>
+                          <div className="fw-bold">₹{row.price}</div>
+                        </td>
+                        <td style={{ color: row.ema7Daily && row.price >= row.ema7Daily ? '#198754' : '#dc3545' }}>
+                          {row.ema7Daily ?? '-'}
+                        </td>
+                        <td style={{ color: row.ema7Weekly && row.price >= row.ema7Weekly ? '#198754' : '#dc3545' }}>
+                          {row.ema7Weekly ?? '-'}
+                        </td>
+                        <td style={{ color: row.ema7Monthly && row.price >= row.ema7Monthly ? '#198754' : '#dc3545' }}>
+                          {row.ema7Monthly ?? '-'}
+                        </td>
+                        <td>
+                          {row.ema50Above == null ? '-' : (
+                            <span className={`badge ${row.ema50Above ? 'bg-success' : 'bg-danger'}`}>{row.ema50Above ? 'YES ✓' : 'NO ✗'}</span>
+                          )}
+                        </td>
+                        <td>
+                          {row.ema200Above == null ? '-' : (
+                            <span className={`badge ${row.ema200Above ? 'bg-success' : 'bg-danger'}`}>{row.ema200Above ? 'YES ✓' : 'NO ✗'}</span>
+                          )}
+                        </td>
+                        <td style={{ color: rsiColor, fontWeight: 600 }}>{row.rsi ?? '-'}</td>
+                        <td style={{ color: volColor, fontWeight: 600 }}>{row.volume}</td>
+                        <td>
+                          <span className="badge" style={{ background: statusColor, fontSize: '12px' }}>{row.status}</span>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 700, color: row.upChancePct >= 70 ? '#198754' : row.upChancePct >= 50 ? '#ffc107' : '#dc3545' }}>
+                            {row.upChancePct}%
+                          </span>
+                        </td>
+                        <td className="fw-bold" style={{ color: '#198754' }}>
+                          ₹{row.target}
+                          <div style={{ fontSize: '11px', fontWeight: 400 }}>+{row.targetPct}%</div>
+                        </td>
+                        <td className="fw-bold" style={{ color: '#dc3545' }}>
+                          ₹{row.stopLoss}
+                          <div style={{ fontSize: '11px', fontWeight: 400 }}>{row.stopLossPct}%</div>
+                        </td>
+                        <td>
+                          <span className="badge" style={{
+                            background: row.valuation === 'Undervalued' ? '#198754' : row.valuation === 'Overvalued' ? '#dc3545' : '#6c757d',
+                            fontSize: '12px'
+                          }}>{row.valuation}</span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="d-md-none" style={{ paddingBottom: 10 }}>
+              {watchlist.map((row, i) => {
+                const statusColor = {
+                  'Strong Buy': '#198754', 'Momentum Buy': '#20c997',
+                  'Buy on Dip': '#0d6efd', 'Strong Support': '#6f42c1',
+                  'Hold': '#ffc107', 'Weak': '#dc3545'
+                }[row.status] || textMuted
+                const volColor = row.volume === 'Good' ? '#198754' : row.volume === 'Bad' ? '#dc3545' : '#ffc107'
+                const rsiColor = row.rsi > 70 ? '#dc3545' : row.rsi < 30 ? '#198754' : row.rsi > 55 ? '#20c997' : textMuted
+                const valColor = row.valuation === 'Undervalued' ? '#198754' : row.valuation === 'Overvalued' ? '#dc3545' : '#6c757d'
+                return (
+                  <div key={i} className="card mb-3 shadow" style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
+
+                    {/* Header — Symbol + Price */}
+                    <div className="d-flex justify-content-between align-items-center px-3 pt-3 pb-2" style={{ borderBottom: `1px solid ${border}` }}>
+                      <div>
+                        <div className="fw-bold" style={{ fontSize: '22px', color: text, letterSpacing: '0.3px' }}>{row.symbol}</div>
+                        <span className="badge mt-1" style={{ background: statusColor, fontSize: '13px', padding: '4px 12px', borderRadius: 20 }}>{row.status}</span>
+                      </div>
+                      <div className="text-end">
+                        <div className="fw-bold" style={{ fontSize: '24px', color: text }}>₹{row.price}</div>
+                        <span className="badge" style={{ background: valColor, fontSize: '12px', padding: '3px 10px' }}>{row.valuation}</span>
+                      </div>
+                    </div>
+
+                    {/* EMA Row */}
+                    <div className="d-flex justify-content-between align-items-center px-3 py-3" style={{ background: sectionBg, borderBottom: `1px solid ${border}` }}>
+                      {[['EMA Pro D', row.ema7Daily, row.price >= row.ema7Daily], ['EMA Pro W', row.ema7Weekly, row.price >= row.ema7Weekly], ['EMA Pro M', row.ema7Monthly, row.price >= row.ema7Monthly]].map(([lbl, val, up]) => (
+                        <div key={lbl} className="text-center">
+                          <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lbl}</div>
+                          <div className="fw-bold" style={{ fontSize: '18px', color: val ? (up ? '#198754' : '#dc3545') : textMuted }}>{val ?? '-'}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* EMA Cross + RSI + Volume */}
+                    <div className="px-3 pt-3 pb-2">
+                      <div className="row g-0">
+                        <div className="col-6 pe-2">
+                          <div className="mb-2" style={{ fontSize: '13px', fontWeight: 700, color: textMuted, textTransform: 'uppercase' }}>EMA Cross</div>
+                          {[['50 EMA', row.ema50Above], ['200 EMA', row.ema200Above]].map(([lbl, above]) => (
+                            <div key={lbl} className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: `1px solid ${darkMode ? '#2a2a2a' : '#f0f0f0'}` }}>
+                              <span style={{ fontSize: '14px', color: textMuted }}>{lbl}</span>
+                              <span className={`badge ${above ? 'bg-success' : 'bg-danger'}`} style={{ fontSize: '13px' }}>
+                                {above == null ? '-' : above ? 'YES ✓' : 'NO ✗'}
+                              </span>
+                            </div>
+                          ))}
+                          <div className="d-flex justify-content-between align-items-center py-1">
+                            <span style={{ fontSize: '14px', color: textMuted }}>Volume</span>
+                            <span className="fw-bold" style={{ fontSize: '16px', color: volColor }}>{row.volume}</span>
+                          </div>
+                        </div>
+                        <div className="col-6 ps-2" style={{ borderLeft: `1px solid ${border}` }}>
+                          <div className="mb-2" style={{ fontSize: '13px', fontWeight: 700, color: textMuted, textTransform: 'uppercase' }}>Signals</div>
+                          <div className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: `1px solid ${darkMode ? '#2a2a2a' : '#f0f0f0'}` }}>
+                            <span style={{ fontSize: '14px', color: textMuted }}>RSI</span>
+                            <span className="fw-bold" style={{ fontSize: '16px', color: rsiColor }}>{row.rsi ?? '-'}</span>
+                          </div>
+                          <div className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: `1px solid ${darkMode ? '#2a2a2a' : '#f0f0f0'}` }}>
+                            <span style={{ fontSize: '14px', color: textMuted }}>Up Chance</span>
+                            <span className="fw-bold" style={{ fontSize: '16px', color: row.upChancePct >= 70 ? '#198754' : row.upChancePct >= 50 ? '#ffc107' : '#dc3545' }}>{row.upChancePct}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Target + Stop Loss */}
+                    <div className="d-flex justify-content-between align-items-center px-3 py-3" style={{ background: sectionBg, borderTop: `1px solid ${border}` }}>
+                      <div className="text-center">
+                        <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Target</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: '#198754' }}>₹{row.target}</div>
+                        <div style={{ fontSize: '13px', color: '#198754' }}>+{row.targetPct}%</div>
+                      </div>
+                      <div className="text-center">
+                        <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Risk:Reward</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: text }}>1 : 2</div>
+                      </div>
+                      <div className="text-center">
+                        <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stop Loss</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: '#dc3545' }}>₹{row.stopLoss}</div>
+                        <div style={{ fontSize: '13px', color: '#dc3545' }}>{row.stopLossPct}%</div>
                       </div>
                     </div>
 
