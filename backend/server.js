@@ -1229,57 +1229,29 @@ let historyTrackerCache = { data: null, date: null };
 historyTrackerCache = { data: null, date: null };
 
 function backtestRows(rows, symbol, targetPct, slPct) {
-  const closes = rows.map(r => r.close);
   const hits = [];
   const usedDates = new Set();
-  // Simulate 1h (4-bar aggregated) for dual-timeframe confirmation
-  const get1hSignal = (idx) => {
-    if (idx < 20) return { signal: 'HOLD' };
-    const step = 4;
-    const htfRows = [];
-    for (let k = 0; k <= idx; k += step) {
-      const end = Math.min(k + step, idx + 1);
-      const slice = rows.slice(k, end);
-      if (!slice.length) continue;
-      htfRows.push({
-        open: slice[0].open,
-        high: Math.max(...slice.map(r => r.high)),
-        low: Math.min(...slice.map(r => r.low)),
-        close: slice[slice.length - 1].close
-      });
-    }
-    if (htfRows.length < 20) return { signal: 'HOLD' };
-    const htfCloses = htfRows.map(r => r.close);
-    const htfOhlc = htfRows.slice(-2).map(r => ({ high: r.high, low: r.low, close: r.close }));
-    return generateSignal(htfCloses, htfOhlc);
-  };
-
+  const closes = rows.map(r => r.close);
   for (let i = 20; i < rows.length; i++) {
     const entryDate = rows[i].date.slice(0, 10);
-    if (usedDates.has(entryDate)) continue; // 1 trade per day
-
-    const data = { closes: closes.slice(0, i + 1), ohlc: rows.slice(Math.max(0, i - 1), i + 1).map(r => ({ high: r.high, low: r.low, close: r.close })) };
-    const result15m = generateSignal(data.closes, data.ohlc);
-    if (result15m.signal !== 'BUY' && result15m.signal !== 'SELL') continue;
-
-    const result1h = get1hSignal(i);
-    if (result15m.signal !== result1h.signal) continue;
-
+    if (usedDates.has(entryDate)) continue;
+    const sig = generateSignal(closes.slice(0, i + 1), rows.slice(Math.max(0, i - 1), i + 1).map(r => ({ high: r.high, low: r.low, close: r.close })));
+    if (sig.signal !== 'BUY' && sig.signal !== 'SELL') continue;
     const entry = rows[i].close;
-    const isBuy = result15m.signal === 'BUY';
+    const isBuy = sig.signal === 'BUY';
     const target = parseFloat((isBuy ? entry * (1 + targetPct / 100) : entry * (1 - targetPct / 100)).toFixed(2));
     const sl = parseFloat((isBuy ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100)).toFixed(2));
+    usedDates.add(entryDate);
     for (let j = i + 1; j < rows.length; j++) {
       const h = rows[j].high, l = rows[j].low;
       if (isBuy) {
-        if (h >= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); usedDates.add(entryDate); break; }
-        if (l <= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); usedDates.add(entryDate); break; }
+        if (h >= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); break; }
+        if (l <= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); break; }
       } else {
-        if (l <= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); usedDates.add(entryDate); break; }
-        if (h >= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); usedDates.add(entryDate); break; }
+        if (l <= target) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); break; }
+        if (h >= sl) { hits.push({ date: rows[i].date, exitDate: rows[j].date, symbol, signal: 'SELL', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); break; }
       }
     }
-    usedDates.add(entryDate);
   }
   return hits;
 }
@@ -1292,207 +1264,85 @@ app.get("/api/history-tracker", async (req, res) => {
       return res.json(historyTrackerCache.data);
     }
 
-    const targetPct = 2, slPct = 1;
     const allHits = [];
 
-    // 1. CSV files
+    const wlStocks = getStocks().map(s => s.symbol);
+
+    // ATR-based target/SL per stock
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const stockPctMap = {};
+    await Promise.all(wlStocks.map(async (sym) => {
+      try {
+        const skipNS = sym.startsWith('^') || sym.includes('-') || sym.includes('=');
+        const r = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${skipNS ? sym : sym + '.NS'}?range=1mo&interval=1d`, {
+          timeout: 8000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const result = r.data?.chart?.result?.[0];
+        if (!result) { stockPctMap[sym] = { targetPct: 6, slPct: 3 }; return; }
+        const q = result.indicators.quote[0];
+        const candles = [];
+        for (let i = 0; i < q.close.length; i++) {
+          if (q.high[i] != null && q.low[i] != null && q.close[i] != null)
+            candles.push({ high: q.high[i], low: q.low[i], close: q.close[i] });
+        }
+        if (candles.length < 14) { stockPctMap[sym] = { targetPct: 6, slPct: 3 }; return; }
+        const price = candles[candles.length - 1].close;
+        const atr = candles.slice(-14).reduce((s, c) => s + (c.high - c.low), 0) / 14;
+        stockPctMap[sym] = {
+          targetPct: Math.max(parseFloat(((atr * 3 / price) * 100).toFixed(2)), 1),
+          slPct: Math.max(parseFloat(((atr * 1.5 / price) * 100).toFixed(2)), 0.5)
+        };
+      } catch { stockPctMap[sym] = { targetPct: 6, slPct: 3 }; }
+    }));
+
+
+    // CSV files - NSE daily OHLC format
     const csvFiles = [
-      { file: 'ADANIPORTSNSE.csv', symbol: 'ADANIPORTS' },
-      { file: 'FIVESTARNSE.csv', symbol: 'FIVESTAR' },
+      { file: 'SUPRIYA-EQ-29-01-2026-29-04-2026.csv', symbol: 'SUPRIYA' },
     ];
     const mnths = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
     const parseNum = (s) => parseFloat((s || '').replace(/"/g, '').replace(/,/g, ''));
-    const parseDt = (s) => { const m = (s||'').trim().match(/^(\d{1,2})-(\w{3})-(\d{4})$/); return m ? m[3]+'-'+(mnths[m[2]]||'01')+'-'+m[1].padStart(2,'0') : null; };
-    for (const { file, symbol } of csvFiles) {
+    const parseDt = (s) => { const m = (s||'').trim().match(/^(\d{1,2})-(\w{3})-(\d{4})$/); if (!m) return null; const mon = mnths[m[2]]; return mon ? m[3]+'-'+mon+'-'+m[1].padStart(2,'0') : null; };
+    for (const { file: csvFile, symbol } of csvFiles) {
       try {
-        const raw = fs.readFileSync(path.join(__dirname, './data/', file), 'utf8');
-        const lines = raw.split('\n').map(l => l.trim()).filter(l => l && /^\d{1,2}-/.test(l));
-        const rows = lines.map(l => {
-          const c = l.match(/(?:"[^"]*"|[^,])+/g) || [];
+        const raw = fs.readFileSync(path.join(__dirname, './data/', csvFile), 'utf8').replace(/^\uFEFF/, '');
+        const csvLines = raw.split('\n').map(l => l.trim()).filter(l => l && /^\d{1,2}-/.test(l));
+        const rows = csvLines.map(l => {
+          const c = l.split(',').map(s => s.replace(/"/g, '').trim());
           const date = parseDt(c[0]);
           if (!date) return null;
-          return { date, open: parseNum(c[2]), high: parseNum(c[3]), low: parseNum(c[4]), close: parseNum(c[7]) };
-        }).filter(r => r && !isNaN(r.close)).reverse();
+          const open = parseNum(c[2]), high = parseNum(c[3]), low = parseNum(c[4]), close = parseNum(c[7]);
+          if (isNaN(close) || isNaN(high) || isNaN(low)) return null;
+          return { date, open, high, low, close };
+        }).filter(Boolean).reverse();
+        if (rows.length < 21) continue;
+        const { targetPct, slPct } = stockPctMap[symbol] || { targetPct: 2, slPct: 1 };
         allHits.push(...backtestRows(rows, symbol, targetPct, slPct));
-      } catch {}
+      } catch (e) { console.error('CSV error:', csvFile, e.message); }
     }
-
-    // 2. Live Yahoo - dual timeframe: 15m (5d) + 60m (1mo) for real intraday backtest
-    const n50 = getNifty50().map(s => s.symbol);
-    const nn50 = getNiftyNext50().map(s => s.symbol);
-    const wl = getStocks().map(s => s.symbol);
-    const liveSymbols = [...new Set([...n50, ...nn50, ...wl])];
+    // Live Yahoo - daily 3mo backtest, only watchlist stocks, 1 trade per stock per day
     const batchSize = 5;
-    for (let i = 0; i < liveSymbols.length; i += batchSize) {
-      const batch = liveSymbols.slice(i, i + batchSize);
+    const liveStocks = wlStocks.filter(s => !s.startsWith('^'));
+    for (let i = 0; i < liveStocks.length; i += batchSize) {
+      const batch = liveStocks.slice(i, i + batchSize);
       const batchResults = await Promise.all(batch.map(async (sym) => {
         try {
-          // Fetch both 15m and 60m OHLC data
-          const [ohlc15m, ohlc1h] = await Promise.all([
-            getStockHistory(sym, '15m', '5d', false, false, false, true),
-            getStockHistory(sym, '60m', '1mo', false, false, false, true)
-          ]);
-          if (!ohlc15m || ohlc15m.length < 25) return [];
-
-          const now = new Date();
-          const rows15m = ohlc15m.map((bar, idx) => {
-            const d = new Date(now.getTime() - (ohlc15m.length - 1 - idx) * 15 * 60 * 1000);
-            return { date: d.toISOString().slice(0, 16), open: bar.open, high: bar.high, low: bar.low, close: bar.close };
-          });
-
-          // Generate 1h signal lookup from 60m data
-          const closes1h = ohlc1h ? ohlc1h.map(b => b.close) : [];
-          const ohlcLast1h = ohlc1h && ohlc1h.length >= 2 ? ohlc1h.slice(-2).map(b => ({ high: b.high, low: b.low, close: b.close })) : [];
-          const signal1h = (closes1h.length >= 20 && ohlcLast1h.length >= 2)
-            ? generateSignal(closes1h, ohlcLast1h)
-            : { signal: 'HOLD' };
-
-          // Backtest 15m bars but only take signals confirmed by 1h
-          const hits = [];
-          const usedDates = new Set();
-          const closes15m = rows15m.map(r => r.close);
-          for (let j = 20; j < rows15m.length; j++) {
-            const entryDate = rows15m[j].date.slice(0, 10);
-            if (usedDates.has(entryDate)) continue; // 1 trade per day
-
-            const data15m = { closes: closes15m.slice(0, j + 1), ohlc: rows15m.slice(Math.max(0, j - 1), j + 1).map(r => ({ high: r.high, low: r.low, close: r.close })) };
-            const result15m = generateSignal(data15m.closes, data15m.ohlc);
-            if (result15m.signal !== 'BUY' && result15m.signal !== 'SELL') continue;
-            // Dual-timeframe: 1h must agree
-            if (result15m.signal !== signal1h.signal) continue;
-
-            const entry = rows15m[j].close;
-            const isBuy = result15m.signal === 'BUY';
-            const target = parseFloat((isBuy ? entry * (1 + targetPct / 100) : entry * (1 - targetPct / 100)).toFixed(2));
-            const sl = parseFloat((isBuy ? entry * (1 - slPct / 100) : entry * (1 + slPct / 100)).toFixed(2));
-            for (let k = j + 1; k < rows15m.length; k++) {
-              const h = rows15m[k].high, l = rows15m[k].low;
-              if (isBuy) {
-                if (h >= target) { hits.push({ date: rows15m[j].date, exitDate: rows15m[k].date, symbol: sym, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); usedDates.add(entryDate); break; }
-                if (l <= sl) { hits.push({ date: rows15m[j].date, exitDate: rows15m[k].date, symbol: sym, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); usedDates.add(entryDate); break; }
-              } else {
-                if (l <= target) { hits.push({ date: rows15m[j].date, exitDate: rows15m[k].date, symbol: sym, signal: 'SELL', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: targetPct }); usedDates.add(entryDate); break; }
-                if (h >= sl) { hits.push({ date: rows15m[j].date, exitDate: rows15m[k].date, symbol: sym, signal: 'SELL', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -slPct }); usedDates.add(entryDate); break; }
-              }
-            }
-            usedDates.add(entryDate);
-          }
-          return hits;
+          const ohlc = await getStockHistory(sym, '1d', '3mo', false, false, false, true);
+          if (!ohlc || ohlc.length < 25) return [];
+          const { targetPct, slPct } = stockPctMap[sym] || { targetPct: 2, slPct: 1 };
+          const rows = ohlc.map((bar, idx) => ({ date: `day-${idx}`, open: bar.open, high: bar.high, low: bar.low, close: bar.close }));
+          return backtestRows(rows, sym, targetPct, slPct);
         } catch { return []; }
       }));
       batchResults.forEach(h => allHits.push(...h));
     }
-
-    // 3. Options - CSV files with real OHLC data (30% target / 10% SL)
-    const optTargetPct = 30, optSlPct = 10;
-    const optionCsvFiles = [
-      { file: 'NIFTY23800PE13Apr26.csv', symbol: 'NIFTY 23800 PE (13Apr26)', type: 'PE' },
-      { file: 'NIFTY23800CE13Apr26.csv', symbol: 'NIFTY 23800 CE (13Apr26)', type: 'CE' },
-    ];
-    for (const { file, symbol, type: optType } of optionCsvFiles) {
-      try {
-        const raw = fs.readFileSync(path.join(__dirname, './data/', file), 'utf8');
-        const lines = raw.split('\n').map(l => l.trim()).filter(l => l && /^NIFTY/.test(l));
-        const optMnths = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
-        const parseOptDate = (s) => {
-          const m = (s||'').trim().match(/^(\d{1,2})-(\w{3})-(\d{4})$/);
-          return m ? m[3]+'-'+(optMnths[m[2]]||'01')+'-'+m[1].padStart(2,'0') : null;
-        };
-        const parseOptNum = (s) => { const v = (s||'').trim(); if (v === '-' || v === '') return null; const n = parseFloat(v.replace(/,/g,'')); return isNaN(n) ? null : n; };
-
-        const rows = lines.map(l => {
-          const cols = l.split(',').map(c => c.trim());
-          const date = parseOptDate(cols[1]);
-          if (!date) return null;
-          const open = parseOptNum(cols[5]);
-          const high = parseOptNum(cols[6]);
-          const low = parseOptNum(cols[7]);
-          const close = parseOptNum(cols[8]);
-          const underlying = parseOptNum(cols[16]);
-          if (!close || !underlying) return null;
-          return { date, open: open || close, high: high || close, low: low || close, close, underlying };
-        }).filter(Boolean).reverse(); // oldest first
-
-        if (rows.length < 3) continue;
-
-        // Backtest: for each day, check if option price hits target or SL in subsequent days
-        // CE entry when underlying rising (close > prev close), PE entry when underlying falling
-        const usedOptDates = new Set();
-        for (let j = 1; j < rows.length - 1; j++) {
-          const entryDate = rows[j].date;
-          if (usedOptDates.has(entryDate)) continue; // 1 trade per day
-
-          const prevUnderlying = rows[j-1].underlying;
-          const currUnderlying = rows[j].underlying;
-          const shouldBuy = optType === 'CE'
-            ? (currUnderlying > prevUnderlying)
-            : (currUnderlying < prevUnderlying);
-          if (!shouldBuy) continue;
-
-          const entry = rows[j].close;
-          const target = parseFloat((entry * (1 + optTargetPct / 100)).toFixed(2));
-          const sl = parseFloat((entry * (1 - optSlPct / 100)).toFixed(2));
-
-          for (let k = j + 1; k < rows.length; k++) {
-            if (rows[k].high >= target) {
-              allHits.push({ date: rows[j].date, exitDate: rows[k].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct });
-              usedOptDates.add(entryDate);
-              break;
-            }
-            if (rows[k].low <= sl) {
-              allHits.push({ date: rows[j].date, exitDate: rows[k].date, symbol, signal: 'BUY', entry, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct });
-              usedOptDates.add(entryDate);
-              break;
-            }
-          }
-          usedOptDates.add(entryDate);
-        }
-      } catch (err) { console.error('Option CSV error:', file, err.message); }
-    }
-
-    // 4. Options - option-history.json (existing logic)
-    try {
-      const optHistory = JSON.parse(fs.readFileSync(optionHistoryPath, 'utf8'));
-      const optBySymbol = {};
-      optHistory.forEach(e => { if (!optBySymbol[e.symbol]) optBySymbol[e.symbol] = []; optBySymbol[e.symbol].push(e); });
-      Object.entries(optBySymbol).forEach(([sym, entries]) => {
-        entries.sort((a, b) => a.date.localeCompare(b.date));
-        const usedDates = new Set();
-        entries.forEach((entry, idx) => {
-          if (entry.signal !== 'BUY' && entry.signal !== 'SELL') return;
-          const entryDate = entry.date.slice(0, 10);
-          if (usedDates.has(entryDate)) return; // 1 trade per day
-          const price = entry.ltp;
-          if (!price) return;
-          const isBuy = entry.signal === 'BUY';
-          const target = parseFloat((isBuy ? price * (1 + optTargetPct / 100) : price * (1 - optTargetPct / 100)).toFixed(2));
-          const sl = parseFloat((isBuy ? price * (1 - optSlPct / 100) : price * (1 + optSlPct / 100)).toFixed(2));
-          for (let j = idx + 1; j < entries.length; j++) {
-            const ltp = entries[j].ltp;
-            const high = entries[j].high || ltp;
-            const low = entries[j].low || ltp;
-            if (isBuy) {
-              if (high >= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); usedDates.add(entryDate); return; }
-              if (low <= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'BUY', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); usedDates.add(entryDate); return; }
-            } else {
-              if (low <= target) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: target, result: 'TARGET', pnlPct: optTargetPct }); usedDates.add(entryDate); return; }
-              if (high >= sl) { allHits.push({ date: entry.date, exitDate: entries[j].date, symbol: sym, signal: 'SELL', entry: price, target, sl, exitPrice: sl, result: 'SL', pnlPct: -optSlPct }); usedDates.add(entryDate); return; }
-            }
-          }
-          usedDates.add(entryDate);
-        });
-      });
-    } catch {}
-
-    // Use regex to match option symbols: must have CE/PE preceded by space or digit (not part of stock name)
-    const isOptionSymbol = (s) => /\d\s*(CE|PE)/.test(s) || / (CE|PE)[ (]/.test(s) || s.includes('(Opt)');
-    const optionHits = allHits.filter(h => isOptionSymbol(h.symbol));
-    const stockHits = allHits.filter(h => !isOptionSymbol(h.symbol));
+    const watchlistSymbols = new Set(wlStocks);
+    const stockHits = allHits.filter(h => watchlistSymbols.has(h.symbol));
     stockHits.sort((a, b) => a.date.localeCompare(b.date));
-    optionHits.sort((a, b) => a.date.localeCompare(b.date));
     const result = {
-      stocks: { hits: stockHits, targetCount: stockHits.filter(h => h.result === 'TARGET').length, slCount: stockHits.filter(h => h.result === 'SL').length, total: stockHits.length },
-      options: { hits: optionHits, targetCount: optionHits.filter(h => h.result === 'TARGET').length, slCount: optionHits.filter(h => h.result === 'SL').length, total: optionHits.length }
+      stocks: { hits: stockHits, targetCount: stockHits.filter(h => h.result === 'TARGET').length, slCount: stockHits.filter(h => h.result === 'SL').length, total: stockHits.length }
     };
     historyTrackerCache = { data: result, date: today };
     res.json(result);
@@ -1855,6 +1705,116 @@ app.put('/api/index-levels/:symbol', (req, res) => {
 
 // Support & Resistance Levels
 const { getLevels, getWatchlistAnalysis } = require('./services/levelsService');
+
+// Watchlist Stock Analysis (EMA Pro, RSI, Volume, Up Chance, Target, SL)
+app.get('/api/watchlist-analysis', optionalAuth, async (req, res) => {
+  try {
+    const { EMA, RSI } = require('technicalindicators');
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+
+    let watchlistSymbols = getStocks().map(s => s.symbol);
+    if (req.user) {
+      const user = getUserByMobile(req.user.mobile);
+      const userWl = (user?.watchlist || []).map(w => w.symbol);
+      watchlistSymbols = [...new Set([...watchlistSymbols, ...userWl])];
+    }
+    if (!watchlistSymbols.length) return res.json([]);
+
+    const fetchOHLC = async (symbol, interval, range) => {
+      const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
+      const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
+      const r = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(fullSymbol)}?range=${range}&interval=${interval}`, {
+        timeout: 10000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      const result = r.data?.chart?.result?.[0];
+      if (!result) return null;
+      const q = result.indicators.quote[0];
+      const meta = result.meta;
+      const candles = [];
+      for (let i = 0; i < q.close.length; i++) {
+        if (q.open[i] != null && q.high[i] != null && q.low[i] != null && q.close[i] != null)
+          candles.push({ open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume?.[i] || 0 });
+      }
+      const price = meta.regularMarketPrice || (candles.length ? candles[candles.length - 1].close : 0);
+      const prevClose = meta.chartPreviousClose || 0;
+      const avgVol = candles.length >= 20 ? candles.slice(-20).reduce((s, c) => s + c.volume, 0) / 20 : 0;
+      return { candles, price, prevClose, avgVol };
+    };
+
+    const results = await Promise.all(watchlistSymbols.map(async (symbol) => {
+      try {
+        const [daily, weekly, monthly] = await Promise.all([
+          fetchOHLC(symbol, '1d', '1y'),
+          fetchOHLC(symbol, '1wk', '2y'),
+          fetchOHLC(symbol, '1mo', '5y'),
+        ]);
+        if (!daily || daily.candles.length < 20) return null;
+
+        const closes = daily.candles.map(c => c.close);
+        const price = parseFloat(daily.price.toFixed(2));
+
+        // EMA Pro (7 EMA) for daily/weekly/monthly
+        const ema7Daily = daily.candles.length >= 7 ? parseFloat(EMA.calculate({ period: 7, values: closes }).slice(-1)[0].toFixed(2)) : null;
+        const ema7Weekly = weekly && weekly.candles.length >= 7 ? parseFloat(EMA.calculate({ period: 7, values: weekly.candles.map(c => c.close) }).slice(-1)[0].toFixed(2)) : null;
+        const ema7Monthly = monthly && monthly.candles.length >= 7 ? parseFloat(EMA.calculate({ period: 7, values: monthly.candles.map(c => c.close) }).slice(-1)[0].toFixed(2)) : null;
+
+        // 50 & 200 EMA
+        const ema50 = closes.length >= 50 ? EMA.calculate({ period: 50, values: closes }).slice(-1)[0] : null;
+        const ema200 = closes.length >= 200 ? EMA.calculate({ period: 200, values: closes }).slice(-1)[0] : null;
+        const ema50Above = ema50 != null ? price >= ema50 : null;
+        const ema200Above = ema200 != null ? price >= ema200 : null;
+
+        // RSI
+        const rsiValues = closes.length >= 15 ? RSI.calculate({ period: 14, values: closes }) : [];
+        const rsi = rsiValues.length ? parseFloat(rsiValues[rsiValues.length - 1].toFixed(1)) : null;
+
+        // Volume
+        const lastVol = daily.candles[daily.candles.length - 1].volume;
+        const volume = daily.avgVol > 0 ? (lastVol >= daily.avgVol * 1.2 ? 'Good' : lastVol < daily.avgVol * 0.7 ? 'Bad' : 'Average') : 'Average';
+
+        // Up Chance score (0-100)
+        let score = 0;
+        if (ema7Daily && price >= ema7Daily) score += 20;
+        if (ema7Weekly && price >= ema7Weekly) score += 20;
+        if (ema7Monthly && price >= ema7Monthly) score += 20;
+        if (ema50Above) score += 15;
+        if (ema200Above) score += 15;
+        if (rsi && rsi >= 50 && rsi <= 70) score += 10;
+        const upChancePct = score;
+
+        // Status
+        let status = 'Weak';
+        if (score >= 90) status = 'Strong Buy';
+        else if (score >= 70) status = 'Momentum Buy';
+        else if (score >= 50) status = 'Buy on Dip';
+        else if (score >= 30) status = 'Strong Support';
+        else if (score >= 20) status = 'Hold';
+
+        // Target & Stop Loss (based on ATR-like range)
+        const recentCandles = daily.candles.slice(-14);
+        const atr = recentCandles.reduce((s, c) => s + (c.high - c.low), 0) / recentCandles.length;
+        const targetPct = parseFloat(((atr * 3 / price) * 100).toFixed(1));
+        const stopLossPct = parseFloat(((atr * 1.5 / price) * 100).toFixed(1));
+        const target = parseFloat((price * (1 + targetPct / 100)).toFixed(2));
+        const stopLoss = parseFloat((price * (1 - stopLossPct / 100)).toFixed(2));
+
+        // Valuation (simple P/B proxy via 52w position)
+        const high52 = Math.max(...closes.slice(-252));
+        const low52 = Math.min(...closes.slice(-252));
+        const pos52 = high52 !== low52 ? (price - low52) / (high52 - low52) : 0.5;
+        const valuation = pos52 < 0.35 ? 'Undervalued' : pos52 > 0.75 ? 'Overvalued' : 'Fair Value';
+
+        return { symbol, price, ema7Daily, ema7Weekly, ema7Monthly, ema50Above, ema200Above, rsi, volume, status, upChancePct, target, targetPct, stopLoss, stopLossPct: -stopLossPct, valuation };
+      } catch { return null; }
+    }));
+
+    res.json(results.filter(Boolean));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch watchlist analysis' });
+  }
+});
 
 app.get("/api/levels", optionalAuth, async (req, res) => {
   try {
