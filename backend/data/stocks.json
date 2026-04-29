@@ -1,8 +1,5 @@
 [
   {
-    "symbol": "ASHOKA"
-  },
-  {
     "symbol": "SATIN"
   },
   {
@@ -12,46 +9,25 @@
     "symbol": "JKPAPER"
   },
   {
-    "symbol": "PNCINFRA"
-  },
-  {
     "symbol": "SURYODAY"
   },
   {
     "symbol": "VIKRAMSOLR"
   },
   {
-    "symbol": "UDS"
-  },
-  {
     "symbol": "MUTHOOTMF"
-  },
-  {
-    "symbol": "PRICOLLTD"
   },
   {
     "symbol": "SUPRIYA"
   },
   {
-    "symbol": "ADVAIT"
-  },
-  {
-    "symbol": "TRANSRAILL"
-  },
-  {
-    "symbol": "GANESHCP"
-  },
-  {
     "symbol": "PRICOLLTD"
   },
   {
-    "symbol": "CHENNPETRO"
+    "symbol": "GULPOLY"
   },
   {
-    "symbol": "MBAPL"
-  },
-  {
-    "symbol": "SBICARD"
+    "symbol": "SOLEX"
   },
   {
     "symbol": "^NSEI"
@@ -61,11 +37,5 @@
   },
   {
     "symbol": "^NSEBANK"
-  },
-  {
-    "symbol": "GULPOLY"
-  },
-  {
-    "symbol": "SOLEX"
   }
 ]
