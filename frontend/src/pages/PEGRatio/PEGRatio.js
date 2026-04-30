@@ -55,8 +55,9 @@ export default function PEGRatio() {
     if (loading || !data.length) return
     const isMarketOpen = () => {
       const now = new Date()
-      const h = now.getHours(), m = now.getMinutes()
-      const day = now.getDay()
+      const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+      const h = ist.getHours(), m = ist.getMinutes()
+      const day = ist.getDay()
       if (day === 0 || day === 6) return false
       return (h * 60 + m) >= 555 && (h * 60 + m) <= 930
     }
@@ -332,7 +333,7 @@ export default function PEGRatio() {
                     <tr key={i} style={{ verticalAlign: 'middle' }}>
                       <td className="fw-bold">{row.name}</td>
                       <td>{row.marketCap ? (row.marketCap >= 100000 ? `${(row.marketCap / 100000).toFixed(1)}L Cr` : row.marketCap >= 1000 ? `${(row.marketCap / 1000).toFixed(1)}K Cr` : `${row.marketCap} Cr`) : '-'}</td>
-                      <td>₹{row.price || '-'}</td>
+                      <td>{row.price ? `₹${row.price}` : '-'}</td>
                       <td>{renderEpsCell(row)}</td>
                       <td>{renderPeCell(row)}</td>
                       <td>{renderDivCell(row)}</td>
@@ -366,7 +367,7 @@ export default function PEGRatio() {
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <div>
                         <div style={{ fontSize: '12px', color: textMuted }}>Price</div>
-                        <div className="fw-bold" style={{ fontSize: '18px', color: text }}>₹{row.price || '-'}</div>
+                        <div className="fw-bold" style={{ fontSize: '18px', color: text }}>{row.price ? `₹${row.price}` : '-'}</div>
                       </div>
                       <div className="text-end">
                         <div style={{ fontSize: '12px', color: textMuted }}>Fair Price</div>
