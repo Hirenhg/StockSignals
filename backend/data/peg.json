@@ -3,7 +3,8 @@
     "name": "5PAISA",
     "category": "PEG",
     "epsGrowth": 20.77,
-    "manualDivYield": 0
+    "manualDivYield": 0,
+    "manualPE": 35.6
   },
   {
     "name": "AAVAS",
@@ -15,13 +16,16 @@
   {
     "name": "APTUS",
     "category": "Watchlist",
-    "epsGrowth": 21.87
+    "epsGrowth": 21.87,
+    "manualDivYield": 1.73,
+    "manualPE": 14.65
   },
   {
     "name": "ASHOKA",
     "category": "Watchlist",
     "epsGrowth": 49.79,
-    "manualDivYield": 0
+    "manualDivYield": 0,
+    "manualPE": 3.60
   },
   {
     "name": "AXISBANK",
@@ -48,43 +52,57 @@
     "name": "CEIGALL",
     "category": "Watchlist",
     "epsGrowth": 30.89,
-    "manualDivYield": 0
+    "manualDivYield": 0,
+    "manualPE": 22.74
   },
   {
     "name": "CGCL",
     "category": "Watchlist",
-    "epsGrowth": 35.29
+    "epsGrowth": 35.29,
+    "manualDivYield": 0.11,
+    "manualPE": 18.90
   },
   {
     "name": "FIVESTAR",
     "category": "Watchlist",
-    "epsGrowth": 13.86
+    "epsGrowth": 13.86,
+    "manualDivYield": 0.42,
+    "manualPE": 12.88
   },
   {
     "name": "GAIL",
     "category": "Watchlist",
-    "epsGrowth": 20.32
+    "epsGrowth": 20.32,
+    "manualDivYield": 4.59,
+    "manualPE": 12.49
   },
   {
     "name": "GICRE",
     "category": "Watchlist",
-    "epsGrowth": 17.08
+    "epsGrowth": 17.08,
+    "manualDivYield": 2.54,
+    "manualPE": 7.17
   },
   {
     "name": "HAPPSTMNDS",
     "category": "Watchlist",
-    "epsGrowth": 32.79
+    "epsGrowth": 32.79,
+    "manualDivYield": 1.61,
+    "manualPE": 27.43
   },
   {
     "name": "INOXWIND",
     "category": "Watchlist",
     "epsGrowth": 56.72,
-    "manualDivYield": 0
+    "manualDivYield": 0,
+    "manualPE": 34.76
   },
   {
     "name": "JKPAPER",
     "category": "Watchlist",
-    "epsGrowth": 114.19
+    "epsGrowth": 114.19,
+    "manualDivYield": 1.39,
+    "manualPE": 24.37
   },
   {
     "name": "KNRCON",
@@ -96,12 +114,16 @@
   {
     "name": "LICHSGFIN",
     "category": "PEG",
-    "epsGrowth": 4.3
+    "epsGrowth": 4.3,
+    "manualDivYield": 1.80,
+    "manualPE": 5.56
   },
   {
     "name": "MOTHERSON",
     "category": "Watchlist",
-    "epsGrowth": 38.05
+    "epsGrowth": 38.05,
+    "manualDivYield": 0.47,
+    "manualPE": 36.29
   },
   {
     "name": "NORTHARC",
@@ -120,13 +142,16 @@
   {
     "name": "PNCINFRA",
     "category": "Watchlist",
-    "epsGrowth": 37.23
+    "epsGrowth": 37.23,
+    "manualDivYield": 0.28,
+    "manualPE": 13.33
   },
   {
     "name": "SURYODAY",
     "category": "Watchlist",
     "manualDivYield": 0,
-    "epsGrowth": 73.65
+    "epsGrowth": 73.65,
+    "manualPE": 23.73
   },
   {
     "name": "VIKRAMSOLR",
@@ -160,7 +185,8 @@
     "name": "ADANIENT",
     "category": "Watchlist",
     "epsGrowth": 62.32,
-    "manualDivYield": 0.07
+    "manualDivYield": 0.07,
+    "manualPE": 98.70
   },
   {
     "name": "ADANIPORTS",
@@ -172,7 +198,9 @@
   {
     "name": "ATGL",
     "category": "Adani",
-    "epsGrowth": 5
+    "epsGrowth": 8,
+    "manualPE": 110,
+    "manualDivYield": 0.04
   },
   {
     "name": "AWL",
@@ -206,7 +234,8 @@
     "name": "ADANIENSOL",
     "category": "Adani",
     "manualDivYield": 0,
-    "epsGrowth": 46.15
+    "epsGrowth": 46.15,
+    "manualPE": 70.60
   },
   {
     "name": "TMCV",
@@ -225,45 +254,58 @@
   {
     "name": "TATASTEEL",
     "category": "Tata",
-    "epsGrowth": 25.63
+    "epsGrowth": 25.63,
+    "manualDivYield": 1.70,
+    "manualPE": 27
   },
   {
     "name": "TATACONSUM",
     "category": "Tata",
-    "epsGrowth": 24.93
+    "epsGrowth": 24.93,
+    "manualDivYield": 0.72,
+    "manualPE": 78.10
   },
   {
     "name": "TATAPOWER",
     "category": "Tata",
-    "epsGrowth": 27.88
+    "epsGrowth": 27.88,
+    "manualDivYield": 0.51,
+    "manualPE": 37.60
   },
   {
     "name": "TATACOMM",
     "category": "Watchlist",
     "manualDivYield": 1.72,
-    "epsGrowth": 50.08
+    "epsGrowth": 50.08,
+    "manualPE": 41.0
   },
   {
     "name": "TATAINVEST",
     "category": "Tata",
     "manualPE": 72.9,
     "manualDivYield": 0.46,
-    "epsGrowth": 5
+    "epsGrowth": 16.5
   },
   {
     "name": "INDHOTEL",
     "category": "Tata",
-    "epsGrowth": 18.66
+    "epsGrowth": 18.66,
+    "manualPE": 50.1,
+    "manualDivYield": 0.35
   },
   {
     "name": "TCS",
     "category": "Tata",
-    "epsGrowth": 8.15
+    "epsGrowth": 8.15,
+    "manualPE": 17.1,
+    "manualDivYield": 2.43
   },
   {
     "name": "TITAN",
     "category": "Tata",
-    "epsGrowth": 22.58
+    "epsGrowth": 22.58,
+    "manualPE": 79.8,
+    "manualDivYield": 0.25
   },
   {
     "name": "TRENT",
@@ -275,36 +317,44 @@
   {
     "name": "TATACHEM",
     "category": "Tata",
-    "epsGrowth": 5
+    "epsGrowth": 5,
+    "manualPE": 75.8,
+    "manualDivYield": 1.36
   },
   {
     "name": "VOLTAS",
     "category": "Tata",
-    "epsGrowth": 71.98
+    "epsGrowth": 71.98,
+    "manualPE": 91.30,
+    "manualDivYield": 0.49
   },
   {
     "name": "TATATECH",
     "category": "Tata",
-    "manualDivYield": 1.54,
+    "manualDivYield": 1.44,
+    "manualPE": 36,
     "epsGrowth": 23.99
   },
   {
     "name": "NELCO",
     "category": "Tata",
-    "manualPE": 2479,
-    "epsGrowth": 5
+    "manualPE": 3277,
+    "epsGrowth": 5,
+    "manualDivYield": 0.14
   },
   {
     "name": "TTML",
     "category": "Tata",
     "manualDivYield": 0,
-    "manualPE": -101,
+    "manualPE": -102,
     "epsGrowth": 5
   },
   {
     "name": "RALLIS",
     "category": "Tata",
-    "epsGrowth": 5
+    "manualDivYield": 0.94,
+    "manualPE": 25.60,
+    "epsGrowth": 15
   },
   {
     "name": "TATAELXSI",
@@ -323,239 +373,316 @@
   {
     "name": "THOMASCOOK",
     "category": "Watchlist",
+    "manualPE": 17.4,
+    "manualDivYield": 0.48,
     "epsGrowth": 31
   },
   {
     "name": "VEDL",
     "category": "Watchlist",
+    "manualPE": 12.3,
+    "manualDivYield": 16,
     "epsGrowth": 41.33
   },
   {
     "name": "RELIANCE",
     "category": "Nifty50",
+    "manualPE": 24.0,
+    "manualDivYield": 0.38,
     "epsGrowth": 5.57
   },
   {
     "name": "HDFCBANK",
     "category": "Nifty50",
+    "manualPE": 15.6,
+    "manualDivYield": 1.68,
     "epsGrowth": 11.31
   },
   {
     "name": "INFY",
     "category": "Nifty50",
+    "manualPE": 15.9,
+    "manualDivYield": 4.06,
     "epsGrowth": 8.48
   },
   {
     "name": "ICICIBANK",
     "category": "Nifty50",
+    "manualPE": 16.7,
+    "manualDivYield": 0.87,
     "epsGrowth": 14.11
   },
   {
     "name": "HINDUNILVR",
     "category": "Nifty50",
+    "manualPE": 48.4,
+    "manualDivYield": 1.91,
     "epsGrowth": 9.92
   },
   {
     "name": "ITC",
     "category": "Nifty50",
-    "manualDivYield": 4.85,
-    "manualPE": 18,
+    "manualDivYield": 4.56,
+    "manualPE": 19.1,
     "epsGrowth": 1.4
   },
   {
     "name": "SBIN",
     "category": "Nifty50",
+    "manualPE": 12.2,
+    "manualDivYield": 1.49,
     "epsGrowth": 7.54
   },
   {
     "name": "BHARTIARTL",
     "category": "Nifty50",
+    "manualPE": 37.5,
+    "manualDivYield": 0.85,
     "epsGrowth": 45.2
   },
   {
     "name": "KOTAKBANK",
     "category": "Nifty50",
+    "manualPE": 20.3,
+    "manualDivYield": 0.13,
     "epsGrowth": 22.01
   },
   {
     "name": "LT",
     "category": "Nifty50",
+    "manualPE": 32.4,
+    "manualDivYield": 0.85,
     "epsGrowth": 21
   },
   {
     "name": "WIPRO",
     "category": "Nifty50",
+    "manualPE": 16.0,
+    "manualDivYield": 5.48,
     "epsGrowth": 5.6
   },
   {
     "name": "ASIANPAINT",
     "category": "Nifty50",
+    "manualPE": 57.5,
+    "manualDivYield": 1.01,
     "epsGrowth": 11.34
   },
   {
     "name": "HCLTECH",
     "category": "Nifty50",
+    "manualPE": 18.7,
+    "manualDivYield": 4.50,
     "epsGrowth": 14.2
   },
   {
     "name": "MARUTI",
     "category": "Nifty50",
+    "manualPE": 28.5,
+    "manualDivYield": 1.01,
     "epsGrowth": 15.95
   },
   {
     "name": "BAJFINANCE",
     "category": "Nifty50",
+    "manualPE": 30.4,
+    "manualDivYield": 0.47,
     "epsGrowth": 31.14
   },
   {
     "name": "SUNPHARMA",
     "category": "Nifty50",
+    "manualPE": 35.8,
+    "manualDivYield": 0.88,
     "epsGrowth": 12.31
   },
   {
     "name": "TECHM",
     "category": "Nifty50",
+    "manualPE": 28.9,
+    "manualDivYield": 3.05,
     "epsGrowth": 29.89
   },
   {
     "name": "NESTLEIND",
     "category": "Nifty50",
+    "manualPE": 81.5,
+    "manualDivYield": 0.93,
     "epsGrowth": 18.42
   },
   {
     "name": "POWERGRID",
     "category": "Nifty50",
+    "manualPE": 19.1,
+    "manualDivYield": 2.83,
     "epsGrowth": 8.66
   },
   {
     "name": "ULTRACEMCO",
     "category": "Nifty50",
+    "manualPE": 41.3,
+    "manualDivYield": 0.67,
     "epsGrowth": 36.65
   },
   {
     "name": "ONGC",
     "category": "Nifty50",
-    "epsGrowth": 14.65,
-    "manualPE": 9.21,
+    "epsGrowth": 9.92,
+    "manualPE": 4.09,
     "manualDivYield": 4.43
   },
   {
     "name": "JSWSTEEL",
     "category": "Nifty50",
+    "manualPE": 39.6,
+    "manualDivYield": 0.22,
     "epsGrowth": 60.32
   },
   {
     "name": "NTPC",
     "category": "Nifty50",
-    "manualPE": 15.2,
-    "manualDivYield": 2.21,
+    "manualPE": 16.0,
+    "manualDivYield": 2.09,
     "epsGrowth": 5.33
   },
   {
     "name": "INDUSINDBK",
     "category": "Nifty50",
     "epsGrowth": 425.16,
-    "manualDivYield": 0,
-    "manualPE": -30
+    "manualDivYield": 0.16,
+    "manualPE": 80.2
   },
   {
     "name": "M&M",
     "category": "Nifty50",
+    "manualPE": 24.1,
+    "manualDivYield": 0.82,
     "epsGrowth": 12.13
   },
   {
     "name": "COALINDIA",
     "category": "Nifty50",
+    "manualPE": 9.54,
+    "manualDivYield": 0.50,
     "epsGrowth": 3.06
   },
   {
     "name": "BAJAJFINSV",
     "category": "Nifty50",
+    "manualPE": 28.2,
+    "manualDivYield": 0.06,
     "epsGrowth": 22.44
   },
   {
     "name": "HINDALCO",
     "category": "Nifty50",
+    "manualPE": 13.5,
+    "manualDivYield": 0.48,
     "epsGrowth": 5.9
   },
   {
     "name": "DRREDDY",
     "category": "Nifty50",
     "epsGrowth": 20,
-    "manualPE": 19.5,
-    "manualDivYield": 0.62
+    "manualPE": 19.8,
+    "manualDivYield": 0.60
   },
   {
     "name": "GRASIM",
     "category": "Nifty50",
+    "manualPE": 41.2,
+    "manualDivYield": 0.36,
     "epsGrowth": 42.87
   },
   {
     "name": "DIVISLAB",
     "category": "Nifty50",
+    "manualPE": 68.1,
+    "manualDivYield": 0.46,
     "epsGrowth": 20.55
   },
   {
     "name": "BRITANNIA",
     "category": "Nifty50",
+    "manualPE": 57.1,
+    "manualDivYield": 1.31,
     "epsGrowth": 14.6
   },
   {
     "name": "HEROMOTOCO",
     "category": "Nifty50",
-    "manualPE": 19.1,
-    "manualDivYield": 3.12,
+    "manualPE": 18.4,
+    "manualDivYield": 3.24,
     "epsGrowth": 11.28
   },
   {
     "name": "CIPLA",
     "category": "Nifty50",
+    "manualPE": 22.2,
+    "manualDivYield": 0.99,
     "epsGrowth": 6.45
   },
   {
     "name": "UPL",
     "category": "Nifty50",
+    "manualPE": 28.5,
+    "manualDivYield": 0.93,
     "epsGrowth": 46.11
   },
   {
     "name": "SBILIFE",
     "category": "Nifty50",
+    "manualPE": 73.9,
+    "manualDivYield": 0.15,
     "epsGrowth": 17.3
   },
   {
     "name": "EICHERMOT",
     "category": "Nifty50",
+    "manualPE": 36.1,
+    "manualDivYield": 0.98,
     "epsGrowth": 15.34
   },
   {
     "name": "BPCL",
     "category": "Nifty50",
-    "epsGrowth": -26.31
+    "manualPE": 5.22,
+    "manualDivYield": 5.82,
+    "epsGrowth": 8
   },
   {
     "name": "APOLLOHOSP",
     "category": "Nifty50",
+    "manualPE": 60.5,
+    "manualDivYield": 0.25,
     "epsGrowth": 25.57
   },
   {
     "name": "SHREECEM",
     "category": "Nifty50",
+    "manualPE": 48.7,
+    "manualDivYield": 0.45,
     "epsGrowth": 30.65
   },
   {
     "name": "HDFCLIFE",
     "category": "Nifty50",
+    "manualPE": 66.2,
+    "manualDivYield": 0.36,
     "epsGrowth": 18.98
   },
   {
     "name": "LICI",
     "category": "NiftyNext50",
+    "manualPE": 9.52,
+    "manualDivYield": 1.50,
     "epsGrowth": 5
   },
   {
     "name": "SATIN",
     "category": "PEG",
     "manualDivYield": 0,
-    "epsGrowth": 50
+    "epsGrowth": 50,
+    "manualPE": 10.1
   }
 ]
