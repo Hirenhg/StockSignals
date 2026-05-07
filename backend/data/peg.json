@@ -1,12 +1,5 @@
 [
   {
-    "name": "5PAISA",
-    "category": "PEG",
-    "epsGrowth": 20.77,
-    "manualDivYield": 0,
-    "manualPE": 35.6
-  },
-  {
     "name": "AAVAS",
     "category": "PEG",
     "epsGrowth": 21.81,
@@ -25,7 +18,7 @@
     "category": "Watchlist",
     "epsGrowth": 49.79,
     "manualDivYield": 0,
-    "manualPE": 3.60
+    "manualPE": 3.6
   },
   {
     "name": "AXISBANK",
@@ -60,7 +53,7 @@
     "category": "Watchlist",
     "epsGrowth": 35.29,
     "manualDivYield": 0.11,
-    "manualPE": 18.90
+    "manualPE": 18.9
   },
   {
     "name": "FIVESTAR",
@@ -110,13 +103,6 @@
     "epsGrowth": 81.55,
     "manualPE": 5.76,
     "manualDivYield": 0.22
-  },
-  {
-    "name": "LICHSGFIN",
-    "category": "PEG",
-    "epsGrowth": 4.3,
-    "manualDivYield": 1.80,
-    "manualPE": 5.56
   },
   {
     "name": "MOTHERSON",
@@ -186,7 +172,7 @@
     "category": "Watchlist",
     "epsGrowth": 62.32,
     "manualDivYield": 0.07,
-    "manualPE": 98.70
+    "manualPE": 98.7
   },
   {
     "name": "ADANIPORTS",
@@ -235,7 +221,7 @@
     "category": "Adani",
     "manualDivYield": 0,
     "epsGrowth": 46.15,
-    "manualPE": 70.60
+    "manualPE": 70.6
   },
   {
     "name": "TMCV",
@@ -255,7 +241,7 @@
     "name": "TATASTEEL",
     "category": "Tata",
     "epsGrowth": 25.63,
-    "manualDivYield": 1.70,
+    "manualDivYield": 1.7,
     "manualPE": 27
   },
   {
@@ -263,21 +249,21 @@
     "category": "Tata",
     "epsGrowth": 24.93,
     "manualDivYield": 0.72,
-    "manualPE": 78.10
+    "manualPE": 78.1
   },
   {
     "name": "TATAPOWER",
     "category": "Tata",
     "epsGrowth": 27.88,
     "manualDivYield": 0.51,
-    "manualPE": 37.60
+    "manualPE": 37.6
   },
   {
     "name": "TATACOMM",
     "category": "Watchlist",
     "manualDivYield": 1.72,
     "epsGrowth": 50.08,
-    "manualPE": 41.0
+    "manualPE": 41
   },
   {
     "name": "TATAINVEST",
@@ -325,7 +311,7 @@
     "name": "VOLTAS",
     "category": "Tata",
     "epsGrowth": 71.98,
-    "manualPE": 91.30,
+    "manualPE": 91.3,
     "manualDivYield": 0.49
   },
   {
@@ -353,7 +339,7 @@
     "name": "RALLIS",
     "category": "Tata",
     "manualDivYield": 0.94,
-    "manualPE": 25.60,
+    "manualPE": 25.6,
     "epsGrowth": 15
   },
   {
@@ -387,7 +373,7 @@
   {
     "name": "RELIANCE",
     "category": "Nifty50",
-    "manualPE": 24.0,
+    "manualPE": 24,
     "manualDivYield": 0.38,
     "epsGrowth": 5.57
   },
@@ -457,7 +443,7 @@
   {
     "name": "WIPRO",
     "category": "Nifty50",
-    "manualPE": 16.0,
+    "manualPE": 16,
     "manualDivYield": 5.48,
     "epsGrowth": 5.6
   },
@@ -472,7 +458,7 @@
     "name": "HCLTECH",
     "category": "Nifty50",
     "manualPE": 18.7,
-    "manualDivYield": 4.50,
+    "manualDivYield": 4.5,
     "epsGrowth": 14.2
   },
   {
@@ -541,7 +527,7 @@
   {
     "name": "NTPC",
     "category": "Nifty50",
-    "manualPE": 16.0,
+    "manualPE": 16,
     "manualDivYield": 2.09,
     "epsGrowth": 5.33
   },
@@ -563,7 +549,7 @@
     "name": "COALINDIA",
     "category": "Nifty50",
     "manualPE": 9.54,
-    "manualDivYield": 0.50,
+    "manualDivYield": 0.5,
     "epsGrowth": 3.06
   },
   {
@@ -585,7 +571,7 @@
     "category": "Nifty50",
     "epsGrowth": 20,
     "manualPE": 19.8,
-    "manualDivYield": 0.60
+    "manualDivYield": 0.6
   },
   {
     "name": "GRASIM",
@@ -675,7 +661,7 @@
     "name": "LICI",
     "category": "NiftyNext50",
     "manualPE": 9.52,
-    "manualDivYield": 1.50,
+    "manualDivYield": 1.5,
     "epsGrowth": 5
   },
   {
@@ -684,5 +670,40 @@
     "manualDivYield": 0,
     "epsGrowth": 50,
     "manualPE": 10.1
+  },
+  {
+    "name": "MUTHOOTMF",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "manualPE": 25,
+    "epsGrowth": 113.24
+  },
+  {
+    "name": "NFL",
+    "category": "PEG",
+    "manualPE": 19.82,
+    "manualDivYield": 1.97,
+    "epsGrowth": 31.5
+  },
+  {
+    "name": "JWL",
+    "category": "PEG",
+    "manualPE": 52.61,
+    "manualDivYield": 0.34,
+    "epsGrowth": 37.1
+  },
+  {
+    "name": "PFC",
+    "category": "PEG",
+    "manualPE": 6.04,
+    "manualDivYield": 3.41,
+    "epsGrowth": 4.73
+  },
+  {
+    "name": "ANANTRAJ",
+    "category": "PEG",
+    "manualPE": 38.12,
+    "manualDivYield": 0.13,
+    "epsGrowth": 59.83
   }
 ]
