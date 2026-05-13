@@ -679,20 +679,6 @@
     "epsGrowth": 113.24
   },
   {
-    "name": "NFL",
-    "category": "PEG",
-    "manualPE": 19.82,
-    "manualDivYield": 1.97,
-    "epsGrowth": 31.5
-  },
-  {
-    "name": "JWL",
-    "category": "PEG",
-    "manualPE": 52.61,
-    "manualDivYield": 0.34,
-    "epsGrowth": 37.1
-  },
-  {
     "name": "PFC",
     "category": "PEG",
     "manualPE": 6.04,
@@ -705,5 +691,19 @@
     "manualPE": 38.12,
     "manualDivYield": 0.13,
     "epsGrowth": 59.83
+  },
+  {
+    "name": "BHEL",
+    "category": "PEG",
+    "manualPE": 87.9,
+    "manualDivYield": 0.12,
+    "epsGrowth": 25
+  },
+  {
+    "name": "KAYNES",
+    "category": "PEG",
+    "manualPE": 71.7,
+    "manualDivYield": 0,
+    "epsGrowth": 73.5
   }
 ]

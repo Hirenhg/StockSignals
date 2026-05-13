@@ -2,35 +2,35 @@
   {
     "symbol": "NIFTY",
     "label": "NIFTY SPOT",
-    "cmp": 24337,
-    "bullishAbove": 24360,
+    "cmp": 23413,
+    "bullishAbove": 23500,
     "bullishTargets": [
-      24400,
-      24460
+      23600,
+      23660
     ],
-    "bearishBelow": 24230,
+    "bearishBelow": 23350,
     "bearishTargets": [
-      24160,
-      24100
+      23270,
+      23160
     ],
-    "date": "2026-05-07",
+    "date": "2026-05-14",
     "note": "Trade with strict SL."
   },
   {
     "symbol": "SENSEX",
     "label": "SENSEX SPOT",
-    "cmp": 79278,
-    "bullishAbove": 78020,
+    "cmp": 74608,
+    "bullishAbove": 74740,
     "bullishTargets": [
-      78300,
-      78640
+      75200,
+      75470
     ],
-    "bearishBelow": 77615,
+    "bearishBelow": 74540,
     "bearishTargets": [
-      77400,
-      77270
+      74205,
+      73930
     ],
-    "date": "2026-05-07",
+    "date": "2026-05-14",
     "note": "Avoid overtrading near key levels."
   }
 ]
