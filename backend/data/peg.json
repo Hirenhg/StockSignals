@@ -665,25 +665,11 @@
     "epsGrowth": 5
   },
   {
-    "name": "SATIN",
-    "category": "PEG",
-    "manualDivYield": 0,
-    "epsGrowth": 50,
-    "manualPE": 10.1
-  },
-  {
     "name": "MUTHOOTMF",
     "category": "PEG",
     "manualDivYield": 0,
     "manualPE": 25,
     "epsGrowth": 113.24
-  },
-  {
-    "name": "PFC",
-    "category": "PEG",
-    "manualPE": 6.04,
-    "manualDivYield": 3.41,
-    "epsGrowth": 4.73
   },
   {
     "name": "ANANTRAJ",
@@ -693,17 +679,10 @@
     "epsGrowth": 59.83
   },
   {
-    "name": "BHEL",
+    "name": "DEEPAKFERT",
     "category": "PEG",
-    "manualPE": 87.9,
-    "manualDivYield": 0.12,
-    "epsGrowth": 25
-  },
-  {
-    "name": "KAYNES",
-    "category": "PEG",
-    "manualPE": 71.7,
-    "manualDivYield": 0,
-    "epsGrowth": 73.5
+    "manualPE": 19.20,
+    "manualDivYield": 0.70,
+    "epsGrowth": 10.5
   }
 ]
