@@ -1,11 +1,24 @@
 [
-  {
-    "symbol": "ANANTRAJ"
-  },
-  {
-    "symbol": "PFC"
-  },
-  {
-    "symbol": "DEEPAKFERT"
-  }
+  { "symbol": "ANANTRAJ" },
+  { "symbol": "HONASA" },
+  { "symbol": "DEEPAKFERT" },
+  { "symbol": "TRANSRAIL" },
+  { "symbol": "CLEAN" },
+  { "symbol": "ZYDUSWELL" },
+  { "symbol": "SHRIPISTON" },
+  { "symbol": "PARKMEDI" },
+  { "symbol": "GAIL" },
+  { "symbol": "NUVAMA" },
+  { "symbol": "KMEW" },
+  { "symbol": "SYRMA" },
+  { "symbol": "JBMA" },
+  { "symbol": "AEROFLEX" },
+  { "symbol": "SASKEN" },
+  { "symbol": "WOCKPHARMA" },
+  { "symbol": "CYIENT" },
+  { "symbol": "MARKSANS" },
+  { "symbol": "WELSPUNLIV" },
+  { "symbol": "SERVOTECH" },
+  { "symbol": "GREAVESCOT" },
+  { "symbol": "VIKRAMSOLAR" }
 ]
