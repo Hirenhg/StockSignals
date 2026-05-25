@@ -29,6 +29,7 @@ const Header = () => {
         { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
         // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
         { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
+        { path: '/swing-trade', label: 'Swing Trade', icon: 'bi-graph-up-arrow' },
         // { path: '/history-tracker', label: 'History', icon: 'bi-clock-history' },
       ]
     : [
