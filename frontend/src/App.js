@@ -22,6 +22,7 @@ const Levels = lazy(() => import('./pages/Levels/Levels'));
 const Results = lazy(() => import('./pages/Results/Results'));
 const HistoryTracker = lazy(() => import('./pages/HistoryTracker/HistoryTracker'));
 const IndexLevels = lazy(() => import('./pages/IndexLevels/IndexLevels'));
+const SwingTrade = lazy(() => import('./pages/SwingTrade/SwingTrade'));
 const Login = lazy(() => import('./pages/Login/Login'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
@@ -64,6 +65,7 @@ function AppRoutes() {
           <Route path="/results" element={<Protected><S><Results /></S></Protected>} />
           <Route path="/history-tracker" element={<Protected><S><HistoryTracker /></S></Protected>} />
           <Route path="/index-levels" element={<Protected><S><IndexLevels /></S></Protected>} />
+          <Route path="/swing-trade" element={<Protected><S><SwingTrade /></S></Protected>} />
           <Route path="*" element={<S><NotFound /></S>} />
         </Routes>
       )}
