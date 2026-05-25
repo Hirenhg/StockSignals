@@ -1,5 +1,5 @@
 [
-  { "symbol": "AEROFLEX" },
+{ "symbol": "AEROFLEX" },
   { "symbol": "ANANTRAJ" },
   { "symbol": "CLEAN" },
   { "symbol": "CYIENT" },
@@ -25,5 +25,13 @@
   { "symbol": "VIKRAMSOLAR" },
   { "symbol": "WELSPUNLIV" },
   { "symbol": "WOCKPHARMA" },
-  { "symbol": "ZYDUSWELL" }
+  { "symbol": "ZYDUSWELL" },
+  { "symbol": "RRKABEL" },
+  { "symbol": "SAIL" },
+  { "symbol": "EMIL" },
+  { "symbol": "ARVIND" },
+  { "symbol": "SPORTKING" },
+  { "symbol": "BAJAJCON" },
+  { "symbol": "SPARC" },
+  { "symbol": "ADANIENSOL" }
 ]
