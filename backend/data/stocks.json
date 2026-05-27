@@ -3,7 +3,6 @@
   { "symbol": "ANANTRAJ" },
   { "symbol": "CLEAN" },
   { "symbol": "CYIENT" },
-  { "symbol": "DEEPAKFERT" },
   { "symbol": "GAEL" },
   { "symbol": "GREAVESCOT" },
   { "symbol": "JBMA" },
@@ -15,7 +14,6 @@
   { "symbol": "NUVAMA" },
   { "symbol": "NUVOCO" },
   { "symbol": "ONESOURCE" },
-  { "symbol": "PARKMEDI" },
   { "symbol": "SASKEN" },
   { "symbol": "SERVOTECH" },
   { "symbol": "SHRIPISTON" },
@@ -33,5 +31,10 @@
   { "symbol": "SPORTKING" },
   { "symbol": "BAJAJCON" },
   { "symbol": "SPARC" },
-  { "symbol": "ADANIENSOL" }
+  { "symbol": "ADANIENSOL" },
+  { "symbol": "DIACABS" },
+  { "symbol": "SONACOMS" },
+  { "symbol": "GMDC" },
+  { "symbol": "ADANIGREEN" },
+  { "symbol": "AIAENG" }
 ]
