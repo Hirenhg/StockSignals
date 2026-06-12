@@ -107,7 +107,7 @@
   {
     "name": "MOTHERSON",
     "category": "Watchlist",
-    "epsGrowth": 38.05,
+    "epsGrowth": 28.08,
     "manualDivYield": 0.47,
     "manualPE": 36.29
   },
@@ -672,17 +672,129 @@
     "epsGrowth": 113.24
   },
   {
-    "name": "ANANTRAJ",
+    "name": "HARIOMPIPE",
     "category": "PEG",
-    "manualPE": 38.12,
+    "manualDivYield": 0.16,
+    "manualPE": 16.70,
+    "epsGrowth": 27.5
+  },
+  {
+    "name": "FRACTAL",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "manualPE": 54.3,
+    "epsGrowth": 32.76
+  },
+  {
+    "name": "CDSL",
+    "category": "PEG",
+    "manualDivYield": 1.02,
+    "manualPE": 56.3,
+    "epsGrowth": 21.45
+  },
+  {
+    "name": "VETO",
+    "category": "PEG",
+    "manualDivYield": 0.66,
+    "manualPE": 11.10,
+    "epsGrowth": 8
+  },
+  {
+    "name": "MANINDS",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "manualPE": 24,
+    "epsGrowth": 118.84
+  },
+  {
+    "name": "GRINDWELL",
+    "category": "PEG",
+    "manualDivYield": 1,
+    "manualPE": 51.20,
+    "epsGrowth": 15.36
+  },
+  {
+    "name": "FORTIS",
+    "category": "PEG",
+    "manualDivYield": 0.10,
+    "manualPE": 70.40,
+    "epsGrowth": 27.87
+  },
+  {
+    "name": "JBMA",
+    "category": "PEG",
     "manualDivYield": 0.13,
-    "epsGrowth": 59.83
+    "manualPE": 72.0,
+    "epsGrowth": 19
   },
   {
     "name": "DEEPAKFERT",
     "category": "PEG",
-    "manualPE": 19.20,
-    "manualDivYield": 0.70,
-    "epsGrowth": 10.5
+    "manualDivYield": 0.68,
+    "manualPE": 26.60,
+    "epsGrowth": 35.81
+  },
+  {
+    "name": "DIACABS",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "manualPE": 72,
+    "epsGrowth": 239
+  },
+  {
+    "name": "NIACL",
+    "category": "PEG",
+    "manualDivYield": 1.21,
+    "manualPE": 17.80,
+    "epsGrowth": 34.87
+  },
+  {
+    "name": "KMEW",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "manualPE": 59.7,
+    "epsGrowth": 75.75
+  },
+  {
+    "name": "SOLEX",
+    "category": "PEG",
+    "manualDivYield": 0.05,
+    "manualPE": 13.10,
+    "epsGrowth": 166
+  },
+  {
+    "name": "KERNEX",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "manualPE": 38,
+    "epsGrowth": 230
+  },
+  {
+    "name": "IOLCP",
+    "category": "PEG",
+    "manualDivYield": 0.74,
+    "manualPE": 27,
+    "epsGrowth": 21.31
+  },
+  {
+    "name": "AVALON",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "manualPE": 99.60,
+    "epsGrowth": 39.26
+  },
+  {
+    "name": "SERVOTECH",
+    "category": "PEG",
+    "manualDivYield": 0.05,
+    "manualPE": 63.9,
+    "epsGrowth": 44
+  },
+  {
+    "name": "GROWW",
+    "category": "PEG",
+    "manualDivYield": 0,
+    "manualPE": 59.90,
+    "epsGrowth": 28.98
   }
 ]
