@@ -138,6 +138,8 @@ export default function Levels() {
   const [watchlist, setWatchlist] = useState([])
   const [wlLoading, setWlLoading] = useState(true)
   const [wlSort, setWlSort] = useState('desc')
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [volumeFilter, setVolumeFilter] = useState('All')
   const { darkMode } = useTheme()
 
   const cardBg = darkMode ? '#1e1e1e' : '#fff'
@@ -451,6 +453,24 @@ export default function Levels() {
         <h5 className="fw-bold mb-3 mt-4" style={{ color: text }}>Watchlist Stock Analysis</h5>
         <div className="mb-3" style={{ fontSize: '12px', color: textMuted }}>EMA Pro Daily/Weekly/Monthly · 50 & 200 EMA Cross · RSI · Volume · Status · Upside % · Target & Stop Loss</div>
 
+        <div className="d-flex gap-2 mb-3 flex-wrap">
+          <select className="form-select" style={{ width: 'auto', fontSize: '14px' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="All">All Status</option>
+            <option value="Strong Buy">Strong Buy</option>
+            <option value="Momentum Buy">Momentum Buy</option>
+            <option value="Buy on Dip">Buy on Dip</option>
+            <option value="Strong Support">Strong Support</option>
+            <option value="Hold">Hold</option>
+            <option value="Weak">Weak</option>
+          </select>
+          <select className="form-select" style={{ width: 'auto', fontSize: '14px' }} value={volumeFilter} onChange={e => setVolumeFilter(e.target.value)}>
+            <option value="All">All Volume</option>
+            <option value="Good">Good</option>
+            <option value="Average">Average</option>
+            <option value="Bad">Bad</option>
+          </select>
+        </div>
+
         {wlLoading ? (
           <div className="d-none d-md-block"><SkeletonTable rows={5} cols={12} /></div>
         ) : watchlist.length === 0 ? (
@@ -475,11 +495,10 @@ export default function Levels() {
                     <th>Up Chance <button onClick={() => setWlSort(s => s === 'desc' ? 'asc' : 'desc')} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '13px', padding: '0 4px' }}>{wlSort === 'desc' ? '▼' : '▲'}</button></th>
                     <th>Target</th>
                     <th>Stop Loss</th>
-                    <th>Valuation</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[...watchlist].sort((a, b) => wlSort === 'desc' ? b.upChancePct - a.upChancePct : a.upChancePct - b.upChancePct).map((row, i) => {
+                  {[...watchlist].filter(r => (statusFilter === 'All' || r.status === statusFilter) && (volumeFilter === 'All' || r.volume === volumeFilter)).sort((a, b) => wlSort === 'desc' ? b.upChancePct - a.upChancePct : a.upChancePct - b.upChancePct).map((row, i) => {
                     const statusColor = {
                       'Strong Buy': '#198754', 'Momentum Buy': '#20c997',
                       'Buy on Dip': '#0d6efd', 'Strong Support': '#6f42c1',
@@ -530,12 +549,6 @@ export default function Levels() {
                           ₹{row.stopLoss}
                           <div style={{ fontSize: '11px', fontWeight: 400 }}>{row.stopLossPct}%</div>
                         </td>
-                        <td>
-                          <span className="badge" style={{
-                            background: row.valuation === 'Undervalued' ? '#198754' : row.valuation === 'Overvalued' ? '#dc3545' : '#6c757d',
-                            fontSize: '12px'
-                          }}>{row.valuation}</span>
-                        </td>
                       </tr>
                     )
                   })}
@@ -545,7 +558,7 @@ export default function Levels() {
 
             {/* Mobile Cards */}
             <div className="d-md-none" style={{ paddingBottom: 10 }}>
-              {watchlist.map((row, i) => {
+              {watchlist.filter(r => (statusFilter === 'All' || r.status === statusFilter) && (volumeFilter === 'All' || r.volume === volumeFilter)).map((row, i) => {
                 const statusColor = {
                   'Strong Buy': '#198754', 'Momentum Buy': '#20c997',
                   'Buy on Dip': '#0d6efd', 'Strong Support': '#6f42c1',
@@ -553,7 +566,7 @@ export default function Levels() {
                 }[row.status] || textMuted
                 const volColor = row.volume === 'Good' ? '#198754' : row.volume === 'Bad' ? '#dc3545' : '#ffc107'
                 const rsiColor = row.rsi > 70 ? '#dc3545' : row.rsi < 30 ? '#198754' : row.rsi > 55 ? '#20c997' : textMuted
-                const valColor = row.valuation === 'Undervalued' ? '#198754' : row.valuation === 'Overvalued' ? '#dc3545' : '#6c757d'
+
                 return (
                   <div key={i} className="card mb-3 shadow" style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
 
@@ -565,7 +578,7 @@ export default function Levels() {
                       </div>
                       <div className="text-end">
                         <div className="fw-bold" style={{ fontSize: '24px', color: text }}>₹{row.price}</div>
-                        <span className="badge" style={{ background: valColor, fontSize: '12px', padding: '3px 10px' }}>{row.valuation}</span>
+
                       </div>
                     </div>
 

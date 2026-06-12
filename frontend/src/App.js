@@ -22,7 +22,7 @@ const Levels = lazy(() => import('./pages/Levels/Levels'));
 const Results = lazy(() => import('./pages/Results/Results'));
 const HistoryTracker = lazy(() => import('./pages/HistoryTracker/HistoryTracker'));
 const IndexLevels = lazy(() => import('./pages/IndexLevels/IndexLevels'));
-const SwingTrade = lazy(() => import('./pages/SwingTrade/SwingTrade'));
+
 const Login = lazy(() => import('./pages/Login/Login'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
@@ -50,7 +50,8 @@ function AppRoutes() {
       {({ assetTab, setAssetTab }) => (
         <Routes>
           <Route path="/login" element={<S login><Login /></S>} />
-          <Route index element={<Protected><S><Dashboard assetTab={assetTab} setAssetTab={setAssetTab} /></S></Protected>} />
+          <Route index element={<Protected><S><Levels /></S></Protected>} />
+          <Route path="/signals" element={<Protected><S><Dashboard assetTab={assetTab} setAssetTab={setAssetTab} /></S></Protected>} />
           <Route path="/market-depth" element={<Protected><S><MarketDepth /></S></Protected>} />
           <Route path="/options" element={<Protected><S><Options /></S></Protected>} />
           <Route path="/optionchain" element={<Protected><S><OptionChain /></S></Protected>} />
@@ -61,11 +62,10 @@ function AppRoutes() {
           <Route path="/portfolio" element={<Protected><S><Portfolio /></S></Protected>} />
           <Route path="/chart/:symbol" element={<Protected><S><ChartPage /></S></Protected>} />
           <Route path="/tracker" element={<Protected><S><Tracker /></S></Protected>} />
-          <Route path="/levels" element={<Protected><S><Levels /></S></Protected>} />
           <Route path="/results" element={<Protected><S><Results /></S></Protected>} />
           <Route path="/history-tracker" element={<Protected><S><HistoryTracker /></S></Protected>} />
           <Route path="/index-levels" element={<Protected><S><IndexLevels /></S></Protected>} />
-          <Route path="/swing-trade" element={<Protected><S><SwingTrade /></S></Protected>} />
+
           <Route path="*" element={<S><NotFound /></S>} />
         </Routes>
       )}
