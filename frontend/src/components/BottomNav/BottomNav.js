@@ -6,7 +6,7 @@ const BottomNav = ({ assetTab, setAssetTab }) => {
   const location = useLocation();
   const { t } = useLanguage();
 
-  if (location.pathname !== '/') return null;
+  if (location.pathname !== '/signals') return null;
 
   const tabs = [
     { key: 'indices', label: t('indices'), icon: 'graph-up', solidIcon: 'graph-up-arrow' },
