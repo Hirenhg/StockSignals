@@ -1,15 +1,18 @@
 [
+  { "symbol": "FIVESTAR" },
+  { "symbol": "ANANTRAJ" },
   { "symbol": "PPLPHARMA" },
-  { "symbol": "WELSPUNLIV" },
   { "symbol": "LUMAXTECH" },
-  { "symbol": "HARIOMPIPE" },
-  { "symbol": "FRACTAL" },
   { "symbol": "360ONE" },
   { "symbol": "MOTHERSON" },
-  { "symbol": "JUBLINGREA" },
   { "symbol": "ONESOURCE" },
   { "symbol": "SCI" },
   { "symbol": "TEMBO" },
   { "symbol": "HARIOMPIPE" },
-  { "symbol": "NFL" }
+  { "symbol": "WELSPUNLIV" },
+  { "symbol": "GROWW" },
+  { "symbol": "KRBL" },
+  { "symbol": "PARAGMILK" },
+  { "symbol": "CELGALL" },
+  { "symbol": "VETO" }
 ]
