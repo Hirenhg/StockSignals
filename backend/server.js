@@ -856,8 +856,9 @@ app.post("/api/:type", (req, res) => {
     return res.status(400).json({ error: `${type.slice(0, -1)} already exists` });
   }
   
-  data.push({ symbol: symbol.toUpperCase() });
+  data.unshift({ symbol: symbol.toUpperCase() });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  signalCache.delete(type);
   res.json({ message: `${type.slice(0, -1)} added successfully`, symbol: symbol.toUpperCase() });
 });
 
@@ -1836,7 +1837,9 @@ app.get("/api/watchlist-analysis", optionalAuth, async (req, res) => {
       watchlist = (user?.watchlist || []).map(w => w.symbol);
     }
     const symbols = [...new Set([...stocks.map(s => s.symbol), ...watchlist])];
-    const results = (await Promise.all(symbols.map(s => getWatchlistAnalysis(s)))).filter(Boolean);
+    const resultsRaw = await Promise.all(symbols.map(s => getWatchlistAnalysis(s)));
+    const resultMap = new Map(resultsRaw.filter(Boolean).map(r => [r.symbol, r]));
+    const results = symbols.map(s => resultMap.get(s)).filter(Boolean);
     res.json(results);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch watchlist analysis' });
