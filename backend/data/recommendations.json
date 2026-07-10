@@ -1,0 +1,74 @@
+[
+  {
+    "id": "1",
+    "name": "HARIOMPIPE",
+    "type": "BUY",
+    "recommendedPrice": 384,
+    "targetPrice": 422,
+    "stopLoss": 371,
+    "duration": "3-4 weeks",
+    "date": "2025-01-20",
+    "sector": "Metal",
+    "createdAt": "2025-01-20T10:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "name": "PARAGMILK",
+    "type": "BUY",
+    "recommendedPrice": 232,
+    "targetPrice": 255,
+    "stopLoss": 224,
+    "duration": "3-4 weeks",
+    "date": "2025-01-21",
+    "sector": "FMCG",
+    "createdAt": "2025-01-21T10:00:00.000Z"
+  },
+  {
+    "id": "3",
+    "name": "BIOCON",
+    "type": "BUY",
+    "recommendedPrice": 419,
+    "targetPrice": 461,
+    "stopLoss": 405,
+    "duration": "3-4 weeks",
+    "date": "2025-01-22",
+    "sector": "Pharma",
+    "createdAt": "2025-01-22T10:00:00.000Z"
+  },
+  {
+    "id": "4",
+    "name": "LIBERTSHOE",
+    "type": "BUY",
+    "recommendedPrice": 275,
+    "targetPrice": 303,
+    "stopLoss": 266,
+    "duration": "3-4 weeks",
+    "date": "2025-01-23",
+    "sector": "Other",
+    "createdAt": "2025-01-23T10:00:00.000Z"
+  },
+  {
+    "id": "5",
+    "name": "SCI",
+    "type": "BUY",
+    "recommendedPrice": 285,
+    "targetPrice": 314,
+    "stopLoss": 276,
+    "duration": "3-4 weeks",
+    "date": "2025-01-24",
+    "sector": "Infra",
+    "createdAt": "2025-01-24T10:00:00.000Z"
+  },
+  {
+    "id": "6",
+    "name": "GENUSPOWER",
+    "type": "BUY",
+    "recommendedPrice": 320,
+    "targetPrice": 352,
+    "stopLoss": 309,
+    "duration": "3-4 weeks",
+    "date": "2025-01-25",
+    "sector": "Energy",
+    "createdAt": "2025-01-25T10:00:00.000Z"
+  }
+]

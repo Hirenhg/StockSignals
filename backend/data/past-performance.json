@@ -1,0 +1,74 @@
+[
+  {
+    "id": "p1",
+    "name": "TATAPOWER",
+    "buyPrice": 390,
+    "buyDate": "2024-11-05",
+    "sellPrice": 429,
+    "sellDate": "2024-11-22",
+    "sector": "Energy"
+  },
+  {
+    "id": "p2",
+    "name": "IRFC",
+    "buyPrice": 148,
+    "buyDate": "2024-11-10",
+    "sellPrice": 163,
+    "sellDate": "2024-11-28",
+    "sector": "Finance"
+  },
+  {
+    "id": "p3",
+    "name": "ZOMATO",
+    "buyPrice": 215,
+    "buyDate": "2024-11-15",
+    "sellPrice": 237,
+    "sellDate": "2024-12-05",
+    "sector": "IT"
+  },
+  {
+    "id": "p4",
+    "name": "COALINDIA",
+    "buyPrice": 420,
+    "buyDate": "2024-12-01",
+    "sellPrice": 405,
+    "sellDate": "2024-12-18",
+    "sector": "Metal"
+  },
+  {
+    "id": "p5",
+    "name": "HDFCBANK",
+    "buyPrice": 1680,
+    "buyDate": "2024-12-10",
+    "sellPrice": 1848,
+    "sellDate": "2025-01-02",
+    "sector": "Banking"
+  },
+  {
+    "id": "p6",
+    "name": "RELIANCE",
+    "buyPrice": 1250,
+    "buyDate": "2024-12-15",
+    "sellPrice": 1375,
+    "sellDate": "2025-01-08",
+    "sector": "Energy"
+  },
+  {
+    "id": "p7",
+    "name": "SUNPHARMA",
+    "buyPrice": 1520,
+    "buyDate": "2024-12-20",
+    "sellPrice": 1460,
+    "sellDate": "2025-01-06",
+    "sector": "Pharma"
+  },
+  {
+    "id": "p8",
+    "name": "TATAMOTORS",
+    "buyPrice": 780,
+    "buyDate": "2025-01-02",
+    "sellPrice": 858,
+    "sellDate": "2025-01-18",
+    "sector": "Auto"
+  }
+]
