@@ -17,25 +17,25 @@ const Header = () => {
   const navItems = isLoggedIn
     ? [
         { path: '/', label: 'Dashboard', icon: 'bi-arrows-expand' },
-        { path: '/index-levels', label: 'Index Levels', icon: 'bi-bar-chart-steps' },
+        // { path: '/index-levels', label: 'Index Levels', icon: 'bi-bar-chart-steps' },
         { path: '/signals', label: 'Signals', icon: 'bi-speedometer2' },
         { path: '/market-depth', label: 'Market Depth', icon: 'bi-people-fill' },
-        { path: '/options', label: t('options'), icon: 'bi-gear' },
+        // { path: '/options', label: t('options'), icon: 'bi-gear' },
         // { path: '/optionchain', label: t('optionChain'), icon: 'bi-link-45deg' },
         { path: '/chart/INFY', label: t('charts'), icon: 'bi-bar-chart-line' },
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
         { path: '/news', label: t('news'), icon: 'bi-newspaper' },
-        { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
-        { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
+        // { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
+        // { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
         // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
-        { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
+        // { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
 
         // { path: '/history-tracker', label: 'History', icon: 'bi-clock-history' },
       ]
     : [
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
         { path: '/news', label: t('news'), icon: 'bi-newspaper' },
-        { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
+        // { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
       ];
 
   const ThemeToggle = () => (
