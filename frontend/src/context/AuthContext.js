@@ -10,25 +10,51 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('token'))
   const [loading, setLoading] = useState(true)
 
+  const logout = (message) => {
+    localStorage.removeItem('token')
+    delete API.defaults.headers.common['Authorization']
+    setToken(null)
+    setUser(null)
+    if (message) alert(message)
+  }
+
+  useEffect(() => {
+    // Intercept 403 responses for single-device enforcement
+    const interceptor = API.interceptors.response.use(
+      res => res,
+      err => {
+        if (err.response?.status === 403 && err.response?.data?.error?.includes('another device')) {
+          logout('You have been logged out because your account was accessed from another device.')
+        }
+        return Promise.reject(err)
+      }
+    )
+    return () => API.interceptors.response.eject(interceptor)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (token) {
       API.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      // Wake server first, then verify token
       wakeServer()
       API.get('/api/auth/me', { timeout: 90000 })
         .then(res => {
           setUser(res.data)
-          // Refresh token in background (don't block UI)
           API.post('/api/auth/refresh').then(r => {
             localStorage.setItem('token', r.data.token)
             API.defaults.headers.common['Authorization'] = `Bearer ${r.data.token}`
             setToken(r.data.token)
           }).catch(() => {})
         })
-        .catch(() => { logout() })
+        .catch((err) => {
+          if (err.response?.status === 403) {
+            logout('You have been logged out because your account was accessed from another device.')
+          } else {
+            logout()
+          }
+        })
         .finally(() => setLoading(false))
     } else {
-      // No token — still wake server so login is fast
       wakeServer()
       setLoading(false)
     }
@@ -50,13 +76,6 @@ export const AuthProvider = ({ children }) => {
     const res = await API.put('/api/auth/profile', { name })
     setUser(prev => ({ ...prev, name: res.data.name }))
     return res.data
-  }
-
-  const logout = () => {
-    localStorage.removeItem('token')
-    delete API.defaults.headers.common['Authorization']
-    setToken(null)
-    setUser(null)
   }
 
   return (
