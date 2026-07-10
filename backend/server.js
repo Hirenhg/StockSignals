@@ -1845,6 +1845,20 @@ app.get("/api/watchlist-analysis", optionalAuth, async (req, res) => {
   }
 });
 
+// Recommendations & Past Performance
+const recommendationsPath = path.join(__dirname, './data/recommendations.json');
+const pastPerformancePath = path.join(__dirname, './data/past-performance.json');
+const getRecommendations = () => { try { return JSON.parse(fs.readFileSync(recommendationsPath, 'utf8')) } catch { return [] } };
+const getPastPerformance = () => { try { return JSON.parse(fs.readFileSync(pastPerformancePath, 'utf8')) } catch { return [] } };
+
+app.get('/api/recommendations', (req, res) => {
+  res.json(getRecommendations());
+});
+
+app.get('/api/past-performance', (req, res) => {
+  res.json(getPastPerformance());
+});
+
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
