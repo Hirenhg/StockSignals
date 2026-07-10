@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -10,7 +11,9 @@ if (!fs.existsSync(usersPath)) fs.mkdirSync(usersPath, { recursive: true });
 function loginWithMobile(mobile) {
   if (!mobile || mobile.length < 10) return { success: false, error: 'Valid mobile number required' };
   const user = getOrCreateUser(mobile);
-  const token = jwt.sign({ mobile, userId: user.id }, JWT_SECRET, { expiresIn: '365d' });
+  const sessionId = crypto.randomBytes(16).toString('hex');
+  updateUser(mobile, { activeSessionId: sessionId });
+  const token = jwt.sign({ mobile, userId: user.id, sessionId }, JWT_SECRET, { expiresIn: '365d' });
   return { success: true, token, user: { id: user.id, mobile: user.mobile, name: user.name } };
 }
 
@@ -53,6 +56,10 @@ function authMiddleware(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Login required' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    const user = getUserByMobile(decoded.mobile);
+    if (user && user.activeSessionId && decoded.sessionId && user.activeSessionId !== decoded.sessionId) {
+      return res.status(403).json({ error: 'Session expired. You logged in from another device.' });
+    }
     req.user = decoded;
     next();
   } catch {

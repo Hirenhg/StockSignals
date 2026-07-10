@@ -1369,9 +1369,8 @@ app.get("/api/auth/me", authMiddleware, (req, res) => {
 app.post("/api/auth/refresh", authMiddleware, (req, res) => {
   const user = getUserByMobile(req.user.mobile);
   if (!user) return res.status(404).json({ error: 'User not found' });
-  const { jwt: jwtLib } = require('jsonwebtoken');
   const JWT_SECRET = process.env.JWT_SECRET || 'stocksignal-secret-key-2024';
-  const newToken = require('jsonwebtoken').sign({ mobile: user.mobile, userId: user.id }, JWT_SECRET, { expiresIn: '365d' });
+  const newToken = require('jsonwebtoken').sign({ mobile: user.mobile, userId: user.id, sessionId: user.activeSessionId }, JWT_SECRET, { expiresIn: '365d' });
   res.json({ token: newToken, user: { id: user.id, mobile: user.mobile, name: user.name } });
 });
 
