@@ -1410,7 +1410,7 @@ app.delete("/api/auth/watchlist/:symbol", authMiddleware, (req, res) => {
 // Buyers — stocks where buy quantity >= 60% (NSE India real data)
 const { getStockBuyerSeller, getIndexStocks } = require('./services/nseService');
 let buyersCache = { data: null, time: 0 };
-const BUYERS_CACHE_TTL = 5 * 60 * 1000; // 5 min
+const BUYERS_CACHE_TTL = 2 * 60 * 1000; // 2 min for fresher data
 
 app.get("/api/buyers", async (req, res) => {
   try {
