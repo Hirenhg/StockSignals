@@ -32,8 +32,9 @@ function MarketDepth() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // Auto-refresh every 2 min for live data
   useEffect(() => {
-    const interval = setInterval(() => fetchData(true), 5 * 60 * 1000)
+    const interval = setInterval(() => fetchData(true), 2 * 60 * 1000)
     return () => clearInterval(interval)
   }, [fetchData])
 
@@ -128,7 +129,7 @@ function MarketDepth() {
             <button className="btn btn-sm btn-outline-primary" onClick={refresh} disabled={refreshing}>
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
-            <small className="text-muted">{sorted.length} stocks — NSE India live</small>
+            <small className="text-muted">{sorted.length} stocks — NSE India live{!loading && allStocks.length === 0 && ' (No data from NSE — market may be closed or NSE is blocking requests)'}</small>
           </div>
           <div className="d-flex align-items-center gap-2">
             <input type="text" className="form-control form-control-sm" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ minWidth: '150px' }} />

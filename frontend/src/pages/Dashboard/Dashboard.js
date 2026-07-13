@@ -25,10 +25,19 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
   const [tvSymbol, setTvSymbol] = useState(null)
   const [suggestions, setSuggestions] = useState([])
   const [suggestLoading, setSuggestLoading] = useState(false)
+  const [watchlist, setWatchlist] = useState([])
+  const [wlLoading, setWlLoading] = useState(true)
+  const [wlSort, setWlSort] = useState('desc')
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [volumeFilter, setVolumeFilter] = useState('All')
   const navigate = useNavigate()
 
   useEffect(() => {
     API.get('/api/telegram/status').then(res => setTelegramEnabled(res.data.enabled)).catch(() => {})
+    API.get('/api/watchlist-analysis')
+      .then(r => setWatchlist(r.data))
+      .catch(e => console.error('Watchlist analysis fetch error:', e))
+      .finally(() => setWlLoading(false))
   }, [])
 
   const toggleTelegram = () => {
@@ -423,7 +432,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
             <span className="badge bg-secondary p-2">HOLD: {holdCount}</span>
           </div>
         </div>
-        <div className="d-md-none" style={{paddingBottom: '80px'}}>
+        <div className="d-md-none" style={{paddingBottom: '0px'}}>
           {loading ? <SkeletonCards count={4} /> : filteredSignals.map((item, index) => (
             <div key={index} className="card mb-3 shadow-sm position-relative">
               <div className="card-body">
@@ -578,6 +587,180 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         </div>
         )}
         {tvSymbol && <TradingViewModal symbol={tvSymbol} onClose={() => setTvSymbol(null)} />}
+
+        {/* ===== WATCHLIST STOCK ANALYSIS ===== */}
+        {(() => {
+          const darkMode = false
+          const cardBg = '#fff'
+          const border = '#e5e5e5'
+          const text = '#212529'
+          const textMuted = '#6c757d'
+          const sectionBg = '#f8f9fa'
+          return (
+            <>
+              <h5 className="fw-bold mb-3 mt-4" style={{ color: text }}>Watchlist Stock Analysis</h5>
+              <div className="mb-3" style={{ fontSize: '12px', color: textMuted }}>EMA Pro Daily/Weekly/Monthly · 50 & 200 EMA Cross · RSI · Volume · Status · Upside % · Target & Stop Loss</div>
+
+              <div className="d-flex gap-2 mb-3 flex-wrap">
+                <select className="form-select" style={{ width: 'auto', fontSize: '14px' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                  <option value="All">All Status</option>
+                  <option value="Strong Buy">Strong Buy</option>
+                  <option value="Momentum Buy">Momentum Buy</option>
+                  <option value="Buy on Dip">Buy on Dip</option>
+                  <option value="Strong Support">Strong Support</option>
+                  <option value="Hold">Hold</option>
+                  <option value="Weak">Weak</option>
+                </select>
+                <select className="form-select" style={{ width: 'auto', fontSize: '14px' }} value={volumeFilter} onChange={e => setVolumeFilter(e.target.value)}>
+                  <option value="All">All Volume</option>
+                  <option value="Good">Good</option>
+                  <option value="Average">Average</option>
+                  <option value="Bad">Bad</option>
+                </select>
+              </div>
+
+              {wlLoading ? (
+                <div className="d-none d-md-block"><SkeletonTable rows={5} cols={12} /></div>
+              ) : watchlist.length === 0 ? (
+                <div className="text-center text-muted p-4">No watchlist stocks found</div>
+              ) : (
+                <>
+                  {/* Desktop */}
+                  <div className="d-none d-md-block table-responsive mb-4">
+                    <table className="table table-hover" style={{ fontSize: '14px' }}>
+                      <thead className="table-dark">
+                        <tr style={{ verticalAlign: 'middle' }}>
+                          <th>Symbol</th>
+                          <th>Price</th>
+                          <th>EMA Pro Daily</th>
+                          <th>EMA Pro Weekly</th>
+                          <th>EMA Pro Monthly</th>
+                          <th>50 EMA</th>
+                          <th>200 EMA</th>
+                          <th>RSI</th>
+                          <th>Volume</th>
+                          <th>Status</th>
+                          <th>Up Chance <button onClick={() => setWlSort(s => s === 'desc' ? 'asc' : 'desc')} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '13px', padding: '0 4px' }}>{wlSort === 'desc' ? '▼' : '▲'}</button></th>
+                          <th>Target</th>
+                          <th>Stop Loss</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...watchlist].filter(r => (statusFilter === 'All' || r.status === statusFilter) && (volumeFilter === 'All' || r.volume === volumeFilter)).sort((a, b) => wlSort === 'desc' ? b.upChancePct - a.upChancePct : a.upChancePct - b.upChancePct).map((row, i) => {
+                          const statusColor = {
+                            'Strong Buy': '#198754', 'Momentum Buy': '#20c997',
+                            'Buy on Dip': '#0d6efd', 'Strong Support': '#6f42c1',
+                            'Hold': '#ffc107', 'Weak': '#dc3545'
+                          }[row.status] || textMuted
+                          const volColor = row.volume === 'Good' ? '#198754' : row.volume === 'Bad' ? '#dc3545' : '#ffc107'
+                          const rsiColor = row.rsi > 70 ? '#dc3545' : row.rsi < 30 ? '#198754' : row.rsi > 55 ? '#20c997' : textMuted
+                          return (
+                            <tr key={i} style={{ verticalAlign: 'middle' }}>
+                              <td className="fw-bold">{row.symbol}</td>
+                              <td><div className="fw-bold">₹{row.price}</div></td>
+                              <td style={{ color: row.ema7Daily && row.price >= row.ema7Daily ? '#198754' : '#dc3545' }}>{row.ema7Daily ?? '-'}</td>
+                              <td style={{ color: row.ema7Weekly && row.price >= row.ema7Weekly ? '#198754' : '#dc3545' }}>{row.ema7Weekly ?? '-'}</td>
+                              <td style={{ color: row.ema7Monthly && row.price >= row.ema7Monthly ? '#198754' : '#dc3545' }}>{row.ema7Monthly ?? '-'}</td>
+                              <td>{row.ema50Above == null ? '-' : (<span className={`badge ${row.ema50Above ? 'bg-success' : 'bg-danger'}`}>{row.ema50Above ? 'YES ✓' : 'NO ✗'}</span>)}</td>
+                              <td>{row.ema200Above == null ? '-' : (<span className={`badge ${row.ema200Above ? 'bg-success' : 'bg-danger'}`}>{row.ema200Above ? 'YES ✓' : 'NO ✗'}</span>)}</td>
+                              <td style={{ color: rsiColor, fontWeight: 600 }}>{row.rsi ?? '-'}</td>
+                              <td style={{ color: volColor, fontWeight: 600 }}>{row.volume}</td>
+                              <td><span className="badge" style={{ background: statusColor, fontSize: '12px' }}>{row.status}</span></td>
+                              <td><span style={{ fontWeight: 700, color: row.upChancePct >= 70 ? '#198754' : row.upChancePct >= 50 ? '#ffc107' : '#dc3545' }}>{row.upChancePct}%</span></td>
+                              <td className="fw-bold" style={{ color: '#198754' }}>₹{row.target}<div style={{ fontSize: '11px', fontWeight: 400 }}>+{row.targetPct}%</div></td>
+                              <td className="fw-bold" style={{ color: '#dc3545' }}>₹{row.stopLoss}<div style={{ fontSize: '11px', fontWeight: 400 }}>{row.stopLossPct}%</div></td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="d-md-none" style={{ paddingBottom: 10 }}>
+                    {watchlist.filter(r => (statusFilter === 'All' || r.status === statusFilter) && (volumeFilter === 'All' || r.volume === volumeFilter)).map((row, i) => {
+                      const statusColor = {
+                        'Strong Buy': '#198754', 'Momentum Buy': '#20c997',
+                        'Buy on Dip': '#0d6efd', 'Strong Support': '#6f42c1',
+                        'Hold': '#ffc107', 'Weak': '#dc3545'
+                      }[row.status] || textMuted
+                      const volColor = row.volume === 'Good' ? '#198754' : row.volume === 'Bad' ? '#dc3545' : '#ffc107'
+                      const rsiColor = row.rsi > 70 ? '#dc3545' : row.rsi < 30 ? '#198754' : row.rsi > 55 ? '#20c997' : textMuted
+
+                      return (
+                        <div key={i} className="card mb-3 shadow" style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
+                          <div className="d-flex justify-content-between align-items-center px-3 pt-3 pb-2" style={{ borderBottom: `1px solid ${border}` }}>
+                            <div>
+                              <div className="fw-bold" style={{ fontSize: '22px', color: text, letterSpacing: '0.3px' }}>{row.symbol}</div>
+                              <span className="badge mt-1" style={{ background: statusColor, fontSize: '13px', padding: '4px 12px', borderRadius: 20 }}>{row.status}</span>
+                            </div>
+                            <div className="text-end">
+                              <div className="fw-bold" style={{ fontSize: '24px', color: text }}>₹{row.price}</div>
+                            </div>
+                          </div>
+                          <div className="d-flex justify-content-between align-items-center px-3 py-3" style={{ background: sectionBg, borderBottom: `1px solid ${border}` }}>
+                            {[['EMA Pro D', row.ema7Daily, row.price >= row.ema7Daily], ['EMA Pro W', row.ema7Weekly, row.price >= row.ema7Weekly], ['EMA Pro M', row.ema7Monthly, row.price >= row.ema7Monthly]].map(([lbl, val, up]) => (
+                              <div key={lbl} className="text-center">
+                                <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lbl}</div>
+                                <div className="fw-bold" style={{ fontSize: '18px', color: val ? (up ? '#198754' : '#dc3545') : textMuted }}>{val ?? '-'}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="px-3 pt-3 pb-2">
+                            <div className="row g-0">
+                              <div className="col-6 pe-2">
+                                <div className="mb-2" style={{ fontSize: '13px', fontWeight: 700, color: textMuted, textTransform: 'uppercase' }}>EMA Cross</div>
+                                {[['50 EMA', row.ema50Above], ['200 EMA', row.ema200Above]].map(([lbl, above]) => (
+                                  <div key={lbl} className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: `1px solid #f0f0f0` }}>
+                                    <span style={{ fontSize: '14px', color: textMuted }}>{lbl}</span>
+                                    <span className={`badge ${above ? 'bg-success' : 'bg-danger'}`} style={{ fontSize: '13px' }}>
+                                      {above == null ? '-' : above ? 'YES ✓' : 'NO ✗'}
+                                    </span>
+                                  </div>
+                                ))}
+                                <div className="d-flex justify-content-between align-items-center py-1">
+                                  <span style={{ fontSize: '14px', color: textMuted }}>Volume</span>
+                                  <span className="fw-bold" style={{ fontSize: '16px', color: volColor }}>{row.volume}</span>
+                                </div>
+                              </div>
+                              <div className="col-6 ps-2" style={{ borderLeft: `1px solid ${border}` }}>
+                                <div className="mb-2" style={{ fontSize: '13px', fontWeight: 700, color: textMuted, textTransform: 'uppercase' }}>Signals</div>
+                                <div className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: `1px solid #f0f0f0` }}>
+                                  <span style={{ fontSize: '14px', color: textMuted }}>RSI</span>
+                                  <span className="fw-bold" style={{ fontSize: '16px', color: rsiColor }}>{row.rsi ?? '-'}</span>
+                                </div>
+                                <div className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: `1px solid #f0f0f0` }}>
+                                  <span style={{ fontSize: '14px', color: textMuted }}>Up Chance</span>
+                                  <span className="fw-bold" style={{ fontSize: '16px', color: row.upChancePct >= 70 ? '#198754' : row.upChancePct >= 50 ? '#ffc107' : '#dc3545' }}>{row.upChancePct}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="d-flex justify-content-between align-items-center px-3 py-3" style={{ background: sectionBg, borderTop: `1px solid ${border}` }}>
+                            <div className="text-center">
+                              <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Target</div>
+                              <div className="fw-bold" style={{ fontSize: '18px', color: '#198754' }}>₹{row.target}</div>
+                              <div style={{ fontSize: '13px', color: '#198754' }}>+{row.targetPct}%</div>
+                            </div>
+                            <div className="text-center">
+                              <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Risk:Reward</div>
+                              <div className="fw-bold" style={{ fontSize: '18px', color: text }}>1 : 2</div>
+                            </div>
+                            <div className="text-center">
+                              <div style={{ fontSize: '12px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stop Loss</div>
+                              <div className="fw-bold" style={{ fontSize: '18px', color: '#dc3545' }}>₹{row.stopLoss}</div>
+                              <div style={{ fontSize: '13px', color: '#dc3545' }}>{row.stopLossPct}%</div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </>
+          )
+        })()}
       </div>
     </>
   )
