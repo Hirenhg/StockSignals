@@ -590,7 +590,6 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
 
         {/* ===== WATCHLIST STOCK ANALYSIS ===== */}
         {(() => {
-          const darkMode = false
           const cardBg = '#fff'
           const border = '#e5e5e5'
           const text = '#212529'
