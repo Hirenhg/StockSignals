@@ -2,35 +2,52 @@
   {
     "symbol": "NIFTY",
     "label": "NIFTY SPOT",
-    "cmp": 23713,
-    "bullishAbove": 23790,
+    "cmp": 24570.65,
+    "bullishAbove": 24572,
     "bullishTargets": [
-      23880,
-      23940
+      24641,
+      24715
     ],
-    "bearishBelow": 23630,
+    "bearishBelow": 24553,
     "bearishTargets": [
-      23595,
-      23545
+      24494,
+      24420
     ],
-    "date": "2026-05-15",
-    "note": "Trade with strict SL."
+    "date": "2026-08-08",
+    "note": "Trade with strict SL. Don't overtrade. Wait for confirmation before entry."
+  },
+  {
+    "symbol": "BANKNIFTY",
+    "label": "BANK NIFTY SPOT",
+    "cmp": 57746.45,
+    "bullishAbove": 57798,
+    "bullishTargets": [
+      58077,
+      58366
+    ],
+    "bearishBelow": 57765,
+    "bearishTargets": [
+      57499,
+      57210
+    ],
+    "date": "2026-08-08",
+    "note": "Always book partial profits at T1. Let the rest ride with trailing SL."
   },
   {
     "symbol": "SENSEX",
     "label": "SENSEX SPOT",
-    "cmp": 75478,
-    "bullishAbove": 75720,
+    "cmp": 78499.17,
+    "bullishAbove": 78528,
     "bullishTargets": [
-      75950,
-      76180
+      78758,
+      78994
     ],
-    "bearishBelow": 75200,
+    "bearishBelow": 78475,
     "bearishTargets": [
-      75085,
-      74800
+      78287,
+      78051
     ],
-    "date": "2026-05-15",
-    "note": "Avoid overtrading near key levels."
+    "date": "2026-08-08",
+    "note": "Never average a losing trade. Exit and re-enter at better levels."
   }
 ]
