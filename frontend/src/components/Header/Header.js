@@ -17,7 +17,7 @@ const Header = () => {
   const navItems = isLoggedIn
     ? [
         { path: '/', label: 'Dashboard', icon: 'bi-arrows-expand' },
-        // { path: '/index-levels', label: 'Index Levels', icon: 'bi-bar-chart-steps' },
+        { path: '/index-levels', label: 'Index Levels', icon: 'bi-bar-chart-steps' },
         { path: '/signals', label: 'Signals', icon: 'bi-speedometer2' },
         // { path: '/market-depth', label: 'Market Depth', icon: 'bi-people-fill' },
         // { path: '/options', label: t('options'), icon: 'bi-gear' },
