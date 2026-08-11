@@ -589,7 +589,7 @@ function Dashboard({ assetTab: assetTabProp, setAssetTab: setAssetTabProp }) {
         {tvSymbol && <TradingViewModal symbol={tvSymbol} onClose={() => setTvSymbol(null)} />}
 
         {/* ===== WATCHLIST STOCK ANALYSIS ===== */}
-        {(() => {
+        {assetTab === 'stocks' && (() => {
           const cardBg = '#fff'
           const border = '#e5e5e5'
           const text = '#212529'
