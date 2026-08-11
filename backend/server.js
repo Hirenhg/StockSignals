@@ -1686,12 +1686,27 @@ app.get("/api/results", async (req, res) => {
   }
 });
 
-// Index Key Levels (manual daily update)
+// Index Key Levels — auto daily update via EMA-7
+const { autoUpdateIndexLevels } = require('./services/autoLevelsService');
 const indexLevelsPath = path.join(__dirname, './data/index-levels.json');
 const getIndexLevels = () => JSON.parse(fs.readFileSync(indexLevelsPath, 'utf8'));
 
+// Run auto-update once at startup, then every 24h
+autoUpdateIndexLevels().catch(() => {});
+setInterval(() => autoUpdateIndexLevels().catch(() => {}), 24 * 60 * 60 * 1000);
+
 app.get('/api/index-levels', (req, res) => {
   res.json(getIndexLevels());
+});
+
+// Manual trigger for immediate refresh
+app.get('/api/index-levels/refresh', async (req, res) => {
+  try {
+    const data = await autoUpdateIndexLevels();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: 'Auto-update failed', detail: e.message });
+  }
 });
 
 app.put('/api/index-levels/:symbol', (req, res) => {
