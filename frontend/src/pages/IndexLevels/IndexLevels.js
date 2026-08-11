@@ -106,13 +106,6 @@ const PricePositionBar = ({ price, s3, r3, pp, darkMode }) => {
   )
 }
 
-const pct = (from, to) => from ? ((to - from) / from * 100).toFixed(2) : null
-const PctBadge = ({ val }) => {
-  if (val === null) return <span className="text-muted">-</span>
-  const n = parseFloat(val)
-  return <span style={{ color: n >= 0 ? '#198754' : '#dc3545', fontWeight: 600, fontSize: 12 }}>{n >= 0 ? '+' : ''}{val}%</span>
-}
-
 function LevelCard({ item, darkMode, livePrice, livePChange }) {
   const bg = darkMode ? '#1e1e1e' : '#fff'
   const border = darkMode ? '#2a2a2a' : '#e9ecef'
