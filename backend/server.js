@@ -1123,6 +1123,10 @@ const getPortfolio = () => JSON.parse(fs.readFileSync(portfolioPath, 'utf8'));
 
 // Portfolio (COVID) routes
 
+app.get("/api/stocks", (req, res) => {
+  res.json(getStocks());
+});
+
 app.get("/api/portfolio", (req, res) => {
   res.json(getPortfolio());
 });
