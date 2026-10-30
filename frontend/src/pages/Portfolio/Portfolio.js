@@ -8,12 +8,17 @@ export default function Portfolio() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+  const [stockSymbols, setStockSymbols] = useState(new Set())
   const { darkMode } = useTheme()
 
   const bg2 = darkMode ? '#16213e' : '#f8f9fa'
   const border = darkMode ? '#2a2a4a' : '#e9ecef'
   const text = darkMode ? '#e0e0e0' : '#212529'
   const textMuted = darkMode ? '#8a8a9a' : '#6c757d'
+
+  useEffect(() => {
+    API.get('/api/stocks').then(r => setStockSymbols(new Set(r.data.map(s => s.symbol)))).catch(() => {})
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -127,7 +132,7 @@ export default function Portfolio() {
                 <tbody>
                   {sorted.map((row, i) => (
                     <tr key={i} style={{ verticalAlign: 'middle' }}>
-                      <td className="fw-bold">{row.name}</td>
+                      <td className="fw-bold" style={{ color: stockSymbols.has(row.name) ? '#ff6c00' : undefined }}>{row.name}</td>
                       <td className="text-end">₹{row.buy}</td>
                       <td className="text-end">{row.qty}</td>
                       <td className="text-end fw-bold" style={{ color: row.pChange >= 0 ? '#198754' : '#dc3545' }}>
@@ -165,7 +170,7 @@ export default function Portfolio() {
                 <div key={i} className="card mb-2 shadow-sm" style={{ background: bg2, border: `1px solid ${border}` }}>
                   <div className="card-body py-2 px-3">
                     <div className="d-flex justify-content-between align-items-center mb-1">
-                      <span className="fw-bold" style={{ color: text }}>{row.name}</span>
+                      <span className="fw-bold" style={{ color: stockSymbols.has(row.name) ? '#ff6c00' : text }}>{row.name}</span>
                       <span className="fw-bold" style={{ color: row.pnl >= 0 ? '#198754' : '#dc3545', fontSize: '13px' }}>
                         {row.pnl >= 0 ? '+' : ''}{row.pnlPct}%
                       </span>
