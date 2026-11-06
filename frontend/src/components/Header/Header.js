@@ -25,8 +25,9 @@ const Header = () => {
         { path: '/chart/INFY', label: t('charts'), icon: 'bi-bar-chart-line' },
         { path: '/sectors', label: t('sectors'), icon: 'bi-building' },
         { path: '/news', label: t('news'), icon: 'bi-newspaper' },
-        // { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
-        // { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
+        { path: '/sector-pe', label: 'Sector PE', icon: 'bi-pie-chart' },
+        { path: '/peg', label: 'PEG Ratio', icon: 'bi-calculator' },
+        { path: '/portfolio', label: 'Portfolio', icon: 'bi-clipboard-data' },
         // { path: '/tracker', label: t('Records'), icon: 'bi-crosshair' },
         // { path: '/results', label: 'Results', icon: 'bi-clipboard-data' },
 
