@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require("express");
 const fs = require('fs');
 const path = require('path');
@@ -741,7 +741,7 @@ app.delete("/api/options/:symbol", (req, res) => {
   res.json({ message: "Option deleted successfully" });
 });
 
-// Tracker hits — global for all users
+// Tracker hits â€” global for all users
 const trackerHitsPath = path.join(__dirname, './data/tracker-hits.json');
 const getTrackerHits = () => { try { return JSON.parse(fs.readFileSync(trackerHitsPath, 'utf8')) } catch { return [] } };
 const saveTrackerHits = (hits) => fs.writeFileSync(trackerHitsPath, JSON.stringify(hits, null, 2));
@@ -1189,6 +1189,52 @@ app.put("/api/portfolio/:index", (req, res) => {
   res.json({ message: 'Updated successfully' });
 });
 
+
+
+
+// All Stocks - NSE equity stocks only (real Indian companies)
+let allStocksListCache = null;
+app.get("/api/allstocks/list", (req, res) => {
+  if (!allStocksListCache) {
+    const master = getSymbolMaster();
+    allStocksListCache = master
+      .filter(s => s.exch_seg === 'NSE' && s.instrumenttype === '' && s.symbol.endsWith('-EQ') && !s.name.includes('INAV') && !s.name.includes('ETF') && !s.name.includes('BEES') && !s.name.includes('TEST'))
+      .map(s => ({ symbol: s.name, yahooSymbol: s.name + '.NS' }))
+      .sort((a, b) => a.symbol.localeCompare(b.symbol));
+  }
+  res.json(allStocksListCache);
+});
+
+// All Stocks - live price + company name for given symbols
+app.post("/api/allstocks/prices", async (req, res) => {
+  try {
+    const { stocks } = req.body;
+    if (!stocks || !stocks.length) return res.json([]);
+    const axios = require('axios');
+    const https = require('https');
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const results = await Promise.all(stocks.map(async ({ symbol, yahooSymbol }) => {
+      try {
+        const r = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=2d`, {
+          timeout: 8000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const result = r.data?.chart?.result?.[0];
+        if (!result) return { symbol, companyName: symbol, price: null, pChange: null };
+        const meta = result.meta;
+        const closes = (result.indicators.quote[0].close || []).filter(c => c != null);
+        const price = parseFloat((meta.regularMarketPrice || closes[closes.length - 1] || 0).toFixed(2));
+        const prevClose = parseFloat((meta.chartPreviousClose || closes[closes.length - 2] || 0).toFixed(2));
+        const pChange = prevClose ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : null;
+        const companyName = meta.longName || meta.shortName || symbol;
+        return { symbol, companyName, price, pChange };
+      } catch { return { symbol, companyName: symbol, price: null, pChange: null }; }
+    }));
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch prices' });
+  }
+});
+
 // Nifty PE data
 app.get("/api/nifty-pe", (req, res) => {
   try {
@@ -1411,7 +1457,7 @@ app.delete("/api/auth/watchlist/:symbol", authMiddleware, (req, res) => {
   res.json({ message: 'Removed from watchlist', watchlist: user.watchlist });
 });
 
-// Buyers — stocks where buy quantity >= 60% (NSE India real data)
+// Buyers â€” stocks where buy quantity >= 60% (NSE India real data)
 const { getStockBuyerSeller, getIndexStocks } = require('./services/nseService');
 let buyersCache = { data: null, time: 0 };
 const BUYERS_CACHE_TTL = 2 * 60 * 1000; // 2 min for fresher data
@@ -1613,7 +1659,7 @@ app.get("/api/market-mood", async (req, res) => {
   }
 });
 
-// Quarterly Results — scrape from Yahoo Finance page
+// Quarterly Results â€” scrape from Yahoo Finance page
 app.get("/api/results", async (req, res) => {
   try {
     const axios = require('axios');
@@ -1690,7 +1736,7 @@ app.get("/api/results", async (req, res) => {
   }
 });
 
-// Index Key Levels — auto daily update via EMA-7
+// Index Key Levels â€” auto daily update via EMA-7
 const { autoUpdateIndexLevels } = require('./services/autoLevelsService');
 const indexLevelsPath = path.join(__dirname, './data/index-levels.json');
 const getIndexLevels = () => JSON.parse(fs.readFileSync(indexLevelsPath, 'utf8'));
