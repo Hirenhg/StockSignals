@@ -5,7 +5,6 @@ import { SkeletonTable } from '../../components/Skeleton/Skeleton'
 import { useTheme } from '../../context/ThemeContext'
 
 const PAGE_SIZE = 50
-const LS_KEY = 'allstocks_holdings'
 
 function AllStocks({ darkMode }) {
   const [allList, setAllList] = useState([])
@@ -16,15 +15,17 @@ function AllStocks({ darkMode }) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pctFilter, setPctFilter] = useState(0)
-  const [holdings, setHoldings] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') } catch { return {} }
-  })
-  const [editing, setEditing] = useState({}) // { symbol: { buy, qty } }
+  const [holdings, setHoldings] = useState({})
+  const [editing, setEditing] = useState({})
 
-  const bg2 = darkMode ? '#16213e' : '#f8f9fa'
+  const bg2 = darkMode ? '#16216e' : '#f8f9fa'
   const border = darkMode ? '#2a2a4a' : '#e9ecef'
-  const text = darkMode ? '#e0e0e0' : '#212529'
+  const text = darkMode ? '#e0e0e0' : '#216529'
   const textMuted = darkMode ? '#8a8a9a' : '#6c757d'
+
+  useEffect(() => {
+    API.get('/api/allstocks/holdings').then(r => setHoldings(r.data)).catch(() => {})
+  }, [])
 
   useEffect(() => {
     API.get('/api/allstocks/list')
@@ -75,7 +76,7 @@ function AllStocks({ darkMode }) {
     const next = { ...holdings }
     if (!buy || !qty) { delete next[symbol] } else { next[symbol] = { buy, qty } }
     setHoldings(next)
-    localStorage.setItem(LS_KEY, JSON.stringify(next))
+    API.put('/api/allstocks/holdings', next).catch(() => {})
     setEditing(prev => { const n = { ...prev }; delete n[symbol]; return n })
   }
 
@@ -121,10 +122,10 @@ function AllStocks({ darkMode }) {
   const totalPnl = totalPortfolio - (heldWithPrice.reduce((s, sym) => s + (holdings[sym].buy * holdings[sym].qty), 0))
   const totalPnlPct = totalHolding ? ((totalPnl / totalHolding) * 100).toFixed(2) : 0
 
-  const inputStyle = { width: 100, fontSize: '14px', padding: '6px 12px', background: bg2, border: `1px solid ${border}`, color: text, borderRadius: 4 }
+  const inputStyle = { width: 100, fontSize: '14px', padding: '6px 16px', background: bg2, border: `1px solid ${border}`, color: text, borderRadius: 4 }
 
   const Pagination = () => totalPages <= 1 ? null : (
-    <div className="d-flex align-items-center justify-content-between mt-3" style={{ fontSize: '13px' }}>
+    <div className="d-flex align-items-center justify-content-between mt-3" style={{ fontSize: '16px' }}>
       <span style={{ color: textMuted }}>Page {page} of {totalPages}</span>
       <div className="d-flex gap-1">
         <button className="btn btn-outline-secondary" disabled={page === 1} onClick={() => setPage(1)}>«</button>
@@ -147,17 +148,17 @@ function AllStocks({ darkMode }) {
         <h5 className="fw-bold mb-0" style={{ color: text }}>
           <span>{filtered.length.toLocaleString()} Stocks</span>
         </h5>
-          <div className="d-flex gap-2 ms-auto">
+        <div className="d-flex gap-2 ms-auto flex-wrap w-100 w-md-auto">
           <input
-            className="form-control bg-white"
-            style={{ width: 230, background: bg2, border: `1px solid ${border}`, color: text}}
+            className="form-control bg-white flex-grow-1"
+            style={{ minWidth: 0, background: bg2, border: `1px solid ${border}`, color: text }}
             placeholder="Search..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
           <select
-            className="form-select bg-white"
-            style={{ width: 230, background: bg2, border: `1px solid ${border}`, color: text }}
+            className="form-select bg-white flex-grow-1"
+            style={{ minWidth: 0, background: bg2, border: `1px solid ${border}`, color: text }}
             value={pctFilter}
             onChange={e => setPctFilter(Number(e.target.value))}
           >
@@ -167,17 +168,17 @@ function AllStocks({ darkMode }) {
       </div>
 
       {heldCount > 0 && (
-        <div className="d-flex gap-2 mb-3 overflow-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="d-flex flex-wrap gap-2 mb-3">
           {[
-            { label: 'Stocks', value: `${heldCount}`, color: text, size: '18px' },
+            { label: 'Stocks', value: `${heldCount}`, color: text },
             { label: 'Invested', value: `₹${fmt(Math.round(totalHolding))}`, color: text },
             { label: 'Current', value: pricesLoaded ? `₹${fmt(Math.round(totalPortfolio))}` : '...', color: text },
             { label: 'P&L', value: pricesLoaded ? `${totalPnl >= 0 ? '+' : ''}₹${fmt(Math.round(totalPnl))}` : '...', color: totalPnl >= 0 ? '#198754' : '#dc3545' },
             { label: 'Returns', value: pricesLoaded ? `${totalPnlPct >= 0 ? '+' : ''}${totalPnlPct}%` : '...', color: totalPnl >= 0 ? '#198754' : '#dc3545' },
-          ].map(({ label, value, color, size }) => (
-            <div key={label} className="flex-shrink-0 text-center rounded px-3 py-1" style={{ background: bg2, border: `1px solid ${border}`, minWidth: '85px' }}>
-              <div style={{ fontSize: '12px', color: textMuted }}>{label}</div>
-              <div className="fw-bold" style={{ fontSize: size || '18px', color }}>{value}</div>
+          ].map(({ label, value, color }) => (
+            <div key={label} className="text-center rounded px-3 py-2" style={{ background: bg2, border: `1px solid ${border}`, minWidth: '80px', flex: '1 1 auto' }}>
+              <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
+              <div className="fw-bold" style={{ fontSize: '16px', color }}>{value}</div>
             </div>
           ))}
         </div>
@@ -192,6 +193,8 @@ function AllStocks({ darkMode }) {
                   <th onClick={() => handleSort('companyName')} style={{ cursor: 'pointer' }}>Company{arrow('companyName')}</th>
                   <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }} className="text-end">CMP{arrow('price')}</th>
                   <th onClick={() => handleSort('pChange')} style={{ cursor: 'pointer' }} className="text-end">Change%{arrow('pChange')}</th>
+                  <th onClick={() => handleSort('allTimeHigh')} style={{ cursor: 'pointer' }} className="text-end">ATH{arrow('allTimeHigh')}</th>
+                  <th onClick={() => handleSort('downFromHigh')} style={{ cursor: 'pointer' }} className="text-end">↓ From ATH{arrow('downFromHigh')}</th>
                   <th className="text-end">Buy</th>
                   <th className="text-end">Qty</th>
                   <th className="text-end">Holding</th>
@@ -208,11 +211,15 @@ function AllStocks({ darkMode }) {
                     <tr key={i} style={{ verticalAlign: 'middle', opacity: loadingPrices && !prices[row.symbol] ? 0.4 : 1 }}>
                       <td>
                         <div className="fw-bold">{row.companyName || row.symbol}</div>
-                        <div style={{ fontSize: '11px', color: textMuted }}>{row.symbol}</div>
+                        <div style={{ fontSize: '14px', color: textMuted }}>{row.symbol}</div>
                       </td>
                       <td className="text-end fw-bold">{row.price ? `₹${fmt(row.price)}` : '0'}</td>
                       <td className="text-end fw-bold" style={{ color: row.pChange > 0 ? '#198754' : row.pChange < 0 ? '#dc3545' : undefined }}>
                         {row.pChange != null ? `${row.pChange >= 0 ? '+' : ''}${row.pChange}%` : '0'}
+                      </td>
+                      <td className="text-end">{row.allTimeHigh ? `₹${fmt(row.allTimeHigh)}` : '-'}</td>
+                      <td className="text-end" style={{ color: row.downFromHigh != null ? (row.downFromHigh >= 0 ? '#198754' : '#dc3545') : undefined }}>
+                        {row.downFromHigh != null ? `${row.downFromHigh >= 0 ? '+' : ''}${row.downFromHigh}%` : '-'}
                       </td>
                       {e ? (
                         <>
@@ -259,16 +266,16 @@ function AllStocks({ darkMode }) {
               const e = editing[row.symbol]
               const { holding, portfolioToday, pnl, pnlPct } = calcPnl(row.symbol, row.price)
               return (
-                <div key={i} className="card mb-2 shadow-sm" style={{ background: bg2, border: `1px solid ${border}`, opacity: loadingPrices && !prices[row.symbol] ? 0.4 : 1 }}>
+                <div key={i} className="card mb-2" style={{ background: bg2, border: `1px solid ${border}`, opacity: loadingPrices && !prices[row.symbol] ? 0.4 : 1 }}>
                   <div className="card-body py-2 px-3">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
                       <div>
-                        <div className="fw-bold" style={{ color: text, fontSize: '13px' }}>{row.companyName || row.symbol}</div>
-                        <div style={{ fontSize: '11px', color: textMuted }}>{row.symbol}</div>
+                        <div className="fw-bold" style={{ color: text, fontSize: '15px' }}>{row.companyName || row.symbol}</div>
+                        <div style={{ fontSize: '16px', color: textMuted }}>{row.symbol}</div>
                       </div>
                       <div className="text-end">
-                        <div className="fw-bold">{row.price ? `₹${fmt(row.price)}` : '0'}</div>
-                        <div style={{ fontSize: '12px', color: row.pChange > 0 ? '#198754' : row.pChange < 0 ? '#dc3545' : textMuted }}>
+                        <div className="fw-bold" style={{ fontSize: '15px' }}>{row.price ? `₹${fmt(row.price)}` : '0'}</div>
+                        <div style={{ fontSize: '16px', color: row.pChange > 0 ? '#198754' : row.pChange < 0 ? '#dc3545' : textMuted }}>
                           {row.pChange != null ? `${row.pChange >= 0 ? '+' : ''}${row.pChange}%` : '0'}
                         </div>
                       </div>
@@ -283,15 +290,35 @@ function AllStocks({ darkMode }) {
                         <button className="btn btn-outline-secondary" onClick={() => setEditing(prev => { const n={...prev}; delete n[row.symbol]; return n })}>✕</button>
                       </div>
                     ) : (
-                      <div className="row g-1 mt-1" style={{ fontSize: '12px' }}>
+                      <div className="row g-2" style={{ fontSize: '14px' }}>
+                        <div className="col-4">
+                          <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>ATH</div>
+                          <div>{row.allTimeHigh ? `₹${fmt(row.allTimeHigh)}` : '-'}</div>
+                        </div>
+                        <div className="col-4">
+                          <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>↓ From ATH</div>
+                          <div style={{ color: row.downFromHigh != null ? (row.downFromHigh >= 0 ? '#198754' : '#dc3545') : undefined }}>
+                            {row.downFromHigh != null ? `${row.downFromHigh >= 0 ? '+' : ''}${row.downFromHigh}%` : '-'}
+                          </div>
+                        </div>
                         <div className="col-4" onClick={() => startEdit(row.symbol)} style={{ cursor: 'pointer' }}>
-                          <small style={{ color: textMuted }}>Buy</small>
+                          <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>Buy</div>
                           <div style={{ color: h ? text : '#ff6c00' }}>{h ? `₹${h.buy}` : '+ Add'}</div>
                         </div>
-                        <div className="col-4"><small style={{ color: textMuted }}>Qty</small><div>{h ? h.qty : '0'}</div></div>
-                        <div className="col-4"><small style={{ color: textMuted }}>Holding</small><div>{holding != null ? `₹${fmt(holding)}` : '0'}</div></div>
-                        <div className="col-4"><small style={{ color: textMuted }}>Today</small><div className="fw-bold">{portfolioToday != null ? `₹${fmt(portfolioToday)}` : '0'}</div></div>
-                        <div className="col-8"><small style={{ color: textMuted }}>P&L</small>
+                        <div className="col-4">
+                          <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>Qty</div>
+                          <div>{h ? h.qty : '0'}</div>
+                        </div>
+                        <div className="col-4">
+                          <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>Holding</div>
+                          <div>{holding != null ? `₹${fmt(holding)}` : '0'}</div>
+                        </div>
+                        <div className="col-4">
+                          <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>Today</div>
+                          <div className="fw-bold">{portfolioToday != null ? `₹${fmt(portfolioToday)}` : '0'}</div>
+                        </div>
+                        <div className="col-8">
+                          <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>P&L</div>
                           <div className="fw-bold" style={{ color: pnl >= 0 ? '#198754' : pnl < 0 ? '#dc3545' : undefined }}>
                             {pnl != null ? `${pnl >= 0 ? '+' : ''}₹${fmt(pnl)} (${pnlPct >= 0 ? '+' : ''}${pnlPct}%)` : '0'}
                           </div>
@@ -337,9 +364,9 @@ function CovidPortfolio({ darkMode }) {
   const [search, setSearch] = useState('')
   const [pctFilter, setPctFilter] = useState(0)
 
-  const bg2 = darkMode ? '#16213e' : '#f8f9fa'
+  const bg2 = darkMode ? '#16216e' : '#f8f9fa'
   const border = darkMode ? '#2a2a4a' : '#e9ecef'
-  const text = darkMode ? '#e0e0e0' : '#212529'
+  const text = darkMode ? '#e0e0e0' : '#216529'
   const textMuted = darkMode ? '#8a8a9a' : '#6c757d'
 
   useEffect(() => {
@@ -414,21 +441,19 @@ function CovidPortfolio({ darkMode }) {
 
   return (
     <div>
-      <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-        <h5 className="fw-bold mb-0" style={{ color: text }}>
-          Watchlist
-        </h5>
-        <div className="d-flex gap-2 ms-auto">
+      <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+        <h5 className="fw-bold mb-0" style={{ color: text }}>Watchlist</h5>
+        <div className="d-flex gap-2 ms-auto flex-wrap w-100 w-md-auto">
           <input
-            className="form-control bg-white"
-            style={{ width: 230, background: bg2, border: `1px solid ${border}`, color: text}}
+            className="form-control bg-white flex-grow-1"
+            style={{ minWidth: 0, background: bg2, border: `1px solid ${border}`, color: text }}
             placeholder="Search..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
           <select
-            className="form-select bg-white"
-            style={{ width: 230, background: bg2, border: `1px solid ${border}`, color: text }}
+            className="form-select bg-white flex-grow-1"
+            style={{ minWidth: 0, background: bg2, border: `1px solid ${border}`, color: text }}
             value={pctFilter}
             onChange={e => setPctFilter(Number(e.target.value))}
           >
@@ -436,18 +461,17 @@ function CovidPortfolio({ darkMode }) {
           </select>
         </div>
       </div>
-      {/* Summary cards for held stocks */}
-      <div className="d-flex gap-2 mb-3 overflow-auto" style={{ scrollbarWidth: 'none' }}>
+      <div className="d-flex flex-wrap gap-2 mb-3">
         {[
-          { label: 'Stocks', value: `${displayed.length}${displayed.length !== data.length ? `/${data.length}` : ''}`, color: text, size: '18px' },
+          { label: 'Stocks', value: `${displayed.length}${displayed.length !== data.length ? `/${data.length}` : ''}`, color: text },
           { label: 'Invested', value: `₹${fmt(Math.round(totalHolding))}`, color: text },
           { label: 'Current', value: `₹${fmt(Math.round(totalPortfolio))}`, color: text },
           { label: 'P&L', value: `${totalPnl >= 0 ? '+' : ''}₹${fmt(Math.round(totalPnl))}`, color: totalPnl >= 0 ? '#198754' : '#dc3545' },
           { label: 'Returns', value: `${totalPnlPct >= 0 ? '+' : ''}${totalPnlPct}%`, color: totalPnl >= 0 ? '#198754' : '#dc3545' },
-        ].map(({ label, value, color, size }) => (
-          <div key={label} className="flex-shrink-0 text-center rounded px-3 py-1" style={{ background: bg2, border: `1px solid ${border}`, minWidth: '85px' }}>
-            <div style={{ fontSize: '12px', color: textMuted }}>{label}</div>
-            <div className="fw-bold" style={{ fontSize: size || '18px', color }}>{value}</div>
+        ].map(({ label, value, color }) => (
+          <div key={label} className="text-center rounded px-3 py-2" style={{ background: bg2, border: `1px solid ${border}`, minWidth: '80px', flex: '1 1 auto' }}>
+            <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
+            <div className="fw-bold" style={{ fontSize: '16px', color }}>{value}</div>
           </div>
         ))}
       </div>
@@ -462,6 +486,8 @@ function CovidPortfolio({ darkMode }) {
                   <th onClick={() => handleSort('buy')} style={{ cursor: 'pointer' }} className="text-end">Buy{arrow('buy')}</th>
                   <th onClick={() => handleSort('qty')} style={{ cursor: 'pointer' }} className="text-end">Qty{arrow('qty')}</th>
                   <th onClick={() => handleSort('lastPrice')} style={{ cursor: 'pointer' }} className="text-end">Last Price{arrow('lastPrice')}</th>
+                  <th onClick={() => handleSort('allTimeHigh')} style={{ cursor: 'pointer' }} className="text-end">ATH{arrow('allTimeHigh')}</th>
+                  <th onClick={() => handleSort('downFromHigh')} style={{ cursor: 'pointer' }} className="text-end">↓ From ATH{arrow('downFromHigh')}</th>
                   <th onClick={() => handleSort('holding')} style={{ cursor: 'pointer' }} className="text-end">Holding{arrow('holding')}</th>
                   <th onClick={() => handleSort('portfolioToday')} style={{ cursor: 'pointer' }} className="text-end">Portfolio Today{arrow('portfolioToday')}</th>
                   <th onClick={() => handleSort('pnlPct')} style={{ cursor: 'pointer' }} className="text-end">P&L{arrow('pnlPct')}</th>
@@ -477,6 +503,10 @@ function CovidPortfolio({ darkMode }) {
                       ₹{row.lastPrice || '-'}
                       {row.pChange != null && <small className="ms-1">({row.pChange >= 0 ? '+' : ''}{row.pChange}%)</small>}
                     </td>
+                    <td className="text-end">{row.allTimeHigh ? `₹${fmt(row.allTimeHigh)}` : '-'}</td>
+                    <td className="text-end" style={{ color: row.downFromHigh != null ? (row.downFromHigh >= 0 ? '#198754' : '#dc3545') : undefined }}>
+                      {row.downFromHigh != null ? `${row.downFromHigh >= 0 ? '+' : ''}${row.downFromHigh}%` : '-'}
+                    </td>
                     <td className="text-end">₹{fmt(row.holding)}</td>
                     <td className="text-end fw-bold">₹{fmt(row.portfolioToday)}</td>
                     <td className="text-end fw-bold" style={{ color: row.pnl >= 0 ? '#198754' : '#dc3545' }}>
@@ -486,7 +516,7 @@ function CovidPortfolio({ darkMode }) {
                   </tr>
                 ))}
                 <tr className="table-active fw-bold" style={{ verticalAlign: 'middle' }}>
-                  <td>TOTAL</td><td></td><td></td><td></td>
+                  <td>TOTAL</td><td></td><td></td><td></td><td></td><td></td>
                   <td className="text-end">₹{fmt(Math.round(totalHolding))}</td>
                   <td className="text-end">₹{fmt(Math.round(totalPortfolio))}</td>
                   <td className="text-end" style={{ color: totalPnl >= 0 ? '#198754' : '#dc3545' }}>
@@ -500,21 +530,54 @@ function CovidPortfolio({ darkMode }) {
 
           <div className="d-md-none">
             {sorted.map((row, i) => (
-              <div key={i} className="card mb-2 shadow-sm" style={{ background: bg2, border: `1px solid ${border}` }}>
+              <div key={i} className="card mb-2" style={{ background: bg2, border: `1px solid ${border}` }}>
                 <div className="card-body py-2 px-3">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <span className="fw-bold" style={{ color: stockSymbols.has(row.name) ? '#ff6c00' : text }}>{row.name}</span>
-                    <span className="fw-bold" style={{ color: row.pnl >= 0 ? '#198754' : '#dc3545', fontSize: '13px' }}>
-                      {row.pnl >= 0 ? '+' : ''}{row.pnlPct}%
-                    </span>
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <span className="fw-bold" style={{ color: stockSymbols.has(row.name) ? '#ff6c00' : text, fontSize: '15px' }}>{row.name}</span>
+                    <div className="text-end">
+                      <div className="fw-bold" style={{ color: row.pnl >= 0 ? '#198754' : '#dc3545', fontSize: '15px' }}>
+                        {row.pnl >= 0 ? '+' : ''}{row.pnlPct}%
+                      </div>
+                      <div style={{ fontSize: '16px', color: row.pChange >= 0 ? '#198754' : '#dc3545' }}>
+                        {row.pChange != null ? `${row.pChange >= 0 ? '+' : ''}${row.pChange}%` : ''}
+                      </div>
+                    </div>
                   </div>
-                  <div className="row g-1" style={{ fontSize: '13px' }}>
-                    <div className="col-4"><small style={{ color: textMuted }}>Buy</small><div>₹{row.buy}</div></div>
-                    <div className="col-4"><small style={{ color: textMuted }}>Qty</small><div>{row.qty}</div></div>
-                    <div className="col-4"><small style={{ color: textMuted }}>LTP</small><div className="fw-bold" style={{ color: row.pChange >= 0 ? '#198754' : '#dc3545' }}>₹{row.lastPrice}</div></div>
-                    <div className="col-4"><small style={{ color: textMuted }}>Holding</small><div>₹{fmt(row.holding)}</div></div>
-                    <div className="col-4"><small style={{ color: textMuted }}>Today</small><div className="fw-bold">₹{fmt(row.portfolioToday)}</div></div>
-                    <div className="col-4"><small style={{ color: textMuted }}>P&L</small><div className="fw-bold" style={{ color: row.pnl >= 0 ? '#198754' : '#dc3545' }}>{row.pnl >= 0 ? '+' : ''}₹{fmt(row.pnl)}</div></div>
+                  <div className="row g-2" style={{ fontSize: '14px' }}>
+                    <div className="col-4">
+                      <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>Buy</div>
+                      <div>₹{row.buy}</div>
+                    </div>
+                    <div className="col-4">
+                      <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>Qty</div>
+                      <div>{row.qty}</div>
+                    </div>
+                    <div className="col-4">
+                      <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>LTP</div>
+                      <div className="fw-bold" style={{ color: row.pChange >= 0 ? '#198754' : '#dc3545' }}>₹{row.lastPrice}</div>
+                    </div>
+                    <div className="col-4">
+                      <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>ATH</div>
+                      <div>{row.allTimeHigh ? `₹${fmt(row.allTimeHigh)}` : '-'}</div>
+                    </div>
+                    <div className="col-4">
+                      <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>↓ From ATH</div>
+                      <div style={{ color: row.downFromHigh != null ? (row.downFromHigh >= 0 ? '#198754' : '#dc3545') : undefined }}>
+                        {row.downFromHigh != null ? `${row.downFromHigh >= 0 ? '+' : ''}${row.downFromHigh}%` : '-'}
+                      </div>
+                    </div>
+                    <div className="col-4">
+                      <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>Holding</div>
+                      <div>₹{fmt(row.holding)}</div>
+                    </div>
+                    <div className="col-4">
+                      <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>Today</div>
+                      <div className="fw-bold">₹{fmt(row.portfolioToday)}</div>
+                    </div>
+                    <div className="col-4">
+                      <div style={{ fontSize: '14px', color: textMuted, textTransform: 'uppercase' }}>P&L</div>
+                      <div className="fw-bold" style={{ color: row.pnl >= 0 ? '#198754' : '#dc3545' }}>{row.pnl >= 0 ? '+' : ''}₹{fmt(row.pnl)}</div>
+                    </div>
                   </div>
                 </div>
               </div>
