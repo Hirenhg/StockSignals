@@ -1,0 +1,702 @@
+{
+  "BAJAJCON": {
+    "buy": 129,
+    "qty": 116
+  },
+  "KNRCON": {
+    "buy": 93,
+    "qty": 154
+  },
+  "IGL": {
+    "buy": 173,
+    "qty": 86
+  },
+  "TECHNOE": {
+    "buy": 170,
+    "qty": 88
+  },
+  "DONEAR": {
+    "buy": 18.5,
+    "qty": 811
+  },
+  "SPAL": {
+    "buy": 62,
+    "qty": 242
+  },
+  "SNOWMAN": {
+    "buy": 15,
+    "qty": 1000
+  },
+  "ASALCBR": {
+    "buy": 125,
+    "qty": 120
+  },
+  "GRSE": {
+    "buy": 106,
+    "qty": 142
+  },
+  "CAMS": {
+    "buy": 200,
+    "qty": 75
+  },
+  "5PAISA": {
+    "buy": 95,
+    "qty": 158
+  },
+  "FINPIPE": {
+    "buy": 57,
+    "qty": 263
+  },
+  "KAMATHOTEL": {
+    "buy": 15,
+    "qty": 1000
+  },
+  "STERTOOLS": {
+    "buy": 110,
+    "qty": 136
+  },
+  "APOLLOPIPE": {
+    "buy": 74,
+    "qty": 203
+  },
+  "CARYSIL": {
+    "buy": 182,
+    "qty": 82
+  },
+  "HAPPSTMNDS": {
+    "buy": 175,
+    "qty": 86
+  },
+  "HINDWAREAP": {
+    "buy": 55,
+    "qty": 273
+  },
+  "IIFL": {
+    "buy": 60.5,
+    "qty": 248
+  },
+  "ONWARDTEC": {
+    "buy": 35,
+    "qty": 429
+  },
+  "PENIND": {
+    "buy": 12,
+    "qty": 1250
+  },
+  "SAMHI": {
+    "buy": 75,
+    "qty": 200
+  },
+  "SIRCA": {
+    "buy": 79,
+    "qty": 190
+  },
+  "SURYODAY": {
+    "buy": 50,
+    "qty": 300
+  },
+  "UDS": {
+    "buy": 150,
+    "qty": 100
+  },
+  "GODREJPROP": {
+    "buy": 270,
+    "qty": 56
+  },
+  "GESHIP": {
+    "buy": 166,
+    "qty": 90
+  },
+  "SIYSIL": {
+    "buy": 106,
+    "qty": 142
+  },
+  "SRHHYPOLTD": {
+    "buy": 71.5,
+    "qty": 210
+  },
+  "AWHCL": {
+    "buy": 200,
+    "qty": 75
+  },
+  "CLEAN": {
+    "buy": 400,
+    "qty": 38
+  },
+  "IRCTC": {
+    "buy": 128,
+    "qty": 117
+  },
+  "IEX": {
+    "buy": 41,
+    "qty": 366
+  },
+  "PATELENG": {
+    "buy": 8,
+    "qty": 1875
+  },
+  "ARIES": {
+    "buy": 40,
+    "qty": 375
+  },
+  "RUCHIRA": {
+    "buy": 24.5,
+    "qty": 612
+  },
+  "GOLDBEES": {
+    "buy": 38.5,
+    "qty": 390
+  },
+  "MAWANASUG": {
+    "buy": 16,
+    "qty": 938
+  },
+  "NMDC": {
+    "buy": 6.5,
+    "qty": 2310
+  },
+  "INFOBEAN": {
+    "buy": 100,
+    "qty": 150
+  },
+  "HNDFDS": {
+    "buy": 20,
+    "qty": 750
+  },
+  "NH": {
+    "buy": 185,
+    "qty": 81
+  },
+  "GRAPHITE": {
+    "buy": 105,
+    "qty": 143
+  },
+  "CROMPTON": {
+    "buy": 130,
+    "qty": 115
+  },
+  "GSPL": {
+    "buy": 121.25,
+    "qty": 124
+  },
+  "FSL": {
+    "buy": 21,
+    "qty": 714
+  },
+  "ETERNAL": {
+    "buy": 41,
+    "qty": 366
+  },
+  "HBLENGINE": {
+    "buy": 12,
+    "qty": 1250
+  },
+  "KEC": {
+    "buy": 96,
+    "qty": 156
+  },
+  "RAILTEL": {
+    "buy": 85,
+    "qty": 176
+  },
+  "JINDALSAW": {
+    "buy": 20,
+    "qty": 750
+  },
+  "STAR": {
+    "buy": 250,
+    "qty": 60
+  },
+  "BUTTERFLY": {
+    "buy": 102,
+    "qty": 150
+  },
+  "MGL": {
+    "buy": 500,
+    "qty": 30
+  },
+  "SPANDANA": {
+    "buy": 100,
+    "qty": 150
+  },
+  "BAJAJFINSV": {
+    "buy": 209.5,
+    "qty": 72
+  },
+  "COFFEEDAY": {
+    "buy": 5,
+    "qty": 3000
+  },
+  "JSFB": {
+    "buy": 200,
+    "qty": 75
+  },
+  "BHARTIHEXA": {
+    "buy": 500,
+    "qty": 30
+  },
+  "GMBREW": {
+    "buy": 86,
+    "qty": 175
+  },
+  "MANORAMA": {
+    "buy": 170,
+    "qty": 88
+  },
+  "MAITHANALL": {
+    "buy": 250,
+    "qty": 60
+  },
+  "TFCILTD": {
+    "buy": 35,
+    "qty": 433
+  },
+  "JUBLINGREA": {
+    "buy": 200,
+    "qty": 75
+  },
+  "SWELECTES": {
+    "buy": 77.5,
+    "qty": 194
+  },
+  "GOCLCORP": {
+    "buy": 110,
+    "qty": 136
+  },
+  "HEG": {
+    "buy": 90,
+    "qty": 167
+  },
+  "NDTV": {
+    "buy": 22,
+    "qty": 682
+  },
+  "AMBUJACEM": {
+    "buy": 137,
+    "qty": 110
+  },
+  "ACC": {
+    "buy": 912.5,
+    "qty": 16
+  },
+  "ATGL": {
+    "buy": 100,
+    "qty": 150
+  },
+  "AWL": {
+    "buy": 100,
+    "qty": 150
+  },
+  "ADANIPOWER": {
+    "buy": 7,
+    "qty": 2150
+  },
+  "ADANIENSOL": {
+    "buy": 100,
+    "qty": 150
+  },
+  "GPPL": {
+    "buy": 46.5,
+    "qty": 326
+  },
+  "ADANIGREEN": {
+    "buy": 37.6,
+    "qty": 399
+  },
+  "WELCORP": {
+    "buy": 50,
+    "qty": 300
+  },
+  "DATAMATICS": {
+    "buy": 27.2,
+    "qty": 551
+  },
+  "IFBIND": {
+    "buy": 263,
+    "qty": 56
+  },
+  "ITDC": {
+    "buy": 106.5,
+    "qty": 141
+  },
+  "ROHLTD": {
+    "buy": 33.3,
+    "qty": 450
+  },
+  "WABAG": {
+    "buy": 82.6,
+    "qty": 182
+  },
+  "PHOENIXLTD": {
+    "buy": 236.7,
+    "qty": 63
+  },
+  "ELECON": {
+    "buy": 8,
+    "qty": 1875
+  },
+  "SURYAROSNI": {
+    "buy": 31.7,
+    "qty": 473
+  },
+  "KPRMILL": {
+    "buy": 62.5,
+    "qty": 240
+  },
+  "RVNL": {
+    "buy": 13.1,
+    "qty": 1145
+  },
+  "BEML": {
+    "buy": 377.5,
+    "qty": 40
+  },
+  "TDPOWERSYS": {
+    "buy": 15,
+    "qty": 1000
+  },
+  "MIDHANI": {
+    "buy": 86.8,
+    "qty": 173
+  },
+  "AARTIDRUGS": {
+    "buy": 107.1,
+    "qty": 140
+  },
+  "AARTIIND": {
+    "buy": 105.3,
+    "qty": 142
+  },
+  "AARTIPHARM": {
+    "buy": 200,
+    "qty": 75
+  },
+  "GMRAIRPORT": {
+    "buy": 10,
+    "qty": 1500
+  },
+  "HINDCOPPER": {
+    "buy": 17.5,
+    "qty": 857
+  },
+  "IOC": {
+    "buy": 32.45,
+    "qty": 462
+  },
+  "MOTHERSON": {
+    "buy": 30,
+    "qty": 500
+  },
+  "CGPOWER": {
+    "buy": 4.75,
+    "qty": 3158
+  },
+  "GOACARBON": {
+    "buy": 61.3,
+    "qty": 245
+  },
+  "TRIDENT": {
+    "buy": 3.1,
+    "qty": 4840
+  },
+  "TEXRAIL": {
+    "buy": 13,
+    "qty": 1154
+  },
+  "LEMONTREE": {
+    "buy": 14.4,
+    "qty": 1042
+  },
+  "MAHSEAMLES": {
+    "buy": 97,
+    "qty": 155
+  },
+  "ASHOKA": {
+    "buy": 37.2,
+    "qty": 403
+  },
+  "HINDOILEXP": {
+    "buy": 26.2,
+    "qty": 573
+  },
+  "SANGHVIMOV": {
+    "buy": 22.5,
+    "qty": 667
+  },
+  "SKIPPER": {
+    "buy": 18,
+    "qty": 833
+  },
+  "IIFLCAPS": {
+    "buy": 19.5,
+    "qty": 769
+  },
+  "JIOFIN": {
+    "buy": 100,
+    "qty": 150
+  },
+  "INDIGO": {
+    "buy": 710,
+    "qty": 21
+  },
+  "LODHA": {
+    "buy": 218.5,
+    "qty": 69
+  },
+  "TATAPOWER": {
+    "buy": 28,
+    "qty": 536
+  },
+  "MUKKA": {
+    "buy": 18,
+    "qty": 820
+  },
+  "SOLARA": {
+    "buy": 135.2,
+    "qty": 111
+  },
+  "ADVENZYMES": {
+    "buy": 99,
+    "qty": 152
+  },
+  "PNBHOUSING": {
+    "buy": 122.1,
+    "qty": 123
+  },
+  "MAZDOCK": {
+    "buy": 162.7,
+    "qty": 92
+  },
+  "EASEMYTRIP": {
+    "buy": 4.6,
+    "qty": 3261
+  },
+  "ERIS": {
+    "buy": 321.7,
+    "qty": 47
+  },
+  "SJS": {
+    "buy": 340.5,
+    "qty": 44
+  },
+  "CAPACITE": {
+    "buy": 71.4,
+    "qty": 210
+  },
+  "WIPRO": {
+    "buy": 78.2,
+    "qty": 192
+  },
+  "ULTRACEMCO": {
+    "buy": 2676,
+    "qty": 6
+  },
+  "TRENT": {
+    "buy": 126,
+    "qty": 119
+  },
+  "TITAN": {
+    "buy": 306.2,
+    "qty": 50
+  },
+  "TECHM": {
+    "buy": 333,
+    "qty": 45
+  },
+  "TCS": {
+    "buy": 1032.4,
+    "qty": 15
+  },
+  "TMCV": {
+    "buy": 36,
+    "qty": 208
+  },
+  "TMPV": {
+    "buy": 36,
+    "qty": 208
+  },
+  "TATACONSUM": {
+    "buy": 193.5,
+    "qty": 78
+  },
+  "SUNPHARMA": {
+    "buy": 312.2,
+    "qty": 48
+  },
+  "SHRIRAMFIN": {
+    "buy": 86,
+    "qty": 174
+  },
+  "SBIN": {
+    "buy": 159.45,
+    "qty": 100
+  },
+  "SBILIFE": {
+    "buy": 516.3,
+    "qty": 29
+  },
+  "RELIANCE": {
+    "buy": 200,
+    "qty": 75
+  },
+  "POWERGRID": {
+    "buy": 65.5,
+    "qty": 229
+  },
+  "ONGC": {
+    "buy": 47.8,
+    "qty": 316
+  },
+  "NTPC": {
+    "buy": 73.5,
+    "qty": 205
+  },
+  "NESTLEIND": {
+    "buy": 552,
+    "qty": 27
+  },
+  "MARUTI": {
+    "buy": 3190,
+    "qty": 5
+  },
+  "MM": {
+    "buy": 245.6,
+    "qty": 61
+  },
+  "KOTAKBANK": {
+    "buy": 72.2,
+    "qty": 210
+  },
+  "INFY": {
+    "buy": 432.4,
+    "qty": 35
+  },
+  "INDUSINDBK": {
+    "buy": 243.3,
+    "qty": 62
+  },
+  "HINDALCO": {
+    "buy": 93.8,
+    "qty": 160
+  },
+  "HDFCLIFE": {
+    "buy": 345,
+    "qty": 43
+  },
+  "HDFCBANK": {
+    "buy": 407.7,
+    "qty": 74
+  },
+  "HCLTECH": {
+    "buy": 376.5,
+    "qty": 40
+  },
+  "GRASIM": {
+    "buy": 390.2,
+    "qty": 38
+  },
+  "EICHERMOT": {
+    "buy": 1282,
+    "qty": 12
+  },
+  "CIPLA": {
+    "buy": 361.5,
+    "qty": 41
+  },
+  "BRITANNIA": {
+    "buy": 1266,
+    "qty": 12
+  },
+  "BPCL": {
+    "buy": 66.5,
+    "qty": 226
+  },
+  "BHARTIARTL": {
+    "buy": 277,
+    "qty": 54
+  },
+  "BEL": {
+    "buy": 23.1,
+    "qty": 649
+  },
+  "ADANIPORTS": {
+    "buy": 166.5,
+    "qty": 90
+  },
+  "ADANIENT": {
+    "buy": 67.5,
+    "qty": 222
+  },
+  "HEROMOTOCO": {
+    "buy": 1341.4,
+    "qty": 11
+  },
+  "NLCINDIA": {
+    "buy": 34.95,
+    "qty": 429
+  },
+  "MANAPPURAM": {
+    "buy": 74.25,
+    "qty": 202
+  },
+  "ICICIBANK": {
+    "buy": 268.3,
+    "qty": 112
+  },
+  "COALINDIA": {
+    "buy": 78.55,
+    "qty": 191
+  },
+  "BAJAJHIND": {
+    "buy": 2.35,
+    "qty": 6383
+  },
+  "APEX": {
+    "buy": 132,
+    "qty": 114
+  },
+  "BALAMINES": {
+    "buy": 200,
+    "qty": 75
+  },
+  "STLTECH": {
+    "buy": 47,
+    "qty": 320
+  },
+  "360ONE": {
+    "buy": 217,
+    "qty": 13
+  },
+  "JSWENERGY": {
+    "buy": 42,
+    "qty": 360
+  },
+  "20MICRONS": {
+    "buy": 23,
+    "qty": 655
+  },
+  "3IINFOLTD": {
+    "buy": 1.4,
+    "qty": 10800
+  },
+  "3MINDIA": {
+    "buy": 17648,
+    "qty": 1
+  },
+  "21STCENMGM": {
+    "buy": 11,
+    "qty": 1300
+  },
+  "3PLAND": {
+    "buy": 3.6,
+    "qty": 4200
+  },
+  "63MOONS": {
+    "buy": 45,
+    "qty": 335
+  },
+  "ABINFRA": {
+    "buy": 0.9,
+    "qty": 16670
+  }
+}

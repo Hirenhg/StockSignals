@@ -1153,7 +1153,9 @@ app.get("/api/portfolio/live", async (req, res) => {
       const portfolioToday = parseFloat((live.price * stock.qty).toFixed(2));
       const pnl = parseFloat((portfolioToday - holding).toFixed(2));
       const pnlPct = holding ? parseFloat(((pnl / holding) * 100).toFixed(2)) : 0;
-      return { ...stock, lastPrice: live.price, pChange: live.pChange, holding, portfolioToday, pnl, pnlPct };
+      const allTimeHigh = live.allTimeHigh || null;
+      const downFromHigh = (allTimeHigh && live.price) ? parseFloat(((live.price - allTimeHigh) / allTimeHigh * 100).toFixed(2)) : null;
+      return { ...stock, lastPrice: live.price, pChange: live.pChange, holding, portfolioToday, pnl, pnlPct, allTimeHigh, downFromHigh };
     });
     res.json(results);
   } catch (error) {
@@ -1215,24 +1217,47 @@ app.post("/api/allstocks/prices", async (req, res) => {
     const agent = new https.Agent({ rejectUnauthorized: false });
     const results = await Promise.all(stocks.map(async ({ symbol, yahooSymbol }) => {
       try {
-        const r = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=2d`, {
-          timeout: 8000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
+        const [r, rMax] = await Promise.all([
+          axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=2d`, {
+            timeout: 8000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' }
+          }),
+          axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1mo&range=max`, {
+            timeout: 10000, httpsAgent: agent, headers: { 'User-Agent': 'Mozilla/5.0' }
+          })
+        ]);
         const result = r.data?.chart?.result?.[0];
-        if (!result) return { symbol, companyName: symbol, price: null, pChange: null };
+        if (!result) return { symbol, companyName: symbol, price: null, pChange: null, allTimeHigh: null, downFromHigh: null };
         const meta = result.meta;
         const closes = (result.indicators.quote[0].close || []).filter(c => c != null);
         const price = parseFloat((meta.regularMarketPrice || closes[closes.length - 1] || 0).toFixed(2));
         const prevClose = parseFloat((meta.chartPreviousClose || closes[closes.length - 2] || 0).toFixed(2));
         const pChange = prevClose ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2)) : null;
         const companyName = meta.longName || meta.shortName || symbol;
-        return { symbol, companyName, price, pChange };
-      } catch { return { symbol, companyName: symbol, price: null, pChange: null }; }
+        const maxHighs = (rMax.data?.chart?.result?.[0]?.indicators?.quote?.[0]?.high || []).filter(h => h != null);
+        const allTimeHigh = maxHighs.length ? parseFloat(Math.max(...maxHighs).toFixed(2)) : null;
+        const downFromHigh = (allTimeHigh && price) ? parseFloat(((price - allTimeHigh) / allTimeHigh * 100).toFixed(2)) : null;
+        return { symbol, companyName, price, pChange, allTimeHigh, downFromHigh };
+      } catch { return { symbol, companyName: symbol, price: null, pChange: null, allTimeHigh: null, downFromHigh: null }; }
     }));
     res.json(results);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch prices' });
   }
+});
+
+// AllStocks Holdings — shared across all users
+const allStocksHoldingsPath = path.join(__dirname, './data/allstocks-holdings.json');
+const getAllStocksHoldings = () => { try { return JSON.parse(fs.readFileSync(allStocksHoldingsPath, 'utf8')) } catch { return {} } };
+
+app.get('/api/allstocks/holdings', (req, res) => {
+  res.json(getAllStocksHoldings());
+});
+
+app.put('/api/allstocks/holdings', (req, res) => {
+  const holdings = req.body;
+  if (typeof holdings !== 'object' || Array.isArray(holdings)) return res.status(400).json({ error: 'Invalid holdings' });
+  fs.writeFileSync(allStocksHoldingsPath, JSON.stringify(holdings, null, 2));
+  res.json({ message: 'Saved' });
 });
 
 // Nifty PE data
